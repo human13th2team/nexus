@@ -1,3 +1,22 @@
+# 팀 프로젝트 통합 저장소 (Team Project Mono-repo)
+
+## 🛠 0. 기술 스택 (Technical Stack)
+
+이 프로젝트는 현대적이고 확장성 있는 기술 스택을 사용하여 구축되었습니다.
+
+| 구분 | 기술 (Technology) | 버전 (Version) | 비고 (Note) |
+| :--- | :--- | :--- | :--- |
+| **Frontend** | **Next.js** | `16.2.1` | App Router, React 19.2.4 |
+| | **Tailwind CSS** | `v4.x` | 차세대 엔진 적용 |
+| | **TypeScript** | `v5.x` | 정적 타입 시스템 |
+| **Backend (Spring)** | **Spring Boot** | `3.3.4` | Java 17 LTS |
+| | **Gradle** | `8.10.2` | 빌드 자동화 및 관리 |
+| | **SpringDoc** | `2.6.0` | Swagger UI (OpenAPI 3.0) |
+| **Backend (FastAPI)** | **FastAPI** | `1.0.0` | Python 3.10+, .venv 필수 |
+| | **httpx** | 최신 | 비동기 서비스 간 통신 |
+
+---
+
 ## 1. 기능 중심(Feature-based) 프로젝트 구조
 팀원 간의 코드 충돌을 방지하고 독립적인 개발을 위해 **기능(도메인)별로 디렉토리를 분리**하는 구조를 권장합니다.
 
@@ -63,10 +82,19 @@ app/
 ## 3. 실행 방법
 
 ### Backend - FastAPI
+
+> [!IMPORTANT]
+> **가상환경 필수**: 파이썬 패키지 설치 및 실행은 반드시 `.venv` 가상환경에서 진행해야 합니다. 
+
 ```bash
 cd backend-fastapi
-python3 -m venv venv
-source venv/bin/activate
+# 가상환경 생성 (.venv)
+python3 -m venv .venv
+
+# 가상환경 활성화
+source .venv/bin/activate
+
+# 패키지 설치 및 실행
 pip install -r requirements.txt
 python3 main.py
 ```

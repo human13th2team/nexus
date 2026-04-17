@@ -48,6 +48,7 @@ backend-fastapi/*$py.class
 backend-fastapi/*.so
 backend-fastapi/.Python
 backend-fastapi/venv/
+backend-fastapi/.venv/
 backend-fastapi/ENV/
 backend-fastapi/env/
 backend-fastapi/build/
