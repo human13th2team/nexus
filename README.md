@@ -88,21 +88,30 @@ app/
 
 ```bash
 cd backend-fastapi
-# 가상환경 생성 (.venv)
-python3 -m venv .venv
 
-# 가상환경 활성화
+# 1. 가상환경 생성 (.venv)
+python3 -m venv .venv  # Windows는 python -m venv .venv
+
+# 2. 가상환경 활성화
+# [Mac/Linux]
 source .venv/bin/activate
+# [Windows]
+# .venv\Scripts\activate
 
-# 패키지 설치 및 실행
+# 3. 패키지 설치 및 실행
 pip install -r requirements.txt
-python3 main.py
+python3 main.py  # Windows는 python main.py
 ```
 
 ### Backend - Spring Boot
 ```bash
 cd backend-spring
+
+# [Mac/Linux]
 ./gradlew bootRun
+
+# [Windows]
+# gradlew bootRun
 ```
 
 ### Frontend - Next.js
