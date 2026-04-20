@@ -59,3 +59,6 @@ backend-fastapi/.installed.cfg
 backend-fastapi/*.egg
 backend-fastapi/lib/
 backend-fastapi/lib64/
+
+# --- Docker ---
+docker-data/

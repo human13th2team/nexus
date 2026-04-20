@@ -1,9 +1,9 @@
 # Local Database Configuration (PostgreSQL)
 # Copy this file to application-local.properties and fill in your details
 
-spring.datasource.url=jdbc:postgresql://localhost:5432/your_local_db
-spring.datasource.username=your_username
-spring.datasource.password=your_password
+spring.datasource.url=jdbc:postgresql://localhost:5432/nexus_db
+spring.datasource.username=ashfortune
+spring.datasource.password=
 spring.datasource.driver-class-name=org.postgresql.Driver
 
 # JPA Configuration

@@ -49,19 +49,25 @@
 보안을 위해 실제 설정 파일은 복사하여 사용하세요.
 1. **Spring Boot**: `backend-spring/src/main/resources/application-local.properties.example` ➡️ `application-local.properties`
 2. **FastAPI**: `backend-fastapi/.env.example` ➡️ `.env`
-3. **Database**: 제공된 DDL(전체 스키마)을 실행하여 초기 테이블을 구축하세요.
+3. **Database (Docker)**: 프로젝트 루트에서 아래 명령어를 실행하여 DB를 기동하세요. (자동 스키마 생성)
+   ```bash
+   docker-compose up -d
+   ```
 
 ### 🏃 2단계: 서비스 실행
 ```bash
-# 1. FastAPI (AI 서버)
+# 1. Database (Docker) - 최우선 실행
+docker-compose up -d
+
+# 2. FastAPI (AI 서버)
 cd backend-fastapi && source .venv/bin/activate
 python -m app.main
 
-# 2. Spring Boot (비즈니스 서버)
+# 3. Spring Boot (비즈니스 서버)
 cd backend-spring
 ./gradlew bootRun
 
-# 3. Next.js (프론트엔드)
+# 4. Next.js (프론트엔드)
 cd frontend-next
 npm install && npm run dev
 ```

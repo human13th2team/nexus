@@ -1,0 +1,19 @@
+services:
+  nexus-db:
+    image: pgvector/pgvector:pg16
+    container_name: nexus-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: nexus_db
+      POSTGRES_USER: ashfortune
+      POSTGRES_PASSWORD: "" # 로컬 개발용이므로 비밀번호 없음 (필요시 설정)
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - ./docker-data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    restart: always
+
+networks:
+  default:
+    name: nexus-network
