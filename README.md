@@ -143,8 +143,8 @@ npm run dev
 
 #### **방법 B: Spring Boot (비즈니스 백엔드)**
 1.  `backend-spring/src/main/resources/` 폴더로 이동합니다.
-2.  `application-local.properties` 파일을 엽니다.
-3.  아래 항목들을 본인의 로컬 DB 설정에 맞게 수정합니다.
+2.  `application-local.properties.example` 파일을 복사하여 `application-local.properties` 파일을 새로 만듭니다.
+3.  새로 만든 파일을 열고 본인의 로컬 DB 설정에 맞게 수정합니다.
     *   `spring.datasource.url`: DB 주소 및 이름
     *   `spring.datasource.username`: DB 계정명
     *   `spring.datasource.password`: DB 비밀번호
