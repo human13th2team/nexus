@@ -1,4 +1,4 @@
-package com.example.demo.client;
+package com.team.nexus.client;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
