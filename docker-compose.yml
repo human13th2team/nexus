@@ -6,7 +6,7 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_DB: nexus_db
-      POSTGRES_USER: ashfortune
+      POSTGRES_USER: human2team
       POSTGRES_PASSWORD: "" # 로컬 개발용이므로 비밀번호 없음 (필요시 설정)
       POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
