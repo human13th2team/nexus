@@ -23,45 +23,57 @@
 ### 🌐 Frontend - `frontend-next` (Feature-based)
 ```text
 src/
-├── app/                    # Next.js App Router
-│   ├── (auth)/             # 인증 관련 루트 (login, signup 등)
-│   ├── (order)/            # 주문 관련 루트
-│   └── layout.tsx          # 공통 레이아웃
-├── features/               # 기능별 비즈니스 로직 및 컴포넌트
-│   ├── auth/               # 인증 관련 훅, 컴포넌트, 서비스
-│   ├── order/              # 주문 관련 훅, 컴포넌트, 서비스
-│   └── common/             # 공통 컴포넌트 (버튼, 입력창 등)
+├── app/                    # Next.js App Router (Layout & Routes)
+├── features/               # 도메인 중심 기능별 모듈
+│   ├── auth/               # 공통 인증 및 회원 관리
+│   ├── branding/           # AI 크리에이티브 (브랜딩)
+│   ├── simulation/         # 창업 시뮬레이션 및 상권 분석
+│   ├── compliance/         # 행정 및 정책 매칭 (노무 포함)
+│   ├── community/          # 하이퍼 로컬 커뮤니티
+│   ├── dashboard/          # 통합 운영 분석 대시보드
+│   └── common/             # 공통 컴포넌트
 └── types/                  # 전역 타입 정의
 ```
 
 ### ☕ Backend - `backend-spring` (Domain-based)
 ```text
-src/main/java/com/example/demo/
-├── domain/                 # 각 팀원이 담당하는 도메인별 패키지 (Feature)
-│   ├── auth/               # 인증: Controller, Service, Repository, Dto
-│   ├── order/              # 주문: Controller, Service, Repository, Dto
-│   └── user/               # 사용자: Controller, Service, Repository, Dto
-├── global/                 # 공통 설정 및 전역 관리 대상
-│   ├── entity/             # DB 테이블과 매핑되는 모든 Entity (전역 관리)
-│   ├── config/             # Swagger, Security 등 전역 설정
-│   ├── error/              # 공통 예외 처리
-│   └── common/             # 공통 유틸 및 기반 클래스
+src/main/java/com/team/nexus/
+├── domain/                 # 도메인별 비즈니스 로직
+│   ├── auth/               # 인증/보안: Security, JWT
+│   ├── branding/           # 브랜딩 자산 저장 및 매칭
+│   ├── simulation/         # 지역/업종별 마스터 데이터 관리
+│   ├── compliance/         # 체크리스트 및 서류 생성 로직
+│   ├── community/          # 게시판 CRUD 및 실시간 알림
+│   └── dashboard/          # 통계 집계 및 연동
+├── global/                 # 전역 공통 관리
+│   ├── entity/             # 공통 Entity (BaseTimeEntity 등)
+│   ├── config/             # JPA Auditing, Security 설정
+│   └── error/              # 전역 예외 처리
 └── client/                 # 외부 API 연동 (FastApiClient 등)
 ```
 
-### 🐍 Backend - `backend-fastapi` (Modular)
+### 🐍 Backend - `backend-fastapi` (Modular AI)
 ```text
 app/
-├── api/                    # 기능별 라우터 분리
-│   ├── v1/
-│   │   ├── auth.py         # 인증 API
-│   │   ├── order.py        # 주문 API
-│   │   └── user.py         # 사용자 API
-├── crud/                   # 도메인별 DB 처리 로직
-├── models/                 # 도메인별 DB 모델
-├── schemas/                # 도메인별 Pydantic 스키마
-└── services/               # 도메인별 핵심 비즈니스 로직
+├── api/v1/                 # 도메인별 라우터 분리
+│   ├── branding.py         # AI 브랜드/로고 생성 및 LLM 프롬프트
+│   ├── simulation.py       # 상권 분석 및 창업 비용 예측 알고리즘
+│   ├── compliance.py       # RAG 기반 정책 추천 및 법률 룰 엔진
+│   ├── community.py        # 커뮤니티 부가 서비스
+│   └── dashboard.py        # 시계열 매출 예측 및 리뷰 감성 분석
+├── models/                 # SQLAlchemy 비동기 모델 (공통 시간 필드 포함)
+├── schemas/                # Pydantic 데이터 검증 스키마
+├── services/               # 핵심 AI 모델 연동 및 데이터 가공 로직
+└── core/                   # DB 엔진 및 전역 설정 (database.py)
 ```
+
+#### 💡 FastAPI 레이어 역할 이해하기 (비유)
+팀원들의 빠른 이해를 위해 요리 과정에 비유한 가이드입니다:
+- **`api/v1/` (입구)**: 주문을 받는 **웨이터**. 요청(URL)을 받고 결과를 돌려줍니다.
+- **`services/` (심장)**: 요리를 직접 하는 **셰프**. **AI 로고 생성, 분석 로드맵 계산 등 모든 핵심 로직**이 여기에 들어갑니다.
+- **`schemas/` (체크)**: 주문서 형식을 확인하는 **검수원**. 데이터가 약속된 형식인지 검증합니다.
+- **`models/` (창고 규격)**: 식재료가 보관되는 **창고의 칸 규격**. DB 테이블의 모양을 정의합니다.
+- **`core/` (관리실)**: 주방에 전기가 잘 들어오는지 확인하는 **관리실**. DB 연결 및 환경변수를 설정합니다.
 
 > [!IMPORTANT]
 > **협업 규칙**: 본인이 맡은 `domain` 또는 `feature` 폴더 외부의 코드를 수정해야 할 경우, 반드시 해당 담당자와 상의 후 진행하세요. 공통 코드는 `global` 또는 `common` 폴더에서 관리합니다.
@@ -100,7 +112,8 @@ source .venv/bin/activate
 
 # 3. 패키지 설치 및 실행
 pip install -r requirements.txt
-python3 main.py  # Windows는 python main.py
+# [실행] app 패키지 모듈로 실행해야 합니다.
+python3 -m app.main  # Windows는 python -m app.main
 ```
 
 ### Backend - Spring Boot

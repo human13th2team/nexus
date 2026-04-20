@@ -2,33 +2,32 @@ from fastapi import FastAPI, HTTPException
 import httpx
 from pydantic import BaseModel
 from typing import Optional
+from app.api.v1 import auth, branding, simulation, compliance, community, dashboard
 
 app = FastAPI(
-    title="FastAPI Team Project Template",
-    description="팀 프로젝트를 위한 FastAPI 기반 서버입니다. Swagger는 /docs에서 확인 가능합니다.",
+    title="Nexus API Server",
+    description="Nexus 프로젝트를 위한 통합 API 서버입니다. MSA 구조의 개별 도메인 로직을 담당합니다.",
     version="1.0.0"
 )
 
 # Spring Boot 서버 주소 (8080)
 SPRING_BOOT_URL = "http://localhost:8080"
 
-class MessageBody(BaseModel):
-    message: str
-    sender: Optional[str] = "FastAPI"
+# 도메인별 라우터 등록
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
+app.include_router(branding.router, prefix="/api/v1/branding", tags=["AI Branding"])
+app.include_router(simulation.router, prefix="/api/v1/simulation", tags=["Startup Simulation"])
+app.include_router(compliance.router, prefix="/api/v1/compliance", tags=["Compliance & Policy"])
+app.include_router(community.router, prefix="/api/v1/community", tags=["Hyper-local Community"])
+app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["Ops & Dashboard"])
 
 @app.get("/")
 async def root():
-    return {"message": "FastAPI Server is running!"}
+    return {"message": "Nexus FastAPI Server is running!"}
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "service": "fastapi"}
-
-@app.post("/receive-from-spring")
-async def receive_from_spring(data: MessageBody):
-    """Spring Boot로부터 데이터를 받는 엔드포인트"""
-    print(f"Received message from Spring Boot: {data.message}")
-    return {"status": "success", "received": data.message, "responded_by": "FastAPI"}
+    return {"status": "ok", "service": "fastapi", "project": "nexus"}
 
 @app.get("/call-spring")
 async def call_spring():
