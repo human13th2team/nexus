@@ -38,7 +38,8 @@ backend-spring/.project
 backend-spring/*.iml
 backend-spring/*.iws
 backend-spring/*.ipr
-backend-spring/application-local.properties
+backend-spring/src/main/resources/application-local.properties
+backend-spring/src/main/resources/application-prod.properties
 !backend-spring/.gradle/wrapper/gradle-wrapper.jar
 
 # --- Backend (FastAPI) ---

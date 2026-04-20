@@ -129,6 +129,23 @@ npm run dev
 
 ---
 
+## 5. 초기 설정 가이드 (Getting Started for Team)
+
+팀원들은 프로젝트를 내려받은 후 다음 설정을 완료해야 정상적으로 실행 가능합니다.
+
+### 🐘 DB 및 환경변수 설정 (필수)
+
+민감한 정보가 포함된 설정 파일은 깃헙에 올라가지 않도록 설정되어 있습니다. 아래 절차대로 파일을 생성해 주세요.
+
+1.  **FastAPI (`backend-fastapi`)**:
+    - `.env.example` 파일을 복사하여 `.env` 파일을 생성합니다.
+    - `.env` 파일 내부의 `DATABASE_URL`을 본인의 로컬 DB 또는 공유된 개발 DB 주소로 수정합니다.
+2.  **Spring Boot (`backend-spring`)**:
+    - `src/main/resources/application-local.properties` 파일을 열어 DB 접속 정보(`url`, `username`, `password`)를 본인 환경에 맞게 입력합니다.
+    - 원격 DB 접속이 필요한 경우 `application-prod.properties`를 수정하여 사용합니다.
+
+---
+
 ## 🤖 AI 에이전트(Antigravity)와 협업하기
 본 프로젝트는 효율적인 개발을 위해 AI 에이전트(Antigravity)와의 협업을 적극 권장합니다.
 
