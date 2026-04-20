@@ -134,53 +134,30 @@ npm install
 npm run dev
 ```
 
-## 4. 서버 간 통신 테스트
-- **Spring Boot -> FastAPI**: `GET http://localhost:8080/api/comm/call-fastapi`
-- **FastAPI -> Spring Boot**: `GET http://localhost:8000/call-spring`
-
-이 초기 설정을 통해 팀원들이 별도의 문서 없이도 서버 주소만으로 API를 파악하고, 이미 구축된 통신 모듈을 활용하여 기능을 빠르게 확장할 수 있습니다.
-
 ---
 
-## 5. 🚀 팀원들을 위한 초기 환경 설정 (Getting Started)
+## 6. ✅ 초기 환경 검증 프로토콜 (Verification Checklist)
 
-프로젝트를 성공적으로 실행하기 위해 아래의 **DB 및 환경 설정** 단계를 차례대로 따라해 주세요. (보안상의 이유로 실제 비밀번호가 포함된 설정 파일은 Git에 포함되어 있지 않습니다.)
+새로운 팀원이 프로젝트를 클론한 후, 아래 순서대로 실행하여 본인의 환경이 올바르게 설정되었는지 확인하세요.
 
-### 🐘 1단계: 데이터베이스 및 환경변수 설정
+### 1단계: 백엔드 상태 확인 (애플리케이션 + DB 연결)
+서버가 실행 중이고, 데이터베이스에 정상적으로 연결되었는지 확인합니다.
+- **Spring Boot**: [http://localhost:8080/api/status/check](http://localhost:8080/api/status/check) 접속
+  - `{"status":"UP", "database":"CONNECTED"}` 메시지가 나오면 성공!
+- **FastAPI**: [http://localhost:8000/health](http://localhost:8000/health) 접속
+  - `{"status":"UP", "database":"CONNECTED"}` 메시지가 나오면 성공!
 
-#### **방법 A: FastAPI (AI 전용 백엔드)**
-1.  `backend-fastapi` 폴더로 이동합니다.
-2.  `.env.example` 파일을 복사하여 `.env`라는 이름의 파일을 새로 만듭니다.
-3.  `.env` 파일을 열고 `DATABASE_URL` 부분에 본인의 로컬 PostgreSQL 정보를 입력합니다.
-    *   예시: `postgresql+asyncpg://사용자명:비밀번호@localhost:5432/DB명`
+### 2단계: 서버 간 통신 확인 (MSA 연동 테스트)
+두 백엔드 서버가 서로를 인식하고 통신할 수 있는지 확인합니다.
+- **Spring -> FastAPI 호출**: [http://localhost:8080/api/comm/call-fastapi](http://localhost:8080/api/comm/call-fastapi)
+- **FastAPI -> Spring 호출**: [http://localhost:8000/call-spring](http://localhost:8000/call-spring)
+  - 상대 서버의 헬스체크 응답이 결과에 포함되어야 합니다.
 
-#### **방법 B: Spring Boot (비즈니스 백엔드)**
-1.  `backend-spring/src/main/resources/` 폴더로 이동합니다.
-2.  `application-local.properties.example` 파일을 복사하여 `application-local.properties` 파일을 새로 만듭니다.
-3.  새로 만든 파일을 열고 본인의 로컬 DB 설정에 맞게 수정합니다.
-    *   `spring.datasource.url`: DB 주소 및 이름
-    *   `spring.datasource.username`: DB 계정명
-    *   `spring.datasource.password`: DB 비밀번호
+### 3단계: API 문서(Swagger) 확인
+- Spring Doc: [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+- FastAPI Redoc: [http://localhost:8000/redoc](http://localhost:8000/redoc)
 
-
----
-
-### 📡 2단계: 서비스 실행 순서
-
-모든 설정이 끝났다면, 기술 스택별로 아래 명령어를 입력해 주세요. (자세한 내용은 위 **3. 실행 방법** 섹션을 참고하세요!)
-
-1.  **FastAPI**: `source .venv/bin/activate` 후 `python main.py`
-2.  **Spring Boot**: `./gradlew bootRun`
-3.  **Next.js**: `npm run dev`
+### 4단계: 프론트엔드 연동 확인
+- [http://localhost:3000](http://localhost:3000) 접속 후 메인 페이지가 정상적으로 렌더링되는지 확인합니다.
 
 ---
-
-## 🤖 AI 에이전트(Antigravity)와 협업하기
-본 프로젝트는 효율적인 개발을 위해 AI 에이전트(Antigravity)와의 협업을 적극 권장합니다.
-
-### 🚀 AI 에이전트 초기화 방법
-새로운 팀원이 프로젝트에 합류하거나 새로운 채팅 세션을 시작할 때, Antigravity에게 아래 문구를 입력하여 프로젝트 컨벤션을 동기화하세요.
-
-> **"프로젝트 루트의 `.agent-conventions.md` 파일을 읽고, 여기에 명시된 아키텍처 및 코딩 규칙을 엄격히 준수해서 개발을 도와줘."**
-
-이 과정을 통해 AI는 팀에서 약속한 명칭 규칙, 에러 처리 방식, 기술 스택별 제약 사항을 완벽히 이해한 상태로 코드를 생성하게 됩니다.

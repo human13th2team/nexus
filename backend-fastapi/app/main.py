@@ -1,8 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 import httpx
 from pydantic import BaseModel
 from typing import Optional
+from sqlalchemy import text
 from app.api.v1 import auth, branding, simulation, compliance, community, dashboard
+from app.core.database import get_db
 
 app = FastAPI(
     title="Nexus API Server",
@@ -26,15 +28,29 @@ async def root():
     return {"message": "Nexus FastAPI Server is running!"}
 
 @app.get("/health")
-async def health_check():
-    return {"status": "ok", "service": "fastapi", "project": "nexus"}
+async def health_check(db=Depends(get_db)):
+    try:
+        # DB 연결 확인
+        await db.execute(text("SELECT 1"))
+        return {
+            "status": "UP",
+            "message": "Nexus FastAPI Server is running.",
+            "database": "CONNECTED"
+        }
+    except Exception as e:
+        return {
+            "status": "UP",
+            "database": "DISCONNECTED",
+            "error": str(e)
+        }
 
 @app.get("/call-spring")
 async def call_spring():
     """Spring Boot 서버의 헬스체크 API를 호출하여 데이터를 가져옴"""
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.get(f"{SPRING_BOOT_URL}/health")
+            # Spring Boot의 새로운 상태 확인 API 호출 (/api/status/check)
+            response = await client.get(f"{SPRING_BOOT_URL}/api/status/check")
             if response.status_code == 200:
                 return {"status": "success", "spring_response": response.json()}
             else:

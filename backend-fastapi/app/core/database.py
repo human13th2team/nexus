@@ -1,8 +1,8 @@
 import os
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
 import datetime
+from dotenv import load_dotenv
 from sqlalchemy import func
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 # .env 파일 로드
@@ -25,15 +25,7 @@ AsyncSessionLocal = async_sessionmaker(
 
 # Base 클래스 정의 (SQLAlchemy 2.0 style)
 class Base(DeclarativeBase):
-    created_at: Mapped[datetime.datetime] = mapped_column(
-        server_default=func.now(), 
-        nullable=False
-    )
-    updated_at: Mapped[datetime.datetime] = mapped_column(
-        server_default=func.now(), 
-        onupdate=func.now(), 
-        nullable=False
-    )
+    pass
 
 # DB 세션 의존성 주입을 위한 제너레이터
 async def get_db():
