@@ -129,20 +129,36 @@ npm run dev
 
 ---
 
-## 5. 초기 설정 가이드 (Getting Started for Team)
+## 5. 🚀 팀원들을 위한 초기 환경 설정 (Getting Started)
 
-팀원들은 프로젝트를 내려받은 후 다음 설정을 완료해야 정상적으로 실행 가능합니다.
+프로젝트를 성공적으로 실행하기 위해 아래의 **DB 및 환경 설정** 단계를 차례대로 따라해 주세요. (보안상의 이유로 실제 비밀번호가 포함된 설정 파일은 Git에 포함되어 있지 않습니다.)
 
-### 🐘 DB 및 환경변수 설정 (필수)
+### 🐘 1단계: 데이터베이스 및 환경변수 설정
 
-민감한 정보가 포함된 설정 파일은 깃헙에 올라가지 않도록 설정되어 있습니다. 아래 절차대로 파일을 생성해 주세요.
+#### **방법 A: FastAPI (AI 전용 백엔드)**
+1.  `backend-fastapi` 폴더로 이동합니다.
+2.  `.env.example` 파일을 복사하여 `.env`라는 이름의 파일을 새로 만듭니다.
+3.  `.env` 파일을 열고 `DATABASE_URL` 부분에 본인의 로컬 PostgreSQL 정보를 입력합니다.
+    *   예시: `postgresql+asyncpg://사용자명:비밀번호@localhost:5432/DB명`
 
-1.  **FastAPI (`backend-fastapi`)**:
-    - `.env.example` 파일을 복사하여 `.env` 파일을 생성합니다.
-    - `.env` 파일 내부의 `DATABASE_URL`을 본인의 로컬 DB 또는 공유된 개발 DB 주소로 수정합니다.
-2.  **Spring Boot (`backend-spring`)**:
-    - `src/main/resources/application-local.properties` 파일을 열어 DB 접속 정보(`url`, `username`, `password`)를 본인 환경에 맞게 입력합니다.
-    - 원격 DB 접속이 필요한 경우 `application-prod.properties`를 수정하여 사용합니다.
+#### **방법 B: Spring Boot (비즈니스 백엔드)**
+1.  `backend-spring/src/main/resources/` 폴더로 이동합니다.
+2.  `application-local.properties` 파일을 엽니다.
+3.  아래 항목들을 본인의 로컬 DB 설정에 맞게 수정합니다.
+    *   `spring.datasource.url`: DB 주소 및 이름
+    *   `spring.datasource.username`: DB 계정명
+    *   `spring.datasource.password`: DB 비밀번호
+
+
+---
+
+### 📡 2단계: 서비스 실행 순서
+
+모든 설정이 끝났다면, 기술 스택별로 아래 명령어를 입력해 주세요. (자세한 내용은 위 **3. 실행 방법** 섹션을 참고하세요!)
+
+1.  **FastAPI**: `source .venv/bin/activate` 후 `python main.py`
+2.  **Spring Boot**: `./gradlew bootRun`
+3.  **Next.js**: `npm run dev`
 
 ---
 
