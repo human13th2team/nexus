@@ -7,8 +7,7 @@ services:
     environment:
       POSTGRES_DB: nexus_db
       POSTGRES_USER: human2team
-      POSTGRES_PASSWORD: "" # 로컬 개발용이므로 비밀번호 없음 (필요시 설정)
-      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_PASSWORD: human2team
     volumes:
       - ./docker-data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d

@@ -3,7 +3,8 @@
 
 spring.datasource.url=jdbc:postgresql://localhost:5432/nexus_db
 spring.datasource.username=human2team
-spring.datasource.password=
+# Password found in docker-compose.yml (e.g., human2team)
+spring.datasource.password=human2team
 spring.datasource.driver-class-name=org.postgresql.Driver
 
 # JPA Configuration
