@@ -13,7 +13,7 @@ import java.util.Map;
 
 @Tag(name = "System Status", description = "서버 및 DB 상태 확인 API")
 @RestController
-@RequestMapping("/api/status")
+@RequestMapping("/api/v1/status")
 public class StatusController {
 
     private final DataSource dataSource;
