@@ -1,173 +1,139 @@
-# 팀 프로젝트 통합 저장소 (Team Project Mono-repo)
-
-## 🛠 0. 기술 스택 (Technical Stack)
-
-이 프로젝트는 현대적이고 확장성 있는 기술 스택을 사용하여 구축되었습니다.
-
-| 구분 | 기술 (Technology) | 버전 (Version) | 비고 (Note) |
-| :--- | :--- | :--- | :--- |
-| **Frontend** | **Next.js** | `16.2.1` | App Router, React 19.2.4 |
-| | **Tailwind CSS** | `v4.x` | 차세대 엔진 적용 |
-| | **TypeScript** | `v5.x` | 정적 타입 시스템 |
-| **Backend (Spring)** | **Spring Boot** | `3.3.4` | Java 17 LTS |
-| | **Gradle** | `8.10.2` | 빌드 자동화 및 관리 |
-| | **SpringDoc** | `2.6.0` | Swagger UI (OpenAPI 3.0) |
-| **Backend (FastAPI)** | **FastAPI** | `1.0.0` | Python 3.10+, .venv 필수 |
-| | **httpx** | 최신 | 비동기 서비스 간 통신 |
+# 🌌 Nexus (넥서스)
+### AI 기반 통합 미디어 브랜딩 및 데이터 기반 창업 지원 플랫폼
 
 ---
 
-## 1. 기능 중심(Feature-based) 프로젝트 구조
-팀원 간의 코드 충돌을 방지하고 독립적인 개발을 위해 **기능(도메인)별로 디렉토리를 분리**하는 구조를 권장합니다.
+## 🚀 1. 프로젝트 개요 (Overview)
+**Nexus**는 소상공인과 예비 창업자를 위해 AI가 브랜딩 에셋을 생성하고, 데이터 기반의 상권 분석 및 행정/노무 솔루션을 제공하는 **All-in-One 창업 지원 플랫폼**입니다.
 
-### 🌐 Frontend - `frontend-next` (Feature-based)
+- **AI 브랜딩**: 브랜드 네이밍, 슬로건, 로고 및 마케팅 에셋 자동 생성.
+- **창업 시뮬레이션**: 지능형 상권 분석 및 초기 창업 비용 예측.
+- **행정 & 정책 매칭**: 복잡한 인허가 절차 및 맞춤형 정부 보조금 매칭.
+- **운영 분석 대시보드**: AI를 활용한 매출 예측 및 고객 리뷰 감성 분석.
+
+---
+
+## 🏗️ 2. 시스템 아키텍처 (System Architecture)
+본 프로젝트는 독립적인 확장성과 유지보수성을 위해 **도메인 중심(Domain-Driven) 아키텍처**를 채택하고 있습니다.
+
+### 🌐 Frontend (`frontend-next`)
+- **Next.js 16 (App Router)** 기반.
+- `features/` 하위에 도메인별 컴포넌트와 비즈니스 로직을 격리 관리.
+
+### ☕ Backend - Core (`backend-spring`)
+- **Spring Boot 3.3** 기반의 메인 비즈니스 서버.
+- 도메인별 3계층(`Controller`-`Service`-`Repository`) 구조를 철저히 준수.
+
+### 🐍 Backend - AI Engine (`backend-fastapi`)
+- **FastAPI** 기반의 지능형 엔진.
+- 도메인별 폴더 내부에 `{domain}Router.py`, `{domain}Service.py`, `{domain}Schema.py`를 두어 응집도 극대화.
+
+---
+
+## 📂 3. 디렉토리 구조 (Directory Structure)
+
+### [Next.js Frontend]
 ```text
-src/
-├── app/                    # Next.js App Router
-│   ├── (auth)/             # 인증 관련 루트 (login, signup 등)
-│   ├── (order)/            # 주문 관련 루트
-│   └── layout.tsx          # 공통 레이아웃
-├── features/               # 기능별 비즈니스 로직 및 컴포넌트
-│   ├── auth/               # 인증 관련 훅, 컴포넌트, 서비스
-│   ├── order/              # 주문 관련 훅, 컴포넌트, 서비스
-│   └── common/             # 공통 컴포넌트 (버튼, 입력창 등)
-└── types/                  # 전역 타입 정의
+frontend-next/
+  src/
+    app/              # Next.js App Router (Pages)
+    components/       # 공통 UI 컴포넌트
+    features/         # 도메인별 핵심 기능 (Branding, Simulation 등)
+    services/         # API 통신 로직
 ```
 
-### ☕ Backend - `backend-spring` (Domain-based)
+### [Spring Boot Backend]
 ```text
-src/main/java/com/example/demo/
-├── domain/                 # 각 팀원이 담당하는 도메인별 패키지 (Feature)
-│   ├── auth/               # 인증: Controller, Service, Repository, Dto
-│   ├── order/              # 주문: Controller, Service, Repository, Dto
-│   └── user/               # 사용자: Controller, Service, Repository, Dto
-├── global/                 # 공통 설정 및 전역 관리 대상
-│   ├── entity/             # DB 테이블과 매핑되는 모든 Entity (전역 관리)
-│   ├── config/             # Swagger, Security 등 전역 설정
-│   ├── error/              # 공통 예외 처리
-│   └── common/             # 공통 유틸 및 기반 클래스
-└── client/                 # 외부 API 연동 (FastApiClient 등)
+backend-spring/
+  src/main/java/com/team/nexus/
+    domain/           # 도메인별 패키지 (auth, branding, community 등)
+      {domain}/
+        controller/   # REST 컨트롤러
+        service/      # 비즈니스 로직
+        repository/   # Spring Data JPA
+        dto/          # 데이터 전송 객체
+    global/           # 공통 엔티티 및 예외 처리
 ```
 
-### 🐍 Backend - `backend-fastapi` (Modular)
+### [FastAPI Backend]
 ```text
-app/
-├── api/                    # 기능별 라우터 분리
-│   ├── v1/
-│   │   ├── auth.py         # 인증 API
-│   │   ├── order.py        # 주문 API
-│   │   └── user.py         # 사용자 API
-├── crud/                   # 도메인별 DB 처리 로직
-├── models/                 # 도메인별 DB 모델
-├── schemas/                # 도메인별 Pydantic 스키마
-└── services/               # 도메인별 핵심 비즈니스 로직
+backend-fastapi/
+  app/
+    domain/           # 도메인별 폴더
+      {domain}/
+        {domain}Router.py   # API 엔드포인트
+        {domain}Service.py  # AI 및 데이터 처리 로직
+        {domain}Schema.py   # Pydantic 모델 (DTO)
+    core/             # DB 및 공통 설정
+    models.py         # 통합 SQLAlchemy 엔티티 (Global)
 ```
 
-> [!IMPORTANT]
-> **협업 규칙**: 본인이 맡은 `domain` 또는 `feature` 폴더 외부의 코드를 수정해야 할 경우, 반드시 해당 담당자와 상의 후 진행하세요. 공통 코드는 `global` 또는 `common` 폴더에서 관리합니다.
+---
 
-## 2. API 문서 (Swagger) 확인 방법
-팀원들은 서버 주소만 알면 실시간으로 API 명세를 확인할 수 있습니다.
-- **Spring Boot**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
-- **FastAPI**: [http://localhost:8000/docs](http://localhost:8000/docs)
+## 🛠️ 3. 기술 스택 (Technical Stack)
 
-> [!IMPORTANT]
-> **API First Development**: 코드 구현 전, Swagger에서 입출력 데이터를 먼저 협의하고 확정하는 것을 권장합니다.
+| 구분 | 기술 (Technology) | 버전 (Version) | 상세 내역 |
+| :--- | :--- | :--- | :--- |
+| **Frontend** | Next.js | `16.2.1` | App Router, React 19, TypeScript |
+| **Styling** | Tailwind CSS | `v4.x` | 최신 유틸리티 엔진 |
+| **Backend (Core)** | Spring Boot | `3.3.4` | Java 17, Gradle |
+| **Backend (AI)** | FastAPI | `1.0.0` | Python 3.11+, .venv |
+| **Database** | PostgreSQL | `16.x` | UUID-OSSP, Vector 지원 |
+| **Documentation** | Swagger / Redoc | - | OpenAPI 3.0 사양 |
 
-## 3. 서비스 간 통신 (MSA 통신 예시)
-이미 각 백엔드에는 서로를 호출할 수 있는 공통 모듈이 구성되어 있습니다.
-- **Spring Boot -> FastAPI**: `/api/comm/call-fastapi` (WebClient 활용)
-- **FastAPI -> Spring Boot**: `/call-spring` (httpx 활용)
+---
 
-## 3. 실행 방법
+## ⚙️ 4. 시작하기 (Quick Start Guide)
 
-### Backend - FastAPI
+### 🐘 1단계: 환경변수 설정
+보안을 위해 실제 설정 파일은 복사하여 사용하세요.
+1. **Spring Boot**: `backend-spring/src/main/resources/application-local.properties.example` ➡️ `application-local.properties`
+2. **FastAPI**: `backend-fastapi/.env.example` ➡️ `.env`
+3. **Database (Docker)**: 프로젝트 루트에서 아래 명령어를 실행하여 DB를 기동하세요. (자동 스키마 생성)
+   ```bash
+   docker-compose up -d
+   ```
 
-> [!IMPORTANT]
-> **가상환경 필수**: 파이썬 패키지 설치 및 실행은 반드시 `.venv` 가상환경에서 진행해야 합니다. 
-
+### 🏃 2단계: 서비스 실행
 ```bash
-cd backend-fastapi
+# 1. Database (Docker) - 최우선 실행
+docker-compose up -d
 
-# 1. 가상환경 생성 (.venv)
-python3 -m venv .venv  # Windows는 python -m venv .venv
+# 2. FastAPI (AI 서버)
+cd backend-fastapi && source .venv/bin/activate
+python -m app.main
 
-# 2. 가상환경 활성화
-# [Mac/Linux]
-source .venv/bin/activate
-# [Windows]
-# .venv\Scripts\activate
-
-# 3. 패키지 설치 및 실행
-pip install -r requirements.txt
-python3 main.py  # Windows는 python main.py
-```
-
-### Backend - Spring Boot
-```bash
+# 3. Spring Boot (비즈니스 서버)
 cd backend-spring
-
-# [Mac/Linux]
 ./gradlew bootRun
 
-# [Windows]
-# gradlew bootRun
-```
-
-### Frontend - Next.js
-```bash
+# 4. Next.js (프론트엔드)
 cd frontend-next
-npm install
-npm run dev
+npm install && npm run dev
 ```
 
-## 4. 서버 간 통신 테스트
-- **Spring Boot -> FastAPI**: `GET http://localhost:8080/api/comm/call-fastapi`
-- **FastAPI -> Spring Boot**: `GET http://localhost:8000/call-spring`
+---
 
-이 초기 설정을 통해 팀원들이 별도의 문서 없이도 서버 주소만으로 API를 파악하고, 이미 구축된 통신 모듈을 활용하여 기능을 빠르게 확장할 수 있습니다.
+## ✅ 5. 초기 환경 검증 (Verification Protocol)
+설정이 완료되면 아래 엔드포인트에 접속하여 서버 및 DB 연결 상태를 확인하세요.
+
+> [!IMPORTANT]
+> **Checklist**
+> - [ ] **Spring Boot UP**: [http://localhost:8080/api/status/check](http://localhost:8080/api/status/check) (`status: "UP"`, `database: "CONNECTED"`)
+> - [ ] **FastAPI UP**: [http://localhost:8000/health](http://localhost:8000/health) (`status: "UP"`, `database: "CONNECTED"`)
+> - [ ] **Inter-Server Link**: [http://localhost:8080/api/comm/call-fastapi](http://localhost:8080/api/comm/call-fastapi) (정상 호출 확인)
 
 ---
 
-## 5. 🚀 팀원들을 위한 초기 환경 설정 (Getting Started)
+## 👥 6. 협업 가이드 (Collaboration)
 
-프로젝트를 성공적으로 실행하기 위해 아래의 **DB 및 환경 설정** 단계를 차례대로 따라해 주세요. (보안상의 이유로 실제 비밀번호가 포함된 설정 파일은 Git에 포함되어 있지 않습니다.)
+### 🤖 AI 에이전트(Antigravity) 활용
+본 프로젝트는 AI와의 완벽한 협업을 위해 컨벤션을 공유합니다. 
+> "프로젝트 루트의 **`.agent-conventions.md`**를 읽고 규칙을 준수하여 개발을 도와줘."
 
-### 🐘 1단계: 데이터베이스 및 환경변수 설정
-
-#### **방법 A: FastAPI (AI 전용 백엔드)**
-1.  `backend-fastapi` 폴더로 이동합니다.
-2.  `.env.example` 파일을 복사하여 `.env`라는 이름의 파일을 새로 만듭니다.
-3.  `.env` 파일을 열고 `DATABASE_URL` 부분에 본인의 로컬 PostgreSQL 정보를 입력합니다.
-    *   예시: `postgresql+asyncpg://사용자명:비밀번호@localhost:5432/DB명`
-
-#### **방법 B: Spring Boot (비즈니스 백엔드)**
-1.  `backend-spring/src/main/resources/` 폴더로 이동합니다.
-2.  `application-local.properties.example` 파일을 복사하여 `application-local.properties` 파일을 새로 만듭니다.
-3.  새로 만든 파일을 열고 본인의 로컬 DB 설정에 맞게 수정합니다.
-    *   `spring.datasource.url`: DB 주소 및 이름
-    *   `spring.datasource.username`: DB 계정명
-    *   `spring.datasource.password`: DB 비밀번호
-
+### 📝 개발 규칙
+1. **엔티티 수정**: 모든 엔티티는 `com.team.nexus.global.entity`에서 전역 관리합니다.
+2. **도메인 격리**: 본인이 맡은 `domain/` 하위 폴더 외부의 코드를 수정할 경우 반드시 상의하세요.
+3. **API 우선 설계**: 구현 전 Swagger/Redoc을 통해 인터페이스를 먼저 확정합니다.
 
 ---
-
-### 📡 2단계: 서비스 실행 순서
-
-모든 설정이 끝났다면, 기술 스택별로 아래 명령어를 입력해 주세요. (자세한 내용은 위 **3. 실행 방법** 섹션을 참고하세요!)
-
-1.  **FastAPI**: `source .venv/bin/activate` 후 `python main.py`
-2.  **Spring Boot**: `./gradlew bootRun`
-3.  **Next.js**: `npm run dev`
-
----
-
-## 🤖 AI 에이전트(Antigravity)와 협업하기
-본 프로젝트는 효율적인 개발을 위해 AI 에이전트(Antigravity)와의 협업을 적극 권장합니다.
-
-### 🚀 AI 에이전트 초기화 방법
-새로운 팀원이 프로젝트에 합류하거나 새로운 채팅 세션을 시작할 때, Antigravity에게 아래 문구를 입력하여 프로젝트 컨벤션을 동기화하세요.
-
-> **"프로젝트 루트의 `.agent-conventions.md` 파일을 읽고, 여기에 명시된 아키텍처 및 코딩 규칙을 엄격히 준수해서 개발을 도와줘."**
-
-이 과정을 통해 AI는 팀에서 약속한 명칭 규칙, 에러 처리 방식, 기술 스택별 제약 사항을 완벽히 이해한 상태로 코드를 생성하게 됩니다.
