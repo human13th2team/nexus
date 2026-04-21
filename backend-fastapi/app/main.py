@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.staticfiles import StaticFiles
 import httpx
+import os
 from pydantic import BaseModel
 from typing import Optional
 from sqlalchemy import text
@@ -16,6 +18,12 @@ app = FastAPI(
     description="Nexus 프로젝트를 위한 통합 API 서버입니다. MSA 구조의 개별 도메인 로직을 담당합니다.",
     version="1.0.0"
 )
+
+# 정적 파일 서빙 설정 (로고 이미지 등)
+static_logos_path = "app/static/logos"
+if not os.path.exists(static_logos_path):
+    os.makedirs(static_logos_path)
+app.mount("/static/logos", StaticFiles(directory=static_logos_path), name="logos")
 
 # Spring Boot 서버 주소 (8080)
 SPRING_BOOT_URL = "http://localhost:8080"
