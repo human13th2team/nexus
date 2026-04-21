@@ -3,7 +3,12 @@ import httpx
 from pydantic import BaseModel
 from typing import Optional
 from sqlalchemy import text
-from app.api.v1 import auth, branding, simulation, compliance, community, dashboard
+from app.domain.auth import authRouter as auth
+from app.domain.branding import brandingRouter as branding
+from app.domain.simulation import simulationRouter as simulation
+from app.domain.compliance import complianceRouter as compliance
+from app.domain.community import communityRouter as community
+from app.domain.dashboard import dashboardRouter as dashboard
 from app.core.database import get_db
 
 app = FastAPI(

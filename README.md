@@ -17,16 +17,56 @@
 본 프로젝트는 독립적인 확장성과 유지보수성을 위해 **도메인 중심(Domain-Driven) 아키텍처**를 채택하고 있습니다.
 
 ### 🌐 Frontend (`frontend-next`)
-- **Next.js 16 (App Router)** 기반의 현대적 웹 환경.
-- `features/` 하위에 각 도메인의 핵심 컴포넌트와 비즈니스 로직을 격리하여 관리.
+- **Next.js 16 (App Router)** 기반.
+- `features/` 하위에 도메인별 컴포넌트와 비즈니스 로직을 격리 관리.
 
 ### ☕ Backend - Core (`backend-spring`)
-- **Spring Boot 3.3** 기반의 비즈니스 오케스트레이션.
-- 모든 데이터의 근간이 되는 **Global Entities**를 중앙 관리하며, 도메인별 3계층(Controller-Service-Repository) 구조를 철저히 준수합니다.
+- **Spring Boot 3.3** 기반의 메인 비즈니스 서버.
+- 도메인별 3계층(`Controller`-`Service`-`Repository`) 구조를 철저히 준수.
 
 ### 🐍 Backend - AI Engine (`backend-fastapi`)
-- **FastAPI** 기반의 지능형 추론 엔진.
-- LLM(GPT/Gemini), 이미지 생성 모델, 추천 알고리즘 등 AI 집약적 기능을 모듈화하여 제공합니다.
+- **FastAPI** 기반의 지능형 엔진.
+- 도메인별 폴더 내부에 `{domain}Router.py`, `{domain}Service.py`, `{domain}Schema.py`를 두어 응집도 극대화.
+
+---
+
+## 📂 3. 디렉토리 구조 (Directory Structure)
+
+### [Next.js Frontend]
+```text
+frontend-next/
+  src/
+    app/              # Next.js App Router (Pages)
+    components/       # 공통 UI 컴포넌트
+    features/         # 도메인별 핵심 기능 (Branding, Simulation 등)
+    services/         # API 통신 로직
+```
+
+### [Spring Boot Backend]
+```text
+backend-spring/
+  src/main/java/com/team/nexus/
+    domain/           # 도메인별 패키지 (auth, branding, community 등)
+      {domain}/
+        controller/   # REST 컨트롤러
+        service/      # 비즈니스 로직
+        repository/   # Spring Data JPA
+        dto/          # 데이터 전송 객체
+    global/           # 공통 엔티티 및 예외 처리
+```
+
+### [FastAPI Backend]
+```text
+backend-fastapi/
+  app/
+    domain/           # 도메인별 폴더
+      {domain}/
+        {domain}Router.py   # API 엔드포인트
+        {domain}Service.py  # AI 및 데이터 처리 로직
+        {domain}Schema.py   # Pydantic 모델 (DTO)
+    core/             # DB 및 공통 설정
+    models.py         # 통합 SQLAlchemy 엔티티 (Global)
+```
 
 ---
 
