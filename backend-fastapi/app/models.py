@@ -1,5 +1,5 @@
 from app.core.database import Base
-from sqlalchemy import String, ForeignKey, Integer, SmallInteger, Boolean, Text, Date, TIMESTAMP, JSON, DOUBLE_PRECISION
+from sqlalchemy import String, ForeignKey, Integer, SmallInteger, Boolean, Text, Date, TIMESTAMP, JSON, DOUBLE_PRECISION, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional, List
 import datetime
@@ -21,23 +21,26 @@ class IndustryCategory(Base):
     parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("industry_categories.id", ondelete="SET NULL"))
     level: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     ksic_code: Mapped[Optional[str]] = mapped_column(String(20))
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
     parent: Mapped[Optional["IndustryCategory"]] = relationship("IndustryCategory", remote_side=[id], back_populates="children")
     children: Mapped[List["IndustryCategory"]] = relationship("IndustryCategory", back_populates="parent")
     equipment_prices: Mapped[List["EquipmentPrice"]] = relationship(back_populates="industry_category")
+    brandings: Mapped[List["Branding"]] = relationship(back_populates="industry_category")
+    license_mappings: Mapped[List["LicenseIndustryMapping"]] = relationship(back_populates="category")
 
 class EquipmentPrice(Base):
     __tablename__ = "equipment_prices"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    category_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("industry_categories.id", ondelete="CASCADE"), nullable=False)
-    item_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    standard_price: Mapped[Optional[int]] = mapped_column(Integer)
-    unit: Mapped[Optional[str]] = mapped_column(String(20))
+    industry_category_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("industry_categories.id"))
+    equipment_kr: Mapped[str] = mapped_column(String(50), nullable=False)
+    equipment_eng: Mapped[str] = mapped_column(String(50), nullable=False)
+    price: Mapped[int] = mapped_column(Integer, server_default=text("0"))
 
     # Relationships
-    industry_category: Mapped["IndustryCategory"] = relationship(back_populates="equipment_prices")
+    industry_category: Mapped[Optional["IndustryCategory"]] = relationship(back_populates="equipment_prices")
 
 class User(Base):
     __tablename__ = "users"
@@ -46,14 +49,26 @@ class User(Base):
     nickname: Mapped[Optional[str]] = mapped_column(String(255))
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     passwd: Mapped[str] = mapped_column(String(255), nullable=False)
-    user_type: Mapped[Optional[int]] = mapped_column(Integer)
+    user_type: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("0"))
     biz_no: Mapped[Optional[str]] = mapped_column(String(12))
     address: Mapped[Optional[str]] = mapped_column(String(255))
-    login_type: Mapped[Optional[int]] = mapped_column(Integer)
+    login_type: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("0"))
     access_token: Mapped[Optional[str]] = mapped_column(String(255))
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
-    brandings: Mapped[list["Branding"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    brandings: Mapped[List["Branding"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    sales: Mapped[List["Sale"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    predictions: Mapped[List["Prediction"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    reviews: Mapped[List["Review"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    ai_reports: Mapped[List["AIReport"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    boards: Mapped[List["Board"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    comments: Mapped[List["Comment"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    group_purchases: Mapped[List["GroupPurchase"]] = relationship(back_populates="user")
+    group_orders: Mapped[List["GroupOrder"]] = relationship(back_populates="user")
+    chat_participants: Mapped[List["ChatParticipant"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    chat_messages: Mapped[List["ChatMessage"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    labor_contracts: Mapped[List["LaborContract"]] = relationship(back_populates="user")
 
 # Import types for relationship resolution at the end of the file or use string references
 
@@ -62,14 +77,16 @@ class Branding(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    industry_category_id: Mapped[uuid.UUID] = mapped_column(nullable=False) # FK to industry_categories
+    industry_category_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("industry_categories.id"), nullable=False)
     title: Mapped[str] = mapped_column(String(100), nullable=False)
     keywords: Mapped[Optional[dict]] = mapped_column(JSON)
-    current_step: Mapped[Optional[str]] = mapped_column(String(20))
+    current_step: Mapped[Optional[str]] = mapped_column(String(20), server_default=text("'INTERVIEW'"))
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
     user: Mapped["User"] = relationship(back_populates="brandings")
-    identities: Mapped[list["BrandIdentity"]] = relationship(back_populates="branding", cascade="all, delete-orphan")
+    industry_category: Mapped["IndustryCategory"] = relationship(back_populates="brandings")
+    identities: Mapped[List["BrandIdentity"]] = relationship(back_populates="branding", cascade="all, delete-orphan")
 
 class BrandIdentity(Base):
     __tablename__ = "brand_identities"
@@ -79,7 +96,7 @@ class BrandIdentity(Base):
     brand_name: Mapped[str] = mapped_column(String(100), nullable=False)
     slogan: Mapped[Optional[str]] = mapped_column(String(255))
     brand_story: Mapped[Optional[str]] = mapped_column(Text)
-    is_selected: Mapped[Optional[bool]] = mapped_column(Boolean)
+    is_selected: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text("false"))
     # embedding column (vector) is skipped or mapped to Text/JSON for now if pgvector is not available in the model
     
     # Relationships
@@ -94,7 +111,7 @@ class LogoAsset(Base):
     identity_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("brand_identities.id", ondelete="CASCADE"), nullable=False)
     image_url: Mapped[str] = mapped_column(Text, nullable=False)
     style_tag: Mapped[Optional[str]] = mapped_column(String(50))
-    is_final: Mapped[Optional[bool]] = mapped_column(Boolean)
+    is_final: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text("false"))
 
     # Relationships
     brand_identity: Mapped["BrandIdentity"] = relationship(back_populates="logo_assets")
@@ -110,7 +127,6 @@ class MarketingAsset(Base):
     # Relationships
     brand_identity: Mapped["BrandIdentity"] = relationship(back_populates="marketing_assets")
 
-# To fix circular imports, import User here or use string refs
 
 class LicenseIndustry(Base):
     __tablename__ = "license_industries"
@@ -123,9 +139,10 @@ class LicenseIndustry(Base):
     department: Mapped[str] = mapped_column(String(100), nullable=False)
 
     # Relationships
+    checklist_steps: Mapped[List["ChecklistStep"]] = relationship(back_populates="license_industry", cascade="all, delete-orphan")
     surveys: Mapped[List["Survey"]] = relationship(back_populates="license_industry", cascade="all, delete-orphan")
     documents: Mapped[List["Document"]] = relationship(back_populates="license_industry", cascade="all, delete-orphan")
-    checklist_steps: Mapped[List["ChecklistStep"]] = relationship(back_populates="license_industry", cascade="all, delete-orphan")
+    license_mappings: Mapped[List["LicenseIndustryMapping"]] = relationship(back_populates="license")
 
 class Survey(Base):
     __tablename__ = "surveys"
@@ -146,7 +163,7 @@ class Document(Base):
     license_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("license_industries.id", ondelete="CASCADE"), nullable=False)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     issuer: Mapped[str] = mapped_column(String(100), nullable=False)
-    is_common: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    is_common: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
 
     # Relationships
     license_industry: Mapped["LicenseIndustry"] = relationship(back_populates="documents")
@@ -184,6 +201,10 @@ class LicenseIndustryMapping(Base):
     category_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("industry_categories.id"), nullable=False)
     license_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("license_industries.id"), nullable=False)
 
+    # Relationships
+    category: Mapped["IndustryCategory"] = relationship(back_populates="license_mappings")
+    license: Mapped["LicenseIndustry"] = relationship()
+
 class LaborContract(Base):
     __tablename__ = "labor_contracts"
 
@@ -200,6 +221,10 @@ class LaborContract(Base):
     weekly_allowance: Mapped[Optional[int]] = mapped_column(Integer)
     employee_type: Mapped[str] = mapped_column(String(20), nullable=False)
     pdf_url: Mapped[Optional[str]] = mapped_column(String(500))
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
+
+    # Relationships
+    user: Mapped[Optional["User"]] = relationship(back_populates="labor_contracts")
 
 class Subsidy(Base):
     __tablename__ = "subsidies"
@@ -213,6 +238,7 @@ class Subsidy(Base):
     eligibility: Mapped[Optional[str]] = mapped_column(Text)
     apply_url: Mapped[Optional[str]] = mapped_column(String(500))
     # embedding column (vector) is skipped
+    updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
 class Sale(Base):
     __tablename__ = "sales"
@@ -220,11 +246,12 @@ class Sale(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     sales_date: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=False)
-    total_amount: Mapped[Optional[int]] = mapped_column(Integer)
+    total_amount: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("0"))
     file_url: Mapped[Optional[str]] = mapped_column(String(255))
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
-    user: Mapped["User"] = relationship()
+    user: Mapped["User"] = relationship(back_populates="sales")
     items: Mapped[List["SaleItem"]] = relationship(back_populates="sale", cascade="all, delete-orphan")
 
 class SaleItem(Base):
@@ -233,8 +260,8 @@ class SaleItem(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     sale_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sales.id", ondelete="CASCADE"), nullable=False)
     item_name: Mapped[Optional[str]] = mapped_column(String(255))
-    price: Mapped[Optional[int]] = mapped_column(Integer)
-    quantity: Mapped[Optional[int]] = mapped_column(Integer)
+    price: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("0"))
+    quantity: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("1"))
 
     # Relationships
     sale: Mapped["Sale"] = relationship(back_populates="items")
@@ -247,9 +274,10 @@ class Prediction(Base):
     base_date: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=False)
     total_sales: Mapped[Optional[int]] = mapped_column(Integer)
     predicted_cost: Mapped[Optional[int]] = mapped_column(Integer)
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
-    user: Mapped["User"] = relationship()
+    user: Mapped["User"] = relationship(back_populates="predictions")
     daily_predictions: Mapped[List["DailyPrediction"]] = relationship(back_populates="prediction", cascade="all, delete-orphan")
 
 class DailyPrediction(Base):
@@ -272,9 +300,10 @@ class Review(Base):
     tokens: Mapped[Optional[str]] = mapped_column(Text)
     sentiment_score: Mapped[Optional[float]] = mapped_column(DOUBLE_PRECISION)
     sentiment_label: Mapped[Optional[str]] = mapped_column(String(20))
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
-    user: Mapped["User"] = relationship()
+    user: Mapped["User"] = relationship(back_populates="reviews")
 
 class AIReport(Base):
     __tablename__ = "ai_reports"
@@ -285,11 +314,11 @@ class AIReport(Base):
     report_file_url: Mapped[Optional[str]] = mapped_column(String(255))
     pos_ratio: Mapped[Optional[float]] = mapped_column(DOUBLE_PRECISION)
     neg_ratio: Mapped[Optional[float]] = mapped_column(DOUBLE_PRECISION)
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
-    user: Mapped["User"] = relationship()
+    user: Mapped["User"] = relationship(back_populates="ai_reports")
 
-# Import User for relationships
 
 class Board(Base):
     __tablename__ = "boards"
@@ -300,9 +329,10 @@ class Board(Base):
     content: Mapped[Optional[str]] = mapped_column(Text)
     region_name: Mapped[Optional[str]] = mapped_column(String(20))
     category_name: Mapped[Optional[str]] = mapped_column(String(20))
-    view_count: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    view_count: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("0"))
     image_url: Mapped[Optional[str]] = mapped_column(String(255))
-    is_anonymous: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    is_anonymous: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text("false"))
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
     user: Mapped["User"] = relationship(back_populates="boards")
@@ -316,10 +346,11 @@ class Comment(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     parent_comment_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("comments.id", ondelete="CASCADE"))
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
     board: Mapped["Board"] = relationship(back_populates="comments")
-    user: Mapped["User"] = relationship()
+    user: Mapped["User"] = relationship(back_populates="comments")
     parent: Mapped[Optional["Comment"]] = relationship("Comment", remote_side=[id], back_populates="children")
     children: Mapped[List["Comment"]] = relationship("Comment", back_populates="parent")
 
@@ -332,12 +363,13 @@ class GroupPurchase(Base):
     item_name: Mapped[str] = mapped_column(String(100), nullable=False)
     item_price: Mapped[int] = mapped_column(Integer, nullable=False)
     target_count: Mapped[int] = mapped_column(Integer, nullable=False)
-    current_count: Mapped[Optional[int]] = mapped_column(Integer, default=0)
-    start_date: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP)
+    current_count: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("1"))
+    start_date: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
     end_date: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=False)
-    status: Mapped[Optional[str]] = mapped_column(String(20))
+    status: Mapped[Optional[str]] = mapped_column(String(20), server_default=text("'OPEN'"))
 
     # Relationships
+    user: Mapped["User"] = relationship(back_populates="group_purchases")
     orders: Mapped[List["GroupOrder"]] = relationship(back_populates="group_purchase")
 
 class GroupOrder(Base):
@@ -346,26 +378,28 @@ class GroupOrder(Base):
     id: Mapped[str] = mapped_column(String(50), primary_key=True) # Order ID
     gp_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("group_purchases.id"), nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
-    order_count: Mapped[Optional[int]] = mapped_column(Integer)
+    order_count: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("1"))
     total_price: Mapped[int] = mapped_column(Integer, nullable=False)
     pg_provider: Mapped[Optional[str]] = mapped_column(String(20))
     pg_tid: Mapped[Optional[str]] = mapped_column(String(200))
     payment_method: Mapped[Optional[str]] = mapped_column(String(50))
-    payment_status: Mapped[Optional[str]] = mapped_column(String(20))
+    payment_status: Mapped[Optional[str]] = mapped_column(String(20), server_default=text("'READY'"))
     paid_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP)
 
     # Relationships
     group_purchase: Mapped["GroupPurchase"] = relationship(back_populates="orders")
+    user: Mapped["User"] = relationship(back_populates="group_orders")
 
 class ChatRoom(Base):
     __tablename__ = "chat_rooms"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     title: Mapped[Optional[str]] = mapped_column(String(100))
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
-    participants: Mapped[List["ChatParticipant"]] = relationship(back_populates="chat_room")
-    messages: Mapped[List["ChatMessage"]] = relationship(back_populates="chat_room")
+    participants: Mapped[List["ChatParticipant"]] = relationship(back_populates="chat_room", cascade="all, delete-orphan")
+    messages: Mapped[List["ChatMessage"]] = relationship(back_populates="chat_room", cascade="all, delete-orphan")
 
 class ChatParticipant(Base):
     __tablename__ = "chat_participants"
@@ -373,10 +407,11 @@ class ChatParticipant(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("chat_rooms.id", ondelete="CASCADE"), nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    joined_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP)
+    joined_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
     chat_room: Mapped["ChatRoom"] = relationship(back_populates="participants")
+    user: Mapped["User"] = relationship(back_populates="chat_participants")
 
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
@@ -385,9 +420,10 @@ class ChatMessage(Base):
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("chat_rooms.id", ondelete="CASCADE"), nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    is_read: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    is_read: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text("false"))
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
     chat_room: Mapped["ChatRoom"] = relationship(back_populates="messages")
+    user: Mapped["User"] = relationship(back_populates="chat_messages")
 
-# Import User to avoid circular import issues in relationships
