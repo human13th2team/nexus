@@ -99,30 +99,31 @@ class OllamaClient(BaseAIClient):
 class StableDiffusionClient(BaseAIClient):
     def __init__(self):
         self.api_key = os.getenv("STABILITY_API_KEY")
-        self.base_url = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image"
+        self.engine_id = "stable-diffusion-xl-1024-v1-0"
+        self.base_url = f"https://api.stability.ai/v1/generation/{self.engine_id}/text-to-image"
 
     async def generate_response(self, prompt: str, chat_history: List[Dict[str, str]]) -> str:
         raise NotImplementedError("Stable Diffusion client is for image generation only.")
 
     async def generate_image(self, prompt: str, output_path: str) -> str:
-        """Stability AI API를 사용하여 이미지를 생성합니다."""
+        """Stability AI v1 API를 사용하여 이미지를 생성합니다. (SDXL 1.0 모델)"""
         if not self.api_key:
             raise ValueError("STABILITY_API_KEY가 설정되어 있지 않습니다.")
 
-        # 디버깅: 프롬프트 내용 확인
-        print(f"DEBUG: Stable Diffusion Prompt -> {prompt}")
-
-        if not prompt or len(prompt.strip()) == 0:
-            raise ValueError("프롬프트가 비어 있습니다.")
-
         headers = {
+            "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "Accept": "application/json",
-            "Authorization": f"Bearer {self.api_key}"
+            "Accept": "application/json"
         }
 
-        body = {
-            "text_prompts": [{"text": prompt}],
+        # v1 API (JSON 규격)
+        payload = {
+            "text_prompts": [
+                {
+                    "text": prompt,
+                    "weight": 1
+                }
+            ],
             "cfg_scale": 7,
             "height": 1024,
             "width": 1024,
@@ -131,18 +132,23 @@ class StableDiffusionClient(BaseAIClient):
         }
 
         async with httpx.AsyncClient() as client:
-            response = await client.post(self.base_url, headers=headers, json=body, timeout=60.0)
+            response = await client.post(
+                self.base_url, 
+                headers=headers, 
+                json=payload, 
+                timeout=60.0
+            )
             
             if response.status_code != 200:
-                raise Exception(f"Stability AI API Error: {response.text}")
+                raise Exception(f"Stability AI v1 API Error: {response.text}")
 
+            import base64
             data = response.json()
             
-            # 첫 번째 이미지 데이터 저장 (base64)
-            import base64
-            image_data = base64.b64decode(data["artifacts"][0]["base64"])
-            with open(output_path, "wb") as f:
-                f.write(image_data)
+            # 응답에서 Base64 이미지 데이터 추출 및 저장
+            for i, image in enumerate(data["artifacts"]):
+                with open(output_path, "wb") as f:
+                    f.write(base64.b64decode(image["base64"]))
                 
             return output_path
 

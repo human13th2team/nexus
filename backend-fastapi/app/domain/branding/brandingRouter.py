@@ -62,8 +62,8 @@ async def start_chat(
     - AI가 인터뷰가 충분하다고 판단하면 isFinished=True와 함께 추출된 정보를 반환합니다.
     """
     try:
-        # 1. 채팅 엔진 호출
-        result = await brandingService.chat_with_ai(project_id, request)
+        # 1. 채팅 엔진 호출 (업종 자동 업데이트를 위해 DB 세션 전달)
+        result = await brandingService.chat_with_ai(db, project_id, request)
         
         # 2. 만약 인터뷰가 자동 종료되었다면 DB 업데이트 (선택 사항 - 클라이언트가 PATCH를 호출할 수도 있음)
         # 여기서는 AI 의견에 따라 자동으로 '인터뷰 저장' 로직을 미리 실행하거나 데이터를 반환만 합니다.
@@ -117,23 +117,40 @@ async def generate_logo_api(
 ):
     """
     브랜드 로고 생성 API
-    - 선택된 브랜드 아이덴티티 정보를 바탕으로 AI가 로고 이미지를 생성하고 저장합니다.
+    - 선택된 브랜드 아이덴티티 정보를 바탕으로 AI가 로고 이미지 '파일'들을 생성하여 반환합니다. (DB 저장 X)
     """
     try:
-        logo_asset = await brandingService.generate_brand_logo(db, identity_id)
+        candidates = await brandingService.generate_brand_logo(db, identity_id)
         
-        if not logo_asset:
+        if not candidates:
             raise HTTPException(status_code=404, detail="해당 브랜드 아이덴티티를 찾을 수 없습니다.")
             
         return brandingSchema.LogoResponse(
             success=True,
-            data=brandingSchema.LogoAssetResult(
-                logoAssetId=logo_asset.id,
-                imageUrl=logo_asset.image_url
-            )
+            data=[brandingSchema.LogoCandidate(**c) for c in candidates]
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"로고 생성 중 오류가 발생했습니다: {str(e)}")
+
+@router.post("/identity/{identity_id}/logo/finalize", response_model=brandingSchema.LogoFinalizeResponse)
+async def finalize_logo_api(
+    identity_id: uuid.UUID,
+    request: brandingSchema.LogoFinalizeRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    브랜드 로고 확정 API
+    - 사용자가 선택한 로고 이미지 URL을 받아 최종적으로 DB에 저장합니다.
+    """
+    try:
+        final_logo = await brandingService.finalize_brand_logo(db, identity_id, request.imageUrl)
+        
+        return brandingSchema.LogoFinalizeResponse(
+            success=True,
+            logoAssetId=final_logo.id
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"로고 확정 중 오류가 발생했습니다: {str(e)}")
 
 @router.get("/test")
 async def test_branding():

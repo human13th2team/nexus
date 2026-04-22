@@ -45,10 +45,17 @@ class NamingResponse(BaseModel):
     success: bool = Field(True)
     data: List[NamingResult] = Field(..., description="제안된 브랜드 명 3안 리스트")
 
-class LogoAssetResult(BaseModel):
-    logoAssetId: UUID = Field(..., description="생성된 로고 생성ID")
+class LogoCandidate(BaseModel):
+    tempId: str = Field(..., description="임시 ID")
     imageUrl: str = Field(..., description="로고 이미지 공개 URL")
 
 class LogoResponse(BaseModel):
     success: bool = Field(True)
-    data: LogoAssetResult = Field(..., description="생성된 로고 정보")
+    data: List[LogoCandidate] = Field(..., description="생성된 로고 후보 리스트")
+
+class LogoFinalizeRequest(BaseModel):
+    imageUrl: str = Field(..., description="선택된 로고의 이미지 URL")
+
+class LogoFinalizeResponse(BaseModel):
+    success: bool = Field(True)
+    logoAssetId: UUID = Field(..., description="최종 저장된 로고 에셋 ID")
