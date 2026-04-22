@@ -37,11 +37,17 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         }
 
         String token = jwtTokenProvider.createToken(email);
-        log.info("OAuth2 Login Success: {}, Token: {}", email, token);
+        
+        // 어떤 서비스(google, kakao 등)인지 추출
+        String provider = ((org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken) authentication)
+                .getAuthorizedClientRegistrationId();
+        
+        log.info("OAuth2 Login Success: {} via {}, Token: {}", email, provider, token);
 
-        // 프론트엔드로 토큰을 전달하며 리다이렉트 (프론트엔드 포트 3000번 가정)
+        // 프론트엔드로 토큰과 provider를 전달하며 리다이렉트
         String targetUrl = UriComponentsBuilder.fromUriString("http://localhost:3000/auth/oauth-callback")
                 .queryParam("token", token)
+                .queryParam("provider", provider)
                 .build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);

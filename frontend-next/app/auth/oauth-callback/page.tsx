@@ -9,14 +9,14 @@ export default function OAuthCallbackPage() {
 
   useEffect(() => {
     const token = searchParams.get("token");
+    const provider = searchParams.get("provider");
 
     if (token) {
       // 로컬 스토리지에 토큰 저장
       localStorage.setItem("accessToken", token);
       
-      // 사용자 정보를 가져오는 로직이 추가로 필요할 수 있음
-      // 여기서는 일단 토큰 저장 후 메인으로 이동
-      alert("구글 로그인에 성공했습니다!");
+      const providerName = provider === "google" ? "구글" : provider === "kakao" ? "카카오" : "소셜";
+      alert(`${providerName} 로그인에 성공했습니다!`);
       router.push("/");
     } else {
       alert("로그인 정보를 가져오지 못했습니다.");
