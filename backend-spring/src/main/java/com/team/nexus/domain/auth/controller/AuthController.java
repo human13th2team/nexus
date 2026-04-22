@@ -1,5 +1,7 @@
 package com.team.nexus.domain.auth.controller;
 
+import com.team.nexus.domain.auth.dto.LoginRequest;
+import com.team.nexus.domain.auth.dto.LoginResponse;
 import com.team.nexus.domain.auth.dto.SignupRequest;
 import com.team.nexus.domain.auth.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,7 +27,6 @@ public class AuthController {
     @PostMapping("/signup")
     public ResponseEntity<Map<String, Object>> signup(@Valid @RequestBody SignupRequest request) {
         Map<String, Object> response = new HashMap<>();
-        
         try {
             authService.signup(request);
             response.put("status", "success");
@@ -35,6 +36,26 @@ public class AuthController {
             response.put("status", "error");
             response.put("message", e.getMessage());
             return ResponseEntity.badRequest().body(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "서버 내부 오류가 발생했습니다.");
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인하여 JWT 토큰을 발급받습니다.")
+    @PostMapping("/login")
+    public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody LoginRequest request) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            LoginResponse loginResponse = authService.login(request);
+            response.put("status", "success");
+            response.put("data", loginResponse);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            response.put("status", "error");
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(401).body(response);
         } catch (Exception e) {
             response.put("status", "error");
             response.put("message", "서버 내부 오류가 발생했습니다.");
