@@ -28,6 +28,7 @@ export default function InterviewSection({
   const [isLoading, setIsLoading] = useState(false);
   const [isFinished, setIsFinished] = useState(false); // 인터뷰 완료 상태
   const [isGeneratingBranding, setIsGeneratingBranding] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // 1. 컴포넌트 마운트 시 브랜딩 프로젝트 생성
@@ -97,6 +98,10 @@ export default function InterviewSection({
       console.error("Chat error:", err);
     } finally {
       setIsLoading(false);
+      // 입력창 높이 초기화
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
     }
   };
 
@@ -170,20 +175,30 @@ export default function InterviewSection({
         </div>
 
         <div className="p-4 border-t border-gray-100 bg-white">
-          <div className="flex gap-2">
-            <input
-              type="text"
+          <div className="flex items-end gap-2">
+            <textarea
+              ref={textareaRef}
+              rows={1}
               value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleSend()}
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                e.target.style.height = "auto";
+                e.target.style.height = `${e.target.scrollHeight}px`;
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
               placeholder={isFinished ? "추가로 궁금하신 점이 있으신가요?" : "답변을 입력해 주세요..."}
               disabled={isLoading || !projectId}
-              className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all disabled:bg-gray-50"
+              className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all disabled:bg-gray-50 resize-none max-h-32 overflow-y-auto"
             />
             <button
               onClick={handleSend}
               disabled={isLoading || !projectId}
-              className="bg-black text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-gray-800 transition-colors disabled:bg-gray-400"
+              className="bg-black text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-800 transition-colors disabled:bg-gray-400 h-[42px]"
             >
               전송
             </button>
@@ -231,17 +246,27 @@ export default function InterviewSection({
         <button
           onClick={handleCompleteInterview}
           disabled={!isFinished || isGeneratingBranding}
-          className={`w-full py-4 rounded-2xl text-sm font-bold transition-all shadow-lg flex items-center justify-center gap-2 group ${
+          className={`w-full py-4 rounded-2xl text-sm font-bold transition-all shadow-lg flex items-center justify-center gap-3 group ${
             isFinished 
               ? "bg-black text-white hover:bg-gray-800" 
               : "bg-gray-200 text-gray-400 cursor-not-allowed"
           }`}
         >
-          {isGeneratingBranding ? "브랜드 추천 생성 중..." : "인터뷰 완료 및 브랜드 추천"}
-          {!isGeneratingBranding && (
-            <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
+          {isGeneratingBranding ? (
+            <>
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              브랜드 추천 생성 중...
+            </>
+          ) : (
+            <>
+              인터뷰 완료 및 브랜드 추천
+              <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </>
           )}
         </button>
       </div>

@@ -41,12 +41,11 @@ export default function LogoGenerationSection({
       const result = await response.json();
 
       if (result.success) {
-        // 백엔드에서 tempId와 imageUrl로 넘어옴
-        const newLogos: Logo[] = result.data.map((item: any) => ({
-          id: item.tempId,
-          url: item.imageUrl.startsWith('http') 
-            ? item.imageUrl 
-            : `http://localhost:8000${item.imageUrl}`
+        const newLogos = result.data.map((l: any) => ({
+          id: l.tempId,
+          url: l.imageUrl.startsWith("http") || l.imageUrl.startsWith("data:")
+            ? l.imageUrl
+            : `http://localhost:8000${l.imageUrl}`,
         }));
         setLogos(newLogos);
         if (newLogos.length > 0) setSelectedLogoId(newLogos[0].id);
@@ -68,15 +67,17 @@ export default function LogoGenerationSection({
     setIsFinalizing(true);
     try {
       const targetId = identity?.identityId || identity?.id;
-      // 상대 경로만 추출 (http://localhost:8000 제거)
-      const relativeUrl = selected.url.replace("http://localhost:8000", "");
+      // Base64 데이터인 경우 그대로 전송, 일반 URL인 경우 상대 경로 추출
+      const sendUrl = selected.url.startsWith("data:image") 
+        ? selected.url 
+        : selected.url.replace("http://localhost:8000", "");
 
       const response = await fetch(`${API_BASE_URL}/identity/${targetId}/logo/finalize`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ imageUrl: relativeUrl }),
+        body: JSON.stringify({ imageUrl: sendUrl }),
       });
 
       const result = await response.json();
@@ -95,16 +96,25 @@ export default function LogoGenerationSection({
 
   const handleDownload = async (url: string, filename: string) => {
     try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
+      if (url.startsWith("data:image")) {
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const blobUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      }
     } catch (err) {
       console.error("Download failed:", err);
       alert("다운로드에 실패했습니다.");

@@ -152,6 +152,28 @@ async def finalize_logo_api(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"로고 확정 중 오류가 발생했습니다: {str(e)}")
 
+@router.post("/identity/{identity_id}/assets", response_model=brandingSchema.BrandingAssetsResponse)
+async def generate_marketing_assets_api(
+    identity_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    마케팅 에셋 생성 API
+    - 확정된 로고와 브랜드 정보를 바탕으로 명함, 메뉴판 등의 목업 이미지를 생성합니다.
+    """
+    try:
+        assets = await brandingService.generate_marketing_assets(db, identity_id)
+        
+        if not assets:
+            raise HTTPException(status_code=404, detail="에셋을 생성할 수 없습니다. 로고 확정 여부를 확인해주세요.")
+            
+        return brandingSchema.BrandingAssetsResponse(
+            success=True,
+            data=[brandingSchema.BrandingAssetResult(**a) for a in assets]
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"에셋 생성 중 오류가 발생했습니다: {str(e)}")
+
 @router.get("/test")
 async def test_branding():
     return {"message": "AI Branding Domain API is healthy"}

@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Branding, BrandIdentity, LogoAsset
 from app.domain.branding.brandingSchema import BrandingCreateRequest, BrandingInterviewRequest, ChatRequest
-from sqlalchemy import select
+from sqlalchemy import select, update
 from app.core.ai_client import get_ai_client
 import json
 import os
@@ -180,18 +180,18 @@ async def generate_brand_names(db: AsyncSession, project_id: uuid.UUID):
         raise e
 
 LOGO_PROMPT_MAKER = """
-당신은 세계적인 로고 디자이너입니다. 제공된 브랜드 정보를 바탕으로, 서로 다른 스타일의 **이미지 생성용 영어 프롬프트 3가지**를 작성하세요.
+당신은 로고 디자인 전문가입니다. 주어진 브랜드 정보를 바탕으로 시각적으로 독창적이고 아름다운 로고 디자인을 위한 상세 영어 프롬프트를 **반드시 3개** 생성하세요.
 
-[핵심 디자인 원칙]
-1. **Diversity**: 3가지 프롬프트는 서로 다른 디자인 컨셉(예: 심볼형, 워드마크형, 추상형 등)이어야 합니다.
-2. **Logo Style**: 반드시 로고(Logo) 형태여야 하며 실사 사진은 절대 금지입니다.
-3. **Flat design, Vector art, Minimalist graphic, Clean lines** 스타일을 유지하세요.
-4. **Background**: 반드시 "Isolated on a solid white background"로 설정하세요.
-
-[응답 포맷]
-각 프롬프트는 반드시 한 줄로 작성하고, 프롬프트 사이는 `---` 구분선으로 나누세요. 다른 설명은 생략하세요.
-예시:
-A minimalist vector logo for... --- A geometric symbol logo for... --- A modern abstract logo for...
+**중요 규칙**:
+1. 각 프롬프트는 '---' (하이픈 3개)로 명확히 구분하세요.
+2. 각 프롬프트는 800자 이내의 상세한 영어 문장이어야 합니다.
+3. 로고의 스타일(미니멀, 엠블럼, 타이포그래피 등), 색상, 질감, 배경을 상세히 묘사하세요.
+4. 출력 형식:
+[프롬프트 1]
+---
+[프롬프트 2]
+---
+[프롬프트 3]
 """
 
 async def generate_brand_logo(db: AsyncSession, identity_id: uuid.UUID):
@@ -218,39 +218,179 @@ async def generate_brand_logo(db: AsyncSession, identity_id: uuid.UUID):
     ai_llm_client = get_ai_client("gemini") 
     context = f"브랜드명: {identity.brand_name}, 슬로건: {identity.slogan}, 스토리: {identity.brand_story}"
     raw_response = await ai_llm_client.generate_response(LOGO_PROMPT_MAKER, [{"role": "user", "content": context}])
-    prompts = [p.strip() for p in raw_response.split('---') if p.strip()][:3]
-    if len(prompts) < 1:
-        prompts = [raw_response.strip()]
+    
+    # 3개 후보군 추출 (최소 1개는 보장)
+    prompts = [p.strip() for p in raw_response.split('---') if p.strip()]
+    if not prompts:
+        prompts = [raw_response.strip() or "A professional modern logo design for a brand"]
+    
+    # 3개가 안되면 보충
+    while len(prompts) < 3:
+        prompts.append(prompts[0] + f" style variant {len(prompts)}")
+    
+    prompts = prompts[:3]
+    
+    # 3. 이미지 생성 (Stability API - Base64 반환)
     ai_image_client = get_ai_client("stability")
-    static_dir = "app/static/logos"
-    os.makedirs(static_dir, exist_ok=True)
-    async def create_logo_file(visual_prompt: str, idx: int):
-        file_name = f"{identity_id}_{uuid.uuid4().hex[:8]}_{idx}.png"
-        file_path = os.path.join(static_dir, file_name)
+    
+    import asyncio
+    async def create_logo_base64(visual_prompt: str, idx: int):
         try:
-            await ai_image_client.generate_image(visual_prompt, file_path)
+            # 파일 저장 없이 Base64 문자열 반환
+            base64_data = await ai_image_client.generate_image_base64(visual_prompt)
             return {
                 "tempId": f"temp_{idx}_{uuid.uuid4().hex[:4]}",
-                "imageUrl": f"/static/logos/{file_name}"
+                "imageUrl": base64_data # 데이터 URI 직접 전달
             }
         except Exception as e:
-            print(f"Logo Generation Error (Index {idx}): {str(e)}")
+            import traceback
+            print(f"Logo Generation Error (Index {idx}):\n{traceback.format_exc()}")
             return None
-    import asyncio
-    tasks = [create_logo_file(p, i) for i, p in enumerate(prompts)]
+
+    tasks = [create_logo_base64(p, i) for i, p in enumerate(prompts)]
     results = await asyncio.gather(*tasks)
     return [r for r in results if r is not None]
 
+# [추가] 마케팅 에셋(목업) 생성 프롬프트 메이커
+MOCKUP_PROMPT_MAKER = """
+브랜드 정보와 로고를 바탕으로, 실제 제품에 로고가 적용된 고품질 마케팅 목업 이미지(명함, 메뉴판/브로슈어, 포스터) 3종을 위한 프롬프트를 생성하세요.
+
+**중요 규칙**:
+1. 반드시 3개의 에셋(Business Card, Menu, Poster)을 생성하세요.
+2. 각 에셋 블록은 '---' (하이픈 3개)로 구분하세요.
+3. 각 블록 내에 Type, Title, Description, Prompt 필드를 반드시 포함하세요.
+4. Prompt는 반드시 10자 이상의 상세한 영어 문장이어야 합니다.
+
+응답 형식:
+Type: Business Card
+Title: [에셋 제목]
+Description: [한 줄 설명]
+Prompt: [영어 프롬프트]
+---
+Type: Menu
+Title: [에셋 제목]
+Description: [한 줄 설명]
+Prompt: [영어 프롬프트]
+---
+Type: Poster
+Title: [에셋 제목]
+Description: [한 줄 설명]
+Prompt: [영어 프롬프트]
+"""
+
+async def generate_marketing_assets(db: AsyncSession, identity_id: uuid.UUID):
+    """최종 선정된 로고를 바탕으로 명함, 메뉴판 등의 마케팅 에셋 목업 이미지를 생성합니다."""
+    try:
+        # 1. 브랜드 아이덴티티 및 로고 정보 조회
+        from sqlalchemy.orm import joinedload
+        stmt = select(BrandIdentity).options(joinedload(BrandIdentity.logo_assets)).where(BrandIdentity.id == identity_id)
+        result = await db.execute(stmt)
+        identity = result.unique().scalar_one_or_none()
+        
+        if not identity or not identity.logo_assets:
+            print(f"DEBUG: Identity or LogoAssets not found for {identity_id}")
+            return None
+            
+        # 가장 최근에 확정된 로고 사용
+        final_logo = identity.logo_assets[-1] 
+        
+        # 2. 에셋용 시각화 프롬프트 3종 생성 (LLM 활용)
+        ai_llm_client = get_ai_client("gemini")
+        context = f"브랜드명: {identity.brand_name}, 슬로건: {identity.slogan}, 스토리: {identity.brand_story}, 확정된로고특징: {final_logo.image_url}"
+        raw_response = await ai_llm_client.generate_response(MOCKUP_PROMPT_MAKER, [{"role": "user", "content": context}])
+        
+        # 3. 응답 파싱
+        asset_blocks = [block.strip() for block in raw_response.split('---') if block.strip()]
+        assets_data = []
+        
+        ai_image_client = get_ai_client("stability")
+        static_dir = "app/static/assets"
+        os.makedirs(static_dir, exist_ok=True)
+        
+        import asyncio
+        async def create_asset_file(block, idx):
+            lines = block.split('\n')
+            asset_info = {}
+            for line in lines:
+                if line.startswith("Type:"): asset_info["type"] = line.replace("Type:", "").strip()
+                if line.startswith("Title:"): asset_info["title"] = line.replace("Title:", "").strip()
+                if line.startswith("Description:"): asset_info["description"] = line.replace("Description:", "").strip()
+                if line.startswith("Prompt:"): asset_info["prompt"] = line.replace("Prompt:", "").strip()
+            prompt = asset_info.get("prompt", "").strip()
+            if not prompt:
+                prompt = f"A professional {asset_info.get('type', 'marketing asset')} mockup showing the brand logo"
+
+            file_name = f"asset_{identity_id}_{uuid.uuid4().hex[:8]}_{idx}.png"
+            file_path = os.path.join(static_dir, file_name)
+            try:
+                await ai_image_client.generate_image(prompt, file_path)
+                return {
+                    "id": str(uuid.uuid4()),
+                    "type": asset_info.get("type", "Marketing Asset"),
+                    "title": asset_info.get("title", "Marketing Asset"),
+                    "description": asset_info.get("description", ""),
+                    "imageUrl": f"/static/assets/{file_name}"
+                }
+            except Exception as e:
+                print(f"Asset generation error: {str(e)}")
+            return None
+
+        tasks = [create_asset_file(b, i) for i, b in enumerate(asset_blocks[:3])]
+        results = await asyncio.gather(*tasks)
+        return [r for r in results if r is not None]
+    except Exception as e:
+        import traceback
+        print(f"CRITICAL ERROR in generate_marketing_assets:\n{traceback.format_exc()}")
+        raise e
+
 async def finalize_brand_logo(db: AsyncSession, identity_id: uuid.UUID, image_url: str):
-    """선택된 로고 정보를 DB에 최종 저장합니다."""
+    """선택된 로고(Base64)를 파일로 저장하고 DB에 등록합니다."""
+    # 1. Base64 데이터 파싱 및 파일 저장
+    import base64
+    static_dir = "app/static/logos"
+    os.makedirs(static_dir, exist_ok=True)
+    
+    file_name = f"final_logo_{identity_id}_{uuid.uuid4().hex[:6]}.png"
+    file_path = os.path.join(static_dir, file_name)
+    final_url = f"/static/logos/{file_name}"
+    
+    try:
+        if image_url.startswith("data:image"):
+            # Base64 데이터 추출 (data:image/png;base64,...)
+            header, encoded = image_url.split(",", 1)
+            with open(file_path, "wb") as f:
+                f.write(base64.b64decode(encoded))
+        else:
+            # 만약 이미 파일 URL이라면 (예외 케이스)
+            final_url = image_url
+    except Exception as e:
+        print(f"Final logo save error: {str(e)}")
+        # 실패 시에도 에러를 던지지 않고 기존 URL 사용 시도 (또는 에러 처리)
+
+    # 2. DB 저장
     new_logo = LogoAsset(
         id=uuid.uuid4(),
         identity_id=identity_id,
-        image_url=image_url,
+        image_url=final_url,
         style_tag="FINAL_SELECTION",
         is_final=True
     )
     db.add(new_logo)
     await db.commit()
     await db.refresh(new_logo)
+    
+    # 3. 프로젝트 타이틀 업데이트 (선택된 브랜드명으로)
+    stmt = select(BrandIdentity).where(BrandIdentity.id == identity_id)
+    result = await db.execute(stmt)
+    identity = result.scalar_one_or_none()
+    
+    if identity:
+        from app.models import Branding
+        await db.execute(
+            update(Branding)
+            .where(Branding.id == identity.branding_id)
+            .values(title=identity.brand_name, current_step="LOGO_GENERATION")
+        )
+        await db.commit()
+        
     return new_logo

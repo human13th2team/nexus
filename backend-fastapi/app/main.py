@@ -29,11 +29,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 정적 파일 서빙 설정 (로고 이미지 등)
-static_logos_path = "app/static/logos"
-if not os.path.exists(static_logos_path):
-    os.makedirs(static_logos_path)
-app.mount("/static/logos", StaticFiles(directory=static_logos_path), name="logos")
+# 정적 파일 서빙 설정
+static_candidates_path = "app/static/candidates"
+static_final_logos_path = "app/static/final_logos"
+static_assets_path = "app/static/assets"
+
+for path in [static_candidates_path, static_final_logos_path, static_assets_path]:
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+app.mount("/static/candidates", StaticFiles(directory=static_candidates_path), name="candidates")
+app.mount("/static/final_logos", StaticFiles(directory=static_final_logos_path), name="final_logos")
+app.mount("/static/assets", StaticFiles(directory=static_assets_path), name="assets")
 
 # Spring Boot 서버 주소 (8080)
 SPRING_BOOT_URL = "http://localhost:8080"

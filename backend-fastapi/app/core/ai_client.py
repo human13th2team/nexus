@@ -152,6 +152,33 @@ class StableDiffusionClient(BaseAIClient):
                 
             return output_path
 
+    async def generate_image_base64(self, prompt: str) -> str:
+        """이미지를 파일로 저장하지 않고 Base64 문자열로 반환합니다."""
+        import base64
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.api_key}",
+        }
+
+        payload = {
+            "text_prompts": [{"text": prompt, "weight": 1}],
+            "cfg_scale": 7,
+            "height": 1024,
+            "width": 1024,
+            "samples": 1,
+            "steps": 30,
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(self.base_url, headers=headers, json=payload, timeout=60.0)
+            if response.status_code != 200:
+                raise Exception(f"Stability AI API error: {response.text}")
+
+            data = response.json()
+            image_base64 = data["artifacts"][0]["base64"]
+            return f"data:image/png;base64,{image_base64}"
+
 def get_ai_client(provider: str = "gemini") -> BaseAIClient:
     if provider == "gemini":
         return GeminiClient()

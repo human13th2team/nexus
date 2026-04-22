@@ -59,3 +59,15 @@ class LogoFinalizeRequest(BaseModel):
 class LogoFinalizeResponse(BaseModel):
     success: bool = Field(True)
     logoAssetId: UUID = Field(..., description="최종 저장된 로고 에셋 ID")
+
+# [추가] 마케팅 에셋 응답 스키마
+class BrandingAssetResult(BaseModel):
+    id: str
+    type: str
+    title: str
+    description: str
+    imageUrl: str
+
+class BrandingAssetsResponse(BaseModel):
+    success: bool = Field(True)
+    data: List[BrandingAssetResult]
