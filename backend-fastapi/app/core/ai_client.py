@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import List, Dict, Optional
 import httpx
 import asyncio
+import functools
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 
@@ -17,6 +18,25 @@ class BaseAIClient(ABC):
     @abstractmethod
     async def generate_image(self, prompt: str, output_path: str) -> str:
         pass
+
+def retry_async(max_retries=3, delay=2):
+    """비동기 함수를 위한 재시도 데코레이터"""
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            last_exc = None
+            for i in range(max_retries):
+                try:
+                    return await func(*args, **kwargs)
+                except Exception as e:
+                    last_exc = e
+                    # 500 에러나 네트워크 에러 등 재시도가 필요한 경우만 로깅
+                    print(f"⚠️ [AI Retry {i+1}/{max_retries}] 일시적 오류 발생: {str(e)[:100]}...")
+                    if i < max_retries - 1:
+                        await asyncio.sleep(delay * (i + 1)) # 지수 백오프 적용
+            raise last_exc
+        return wrapper
+    return decorator
 
 class GeminiClient(BaseAIClient):
     _local_model = None # 로컬 모델 싱글톤 보관용
@@ -32,6 +52,7 @@ class GeminiClient(BaseAIClient):
             GeminiClient._local_model = SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')
             print("✅ 로컬 모델 로딩 완료!")
 
+    @retry_async(max_retries=3, delay=2)
     async def generate_response(self, system_instruction: str, chat_history: List[Dict[str, str]]) -> str:
         # Gemini는 별도의 system_instruction과 history를 받는 구조가 잘 잡혀있음
         model_with_instruction = genai.GenerativeModel(

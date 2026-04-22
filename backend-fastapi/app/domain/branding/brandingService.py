@@ -11,6 +11,45 @@ import uuid
 # 테스트용 고정 유저 ID
 TEST_USER_ID = uuid.UUID("a248bb6e-7302-4b48-9375-c23ee477ea45")
 
+# [최적화] 업종 데이터 인메모리 캐시
+INDUSTRY_CACHE = {
+    "map": {},        # ID -> IndustryCategory (이름, 부모ID 등 포함)
+    "initialized": False
+}
+
+async def initialize_industry_cache(db: AsyncSession):
+    """서버 시작 시 4,000여 개의 업종 데이터를 메모리에 로드하여 경로 계산 속도를 극대화합니다."""
+    if INDUSTRY_CACHE["initialized"]:
+        return
+
+    print("🧠 [Cache] 업종 카테고리 데이터를 메모리에 로딩 중...")
+    # 임베딩 제외, 경로 계산에 필요한 필드만 가볍게 조회
+    stmt = select(IndustryCategory).options(load_only(
+        IndustryCategory.id, 
+        IndustryCategory.name, 
+        IndustryCategory.parent_id
+    ))
+    result = await db.execute(stmt)
+    industries = result.scalars().all()
+    
+    INDUSTRY_CACHE["map"] = {ind.id: ind for ind in industries}
+    INDUSTRY_CACHE["initialized"] = True
+    print(f"✅ [Cache] {len(INDUSTRY_CACHE['map'])}개의 업종 데이터 로딩 완료!")
+
+def get_full_path(ind):
+    """캐시된 데이터를 사용하여 업종의 전체 경로를 즉시 반환합니다."""
+    path = [ind.name]
+    curr = ind
+    ind_map = INDUSTRY_CACHE["map"]
+    
+    # 무한 루프 방지 및 캐시 활용
+    depth = 0
+    while curr.parent_id and curr.parent_id in ind_map and depth < 10:
+        curr = ind_map[curr.parent_id]
+        path.insert(0, curr.name)
+        depth += 1
+    return " > ".join(path)
+
 async def create_new_branding(db: AsyncSession, request: BrandingCreateRequest) :
     """새로운 브랜딩 프로젝트를 생성하고 DB에 저장합니다."""
     new_branding = Branding(
@@ -25,9 +64,9 @@ async def create_new_branding(db: AsyncSession, request: BrandingCreateRequest) 
     await db.refresh(new_branding)
     return new_branding
 
-async def update_branding_interview(db: AsyncSession, project_id: uuid.UUID, request: BrandingInterviewRequest):
+async def update_branding_interview(db: AsyncSession, branding_id: uuid.UUID, request: BrandingInterviewRequest):
     """인터뷰 답변을 저장하고 단계를 업데이트합니다."""
-    result = await db.execute(select(Branding).where(Branding.id == project_id))
+    result = await db.execute(select(Branding).where(Branding.id == branding_id))
     branding = result.scalar_one_or_none()
     if not branding:
         return None
@@ -77,41 +116,43 @@ async def chat_with_ai(db: AsyncSession, branding_id: uuid.UUID, request: ChatRe
     try:
         ai_client = get_ai_client("gemini")
         
-        # 1. 사용자의 현재 메시지를 벡터화하여 유사 업종 검색 (Hybrid Search)
-        user_vector = await ai_client.embed_text(request.message)
+        # 1. 브랜딩 프로젝트 정보 우선 조회 (현재 단계 확인용)
+        stmt = select(Branding).where(Branding.id == branding_id)
+        db_result = await db.execute(stmt)
+        branding = db_result.scalar_one_or_none()
         
-        # 코사인 유사도 기준 상위 10개 업종 검색
-        stmt = (
-            select(IndustryCategory)
-            .order_by(IndustryCategory.embedding.cosine_distance(user_vector))
-            .limit(10)
-        )
-        industry_result = await db.execute(stmt)
-        industries = industry_result.scalars().all()
+        industry_list_str = "N/A"
         
-        # ID 기반 맵 생성 (계층 구조 가공용)
-        # 최적화: 무거운 벡터 데이터(embedding)는 제외하고 ID, 이름, 부모 ID만 가볍게 조회
-        all_ind_result = await db.execute(
-            select(IndustryCategory).options(load_only(IndustryCategory.id, IndustryCategory.name, IndustryCategory.parent_id))
-        )
-        ind_map = {ind.id: ind for ind in all_ind_result.scalars().all()}
-        
-        def get_full_path(ind):
-            path = [ind.name]
-            curr = ind
-            while curr.parent_id and curr.parent_id in ind_map:
-                curr = ind_map[curr.parent_id]
-                path.insert(0, curr.name)
-            return " > ".join(path)
-        
-        industry_list_str = "\n".join([f"- {get_full_path(ind)} (ID: {ind.id})" for ind in industries])
-        
-        # 2. 프롬프트 완성
+        # 2. [최적화] 인터뷰 단계에서만 벡터 검색(업종 추천) 수행
+        # 대표님 요청 사항: 불필요한 단계에서 벡터 로그가 남지 않도록 조건부 실행
+        if branding and branding.current_step == "INTERVIEW":
+            # 사용자의 현재 메시지를 벡터화하여 유사 업종 검색
+            user_vector = await ai_client.embed_text(request.message)
+            
+            # HNSW 인덱스를 활용한 고속 유사도 검색
+            stmt_ind = (
+                select(IndustryCategory)
+                .order_by(IndustryCategory.embedding.cosine_distance(user_vector))
+                .limit(10)
+            )
+            industry_result = await db.execute(stmt_ind)
+            industries = industry_result.scalars().all()
+            
+            # 캐시를 사용하여 업종 목록 문자열 생성
+            if not INDUSTRY_CACHE["initialized"]:
+                await initialize_industry_cache(db)
+            industry_list_str = "\n".join([f"- {get_full_path(ind)} (ID: {ind.id})" for ind in industries])
+        else:
+            # 인터뷰 단계가 아니거나 업종이 이미 확정된 경우 벡터 검색 생략
+            industry_list_str = "업종이 이미 확정되었거나 인터뷰 단계가 아닙니다."
+
+        # 3. 프롬프트 완성
         system_prompt = INTERVIEW_SYSTEM_PROMPT_TEMPLATE.replace("{industry_list}", industry_list_str)
 
         history = [{"role": m.role, "content": m.content} for m in request.history[-6:]]
         history.append({"role": "user", "content": request.message})
         
+        # 재시도 로직이 적용된 AI 호출
         raw_response = await ai_client.generate_response(system_prompt, history)
     except Exception as e:
         import traceback
@@ -123,9 +164,6 @@ async def chat_with_ai(db: AsyncSession, branding_id: uuid.UUID, request: ChatRe
             parts = raw_response.split("---")
             json_str = parts[-1].strip()
             result = json.loads(json_str)
-            stmt = select(Branding).where(Branding.id == branding_id)
-            db_result = await db.execute(stmt)
-            branding = db_result.scalar_one_or_none()
             if branding:
                 industry_id = result.get("industry_id")
                 # UUID 유효성 검사 추가
@@ -202,7 +240,7 @@ async def generate_brand_names(db: AsyncSession, branding_id: uuid.UUID):
         for opt in naming_options:
             identity = BrandIdentity(
                 id=uuid.uuid4(),
-                branding_id=project_id,
+                branding_id=branding_id,
                 brand_name=opt["brand_name"],
                 slogan=opt.get("slogan"),
                 brand_story=opt.get("story"),

@@ -172,20 +172,6 @@ export default function BrandingAssetsSection({
         </div>
       </section>
 
-      {/* 3. Banner Section (A3) */}
-      <section className="pt-10">
-        <div className="relative h-64 bg-gray-100 rounded-[2.5rem] overflow-hidden flex flex-col items-center justify-center text-center px-6">
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-200 opacity-50" />
-          <div className="relative z-10 space-y-4">
-            <p className="text-gray-500 text-sm font-medium">Promote your brand with high-quality marketing assets!</p>
-            <div className="flex gap-2 justify-center">
-              <div className="w-1.5 h-1.5 bg-black rounded-full" />
-              <div className="w-1.5 h-1.5 bg-gray-300 rounded-full" />
-              <div className="w-1.5 h-1.5 bg-gray-300 rounded-full" />
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Bottom Actions */}
       <div className="pt-10 border-t border-gray-100 flex justify-between items-center">
