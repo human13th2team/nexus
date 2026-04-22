@@ -164,22 +164,22 @@ export default function LoginPage() {
 
             {/* Social Login Buttons */}
             <div className="grid grid-cols-2 gap-3 mt-6">
-              <button
-                type="button"
+              <a
+                href="http://localhost:8080/oauth2/authorization/google"
                 className="h-12 flex items-center justify-center gap-2 border border-zinc-200 rounded-2xl hover:bg-zinc-50 transition-all active:scale-[0.98] group"
               >
                 <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
                 <span className="text-sm font-bold text-zinc-700 group-hover:text-black">Google</span>
-              </button>
-              <button
-                type="button"
+              </a>
+              <a
+                href="http://localhost:8080/oauth2/authorization/kakao"
                 className="h-12 flex items-center justify-center gap-2 bg-[#FEE500] rounded-2xl hover:bg-[#FDD835] transition-all active:scale-[0.98] group"
               >
                 <div className="w-4 h-4 bg-black rounded-full flex items-center justify-center">
                   <span className="text-[8px] text-[#FEE500] font-black">K</span>
                 </div>
                 <span className="text-sm font-bold text-[#191919]">카카오톡</span>
-              </button>
+              </a>
             </div>
           </div>
 
