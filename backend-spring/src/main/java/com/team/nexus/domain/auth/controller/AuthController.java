@@ -2,6 +2,8 @@ package com.team.nexus.domain.auth.controller;
 
 import com.team.nexus.domain.auth.dto.LoginRequest;
 import com.team.nexus.domain.auth.dto.LoginResponse;
+import com.team.nexus.domain.auth.dto.PasswordResetRequest;
+import com.team.nexus.domain.auth.dto.PasswordResetResponse;
 import com.team.nexus.domain.auth.dto.SignupRequest;
 import com.team.nexus.domain.auth.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -56,6 +58,27 @@ public class AuthController {
             response.put("status", "error");
             response.put("message", e.getMessage());
             return ResponseEntity.status(401).body(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", "서버 내부 오류가 발생했습니다.");
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    @Operation(summary = "비밀번호 재설정", description = "이메일을 입력받아 임시 비밀번호를 생성하고 반환합니다.")
+    @PostMapping("/reset-password")
+    public ResponseEntity<Map<String, Object>> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            PasswordResetResponse resetResponse = authService.resetPassword(request);
+            response.put("status", "success");
+            response.put("data", resetResponse);
+            response.put("message", "임시 비밀번호가 생성되었습니다.");
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            response.put("status", "error");
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         } catch (Exception e) {
             response.put("status", "error");
             response.put("message", "서버 내부 오류가 발생했습니다.");

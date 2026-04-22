@@ -1,5 +1,7 @@
 package com.team.nexus.domain.auth.service;
 
+import com.team.nexus.domain.auth.dto.PasswordResetRequest;
+import com.team.nexus.domain.auth.dto.PasswordResetResponse;
 import com.team.nexus.domain.auth.dto.LoginRequest;
 import com.team.nexus.domain.auth.dto.LoginResponse;
 import com.team.nexus.domain.auth.dto.SignupRequest;
@@ -12,6 +14,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
+import java.util.UUID;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -23,7 +28,6 @@ public class AuthService {
 
     @Transactional
     public void signup(SignupRequest request) {
-        // ... (existing code remains same)
         if (userRepository.existsByEmail(request.getEmail())) {
             log.error("이미 존재하는 이메일입니다: {}", request.getEmail());
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
@@ -62,5 +66,57 @@ public class AuthService {
                 .nickname(user.getNickname())
                 .userType(user.getUserType())
                 .build();
+    }
+
+    @Transactional
+    public PasswordResetResponse resetPassword(PasswordResetRequest request) {
+        // 1. 사용자 조회
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 이메일입니다."));
+
+        // 2. 임시 비밀번호 생성 (8자리 이상, 특수문자 포함)
+        String temporaryPassword = generateTemporaryPassword();
+
+        // 3. 비밀번호 업데이트
+        user.setPasswd(passwordEncoder.encode(temporaryPassword));
+        userRepository.save(user);
+
+        log.info("비밀번호 재설정 완료: {}", request.getEmail());
+
+        return PasswordResetResponse.builder()
+                .temporaryPassword(temporaryPassword)
+                .build();
+    }
+
+    private String generateTemporaryPassword() {
+        String upperCaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        String lowerCaseLetters = "abcdefghijklmnopqrstuvwxyz";
+        String numbers = "0123456789";
+        String specialCharacters = "!@#$%^&*()";
+        String combinedChars = upperCaseLetters + lowerCaseLetters + numbers + specialCharacters;
+
+        SecureRandom random = new SecureRandom();
+        StringBuilder password = new StringBuilder();
+
+        // 최소 요구 사항 충족을 위해 각각 하나씩 추가
+        password.append(lowerCaseLetters.charAt(random.nextInt(lowerCaseLetters.length())));
+        password.append(numbers.charAt(random.nextInt(numbers.length())));
+        password.append(specialCharacters.charAt(random.nextInt(specialCharacters.length())));
+
+        // 나머지 7자리를 무작위로 추가 (총 10자리)
+        for (int i = 0; i < 7; i++) {
+            password.append(combinedChars.charAt(random.nextInt(combinedChars.length())));
+        }
+
+        // 비밀번호 순서 섞기
+        char[] passwordArray = password.toString().toCharArray();
+        for (int i = passwordArray.length - 1; i > 0; i--) {
+            int j = random.nextInt(i + 1);
+            char temp = passwordArray[i];
+            passwordArray[i] = passwordArray[j];
+            passwordArray[j] = temp;
+        }
+
+        return new String(passwordArray);
     }
 }
