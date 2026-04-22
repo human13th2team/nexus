@@ -3,7 +3,9 @@ import google.generativeai as genai
 from abc import ABC, abstractmethod
 from typing import List, Dict, Optional
 import httpx
+import asyncio
 from dotenv import load_dotenv
+from sentence_transformers import SentenceTransformer
 
 load_dotenv()
 
@@ -17,10 +19,18 @@ class BaseAIClient(ABC):
         pass
 
 class GeminiClient(BaseAIClient):
+    _local_model = None # 로컬 모델 싱글톤 보관용
+
     def __init__(self):
         api_key = os.getenv("GOOGLE_API_KEY")
         genai.configure(api_key=api_key)
-        self.model_name = 'models/gemma-4-31b-it' # 대표님이 지시한 Gemma 4 모델 사용
+        self.model_name = 'models/gemma-4-31b-it' 
+        
+        # 로컬 임베딩 모델 로드 (최초 1회)
+        if GeminiClient._local_model is None:
+            print("🧠 로컬 임베딩 모델(768차원) 로딩 중... 잠시만 기다려주세요.")
+            GeminiClient._local_model = SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')
+            print("✅ 로컬 모델 로딩 완료!")
 
     async def generate_response(self, system_instruction: str, chat_history: List[Dict[str, str]]) -> str:
         # Gemini는 별도의 system_instruction과 history를 받는 구조가 잘 잡혀있음
@@ -49,8 +59,6 @@ class GeminiClient(BaseAIClient):
         response = image_model.generate_content(prompt)
         
         # 응답에서 이미지 데이터 추출 및 저장
-        # (참고: 모델에 따라 response.candidates[0].content.parts[0].inline_data 혹은 다른 포맷일 수 있음)
-        # 여기서는 모델이 PIL Image 객체나 바이트 데이터를 반환한다고 가정하고 처리
         try:
             for part in response.candidates[0].content.parts:
                 if part.inline_data:
@@ -58,15 +66,19 @@ class GeminiClient(BaseAIClient):
                         f.write(part.inline_data.data)
                     return output_path
             
-            # 만약 inline_data가 없다면 (일반적인 경우)
             if response.text and "http" in response.text:
-                # URL이 반환되는 특이 케이스 대응
                 return response.text
                 
             raise ValueError("이미지 데이터를 찾을 수 없습니다.")
         except Exception as e:
             print(f"Gemini Image Generation Error: {str(e)}")
             raise e
+
+    async def embed_text(self, text: str) -> List[float]:
+        """텍스트를 로컬 모델을 사용하여 768차원 벡터로 변환합니다."""
+        # 모델 추론은 CPU/GPU를 많이 사용하므로 별도 스레드에서 실행하여 비동기 루프를 보호합니다.
+        embedding = await asyncio.to_thread(GeminiClient._local_model.encode, text)
+        return embedding.tolist()
 
 class OllamaClient(BaseAIClient):
     def __init__(self):

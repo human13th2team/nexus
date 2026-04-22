@@ -1,7 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models import Branding, BrandIdentity, LogoAsset
+from sqlalchemy import select, update, func
+from sqlalchemy.orm import load_only
+from app.models import Branding, BrandIdentity, LogoAsset, IndustryCategory
 from app.domain.branding.brandingSchema import BrandingCreateRequest, BrandingInterviewRequest, ChatRequest
-from sqlalchemy import select, update
 from app.core.ai_client import get_ai_client
 import json
 import os
@@ -40,7 +41,7 @@ async def update_branding_interview(db: AsyncSession, project_id: uuid.UUID, req
     await db.refresh(branding)
     return branding
 
-INTERVIEW_SYSTEM_PROMPT = """
+INTERVIEW_SYSTEM_PROMPT_TEMPLATE = """
 당신은 대표님의 성공적인 창업을 돕는 전문 컨설턴트 'Nexus AI'입니다. 
 정중하고 친절하면서도 전문적인 어투를 유지하세요. (대표님에 대한 예우를 갖추세요)
 
@@ -52,17 +53,7 @@ INTERVIEW_SYSTEM_PROMPT = """
 4. 아래 [업종 카테고리] 중 하나 확정
 
 [업종 카테고리 목록]
-- 외식업 (ID: 550e8400-e29b-41d4-a716-446655440000)
-- 음식 (ID: ab91d653-83fc-407c-b157-acc34253879e)
-- 소매 (ID: b647dad2-4920-49eb-a4e0-1ebcc4b85323)
-- 숙박 (ID: 49c8fd42-c3e4-4422-94a5-8784127008ee)
-- 교육 (ID: 14691c6f-0fd2-4f97-83ba-c50d136ed474)
-- 보건의료 (ID: ac3b7391-a0c2-4937-a87b-e70118e6ed1c)
-- 예술·스포츠 (ID: 0c69e0e9-7c04-4279-ad7b-664a8521e76e)
-- 과학·기술 (ID: 7a06ec29-8ce4-4a5d-979f-4c750ffd26cf)
-- 시설관리·임대 (ID: 79cb11aa-a2ca-44b4-b7b3-947886920219)
-- 부동산 (ID: 216b2085-2cb6-4dd4-b664-076dc9309800)
-- 수리·개인 (ID: 3a5e9100-c34b-4ad8-b552-f3fc76f00c9e)
+{industry_list}
 
 [규칙]
 - 위 4가지 요소가 모두 파악되었다면 `is_finished`를 `true`로 설정하세요. 
@@ -73,39 +64,85 @@ INTERVIEW_SYSTEM_PROMPT = """
 [응답 포맷]
 반드시 구분선 --- 뒤에 아래 JSON만 작성하세요.
 ---
-{
+{{
   "is_finished": bool,
   "industry_id": "UUID",
   "keywords": [],
   "msg": "대표님께 전달할 메시지"
-}
+}}
 """
 
-async def chat_with_ai(db: AsyncSession, project_id: uuid.UUID, request: ChatRequest):
+async def chat_with_ai(db: AsyncSession, branding_id: uuid.UUID, request: ChatRequest):
     """AI와 대화를 나누고 상태를 분석하며 데이터를 실시간으로 DB에 동기화합니다."""
-    ai_client = get_ai_client("gemini") 
-    history = [{"role": m.role, "content": m.content} for m in request.history[-6:]]
-    history.append({"role": "user", "content": request.message})
-    raw_response = await ai_client.generate_response(INTERVIEW_SYSTEM_PROMPT, history)
+    try:
+        ai_client = get_ai_client("gemini")
+        
+        # 1. 사용자의 현재 메시지를 벡터화하여 유사 업종 검색 (Hybrid Search)
+        user_vector = await ai_client.embed_text(request.message)
+        
+        # 코사인 유사도 기준 상위 10개 업종 검색
+        stmt = (
+            select(IndustryCategory)
+            .order_by(IndustryCategory.embedding.cosine_distance(user_vector))
+            .limit(10)
+        )
+        industry_result = await db.execute(stmt)
+        industries = industry_result.scalars().all()
+        
+        # ID 기반 맵 생성 (계층 구조 가공용)
+        # 최적화: 무거운 벡터 데이터(embedding)는 제외하고 ID, 이름, 부모 ID만 가볍게 조회
+        all_ind_result = await db.execute(
+            select(IndustryCategory).options(load_only(IndustryCategory.id, IndustryCategory.name, IndustryCategory.parent_id))
+        )
+        ind_map = {ind.id: ind for ind in all_ind_result.scalars().all()}
+        
+        def get_full_path(ind):
+            path = [ind.name]
+            curr = ind
+            while curr.parent_id and curr.parent_id in ind_map:
+                curr = ind_map[curr.parent_id]
+                path.insert(0, curr.name)
+            return " > ".join(path)
+        
+        industry_list_str = "\n".join([f"- {get_full_path(ind)} (ID: {ind.id})" for ind in industries])
+        
+        # 2. 프롬프트 완성
+        system_prompt = INTERVIEW_SYSTEM_PROMPT_TEMPLATE.replace("{industry_list}", industry_list_str)
+
+        history = [{"role": m.role, "content": m.content} for m in request.history[-6:]]
+        history.append({"role": "user", "content": request.message})
+        
+        raw_response = await ai_client.generate_response(system_prompt, history)
+    except Exception as e:
+        import traceback
+        print("❌ [chat_with_ai 에러 발생]")
+        traceback.print_exc()
+        raise e # 에러를 다시 던져서 500 에러 상태는 유지
     try:
         if "---" in raw_response:
             parts = raw_response.split("---")
             json_str = parts[-1].strip()
             result = json.loads(json_str)
-            stmt = select(Branding).where(Branding.id == project_id)
+            stmt = select(Branding).where(Branding.id == branding_id)
             db_result = await db.execute(stmt)
             branding = db_result.scalar_one_or_none()
             if branding:
                 industry_id = result.get("industry_id")
-                if industry_id and industry_id != "null":
-                    branding.industry_category_id = uuid.UUID(industry_id)
+                # UUID 유효성 검사 추가
+                if industry_id and industry_id != "null" and industry_id != "UUID":
+                    try:
+                        branding.industry_category_id = uuid.UUID(str(industry_id))
+                    except (ValueError, TypeError):
+                        print(f"Invalid UUID received from AI: {industry_id}")
+                        
                 branding.keywords = {
                     "extracted_keywords": result.get("keywords", []),
                     "last_msg": result.get("msg")
                 }
                 await db.commit()
+            
             return {
-                "aiResponse": result.get("msg", parts[0].strip()),
+                "aiResponse": result.get("msg", "네, 알겠습니다. 계속해서 말씀을 나눠볼까요?"),
                 "isFinished": result.get("is_finished", False),
                 "extractedData": {
                     "keywords": result.get("keywords", []),
@@ -145,9 +182,9 @@ NAMING_SYSTEM_PROMPT = """
 ]
 """
 
-async def generate_brand_names(db: AsyncSession, project_id: uuid.UUID):
+async def generate_brand_names(db: AsyncSession, branding_id: uuid.UUID):
     """AI를 호출하여 브랜드 명을 생성하고 DB에 저장합니다."""
-    result = await db.execute(select(Branding).where(Branding.id == project_id))
+    result = await db.execute(select(Branding).where(Branding.id == branding_id))
     branding = result.scalar_one_or_none()
     if not branding or not branding.keywords:
         return None

@@ -25,9 +25,9 @@ async def start_branding(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"브랜딩 생성 중 오류가 발생했습니다: {str(e)}")
 
-@router.patch("/{project_id}/interview", response_model=brandingSchema.CommonResponse)
+@router.patch("/{branding_id}/interview", response_model=brandingSchema.CommonResponse)
 async def update_interview(
-    project_id: uuid.UUID,
+    branding_id: uuid.UUID,
     request: brandingSchema.BrandingInterviewRequest,
     db: AsyncSession = Depends(get_db)
 ):
@@ -36,7 +36,7 @@ async def update_interview(
     - 사용자와 AI 간의 대화 결과(키워드, 답변 데이터)를 프로젝트에 저장합니다.
     """
     try:
-        updated = await brandingService.update_branding_interview(db, project_id, request)
+        updated = await brandingService.update_branding_interview(db, branding_id, request)
         
         if not updated:
             raise HTTPException(status_code=404, detail="해당 프로젝트를 찾을 수 없습니다.")
@@ -50,9 +50,9 @@ async def update_interview(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"인터뷰 저장 중 오류가 발생했습니다: {str(e)}")
 
-@router.post("/{project_id}/chat", response_model=brandingSchema.ChatResponse)
+@router.post("/{branding_id}/chat", response_model=brandingSchema.ChatResponse)
 async def start_chat(
-    project_id: uuid.UUID,
+    branding_id: uuid.UUID,
     request: brandingSchema.ChatRequest,
     db: AsyncSession = Depends(get_db)
 ):
@@ -63,7 +63,7 @@ async def start_chat(
     """
     try:
         # 1. 채팅 엔진 호출 (업종 자동 업데이트를 위해 DB 세션 전달)
-        result = await brandingService.chat_with_ai(db, project_id, request)
+        result = await brandingService.chat_with_ai(db, branding_id, request)
         
         # 2. 만약 인터뷰가 자동 종료되었다면 DB 업데이트 (선택 사항 - 클라이언트가 PATCH를 호출할 수도 있음)
         # 여기서는 AI 의견에 따라 자동으로 '인터뷰 저장' 로직을 미리 실행하거나 데이터를 반환만 합니다.
@@ -77,9 +77,9 @@ async def start_chat(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI 채팅 중 오류가 발생했습니다: {str(e)}")
 
-@router.post("/{project_id}/naming", response_model=brandingSchema.NamingResponse)
+@router.post("/{branding_id}/naming", response_model=brandingSchema.NamingResponse)
 async def generate_brand_names_api(
-    project_id: uuid.UUID,
+    branding_id: uuid.UUID,
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -87,7 +87,7 @@ async def generate_brand_names_api(
     - 저장된 인터뷰 데이터를 바탕으로 AI가 브랜드 명 3안을 생성하고 저장합니다.
     """
     try:
-        identities = await brandingService.generate_brand_names(db, project_id)
+        identities = await brandingService.generate_brand_names(db, branding_id)
         
         if not identities:
             raise HTTPException(status_code=400, detail="인터뷰 데이터가 부족하거나 프로젝트를 찾을 수 없습니다.")

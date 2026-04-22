@@ -1,5 +1,6 @@
 from app.core.database import Base
 from sqlalchemy import String, ForeignKey, Integer, SmallInteger, Boolean, Text, Date, TIMESTAMP, JSON, DOUBLE_PRECISION, text
+from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional, List
 import datetime
@@ -21,6 +22,7 @@ class IndustryCategory(Base):
     parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("industry_categories.id", ondelete="SET NULL"))
     level: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     ksic_code: Mapped[Optional[str]] = mapped_column(String(20))
+    embedding: Mapped[Optional[Vector]] = mapped_column(Vector(768)) # AI 의미 검색용 벡터
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
