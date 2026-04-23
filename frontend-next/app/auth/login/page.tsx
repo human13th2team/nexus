@@ -13,7 +13,7 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import axios from "axios";
+
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -43,20 +43,32 @@ export default function LoginPage() {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const response = await axios.post("http://localhost:8080/api/v1/auth/login", data);
+      const response = await fetch("http://localhost:8080/api/v1/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
 
-      if (response.data.status === "success") {
-        const { accessToken, nickname } = response.data.data;
+      const result = await response.json();
+
+      if (response.ok && result.status === "success") {
+        const { accessToken, nickname } = result.data;
         // 로컬 스토리지에 토큰 저장
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("nickname", nickname);
         
         alert(`${nickname}님, 환영합니다!`);
         router.push("/"); // 메인 페이지로 이동
+      } else {
+        // 서버 응답이 에러인 경우 (4xx, 5xx)
+        const msg = result.message || "로그인 중 오류가 발생했습니다. 이메일과 비밀번호를 확인해 주세요.";
+        setErrorMessage(msg);
       }
     } catch (error: any) {
-      const msg = error.response?.data?.message || "로그인 중 오류가 발생했습니다. 이메일과 비밀번호를 확인해 주세요.";
-      setErrorMessage(msg);
+      // 네트워크 오류 또는 기타 예외 상황
+      setErrorMessage("서버와 통신 중 오류가 발생했습니다. 네트워크 상태를 확인해 주세요.");
     } finally {
       setIsLoading(false);
     }

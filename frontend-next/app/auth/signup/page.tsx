@@ -18,7 +18,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import DaumPostcode from "react-daum-postcode";
-import axios from "axios";
+
 import { cn } from "@/lib/utils";
 import { POLICIES } from "@/constants/policies";
 
@@ -115,22 +115,32 @@ export default function SignupPage() {
 
   const onSignupSubmit = async (data: SignupFormValues) => {
     try {
-      const response = await axios.post("http://localhost:8080/api/v1/auth/signup", {
-        email: data.email,
-        password: data.password,
-        nickname: data.nickname,
-        address: data.address,
-        userType: data.userType,
-        bizNo: data.bizNo,
+      const response = await fetch("http://localhost:8080/api/v1/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+          nickname: data.nickname,
+          address: data.address,
+          userType: data.userType,
+          bizNo: data.bizNo,
+        }),
       });
 
-      if (response.data.status === "success") {
+      const result = await response.json();
+
+      if (response.ok && result.status === "success") {
         alert("회원가입에 성공했습니다! 로그인 페이지로 이동합니다.");
         router.push("/auth/login");
+      } else {
+        const msg = result.message || "회원가입 도중 오류가 발생했습니다.";
+        alert(msg);
       }
     } catch (error: any) {
-      const msg = error.response?.data?.message || "회원가입 도중 오류가 발생했습니다.";
-      alert(msg);
+      alert("서버와 통신 중 오류가 발생했습니다. 네트워크 상태를 확인해 주세요.");
     }
   };
 

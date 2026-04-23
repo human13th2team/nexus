@@ -14,7 +14,7 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import axios from "axios";
+
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -44,14 +44,24 @@ export default function FindPasswordPage() {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const response = await axios.post("http://localhost:8080/api/v1/auth/reset-password", data);
+      const response = await fetch("http://localhost:8080/api/v1/auth/reset-password", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
 
-      if (response.data.status === "success") {
-        setTempPassword(response.data.data.temporaryPassword);
+      const result = await response.json();
+
+      if (response.ok && result.status === "success") {
+        setTempPassword(result.data.temporaryPassword);
+      } else {
+        const msg = result.message || "비밀번호 재설정 중 오류가 발생했습니다. 이메일을 다시 확인해 주세요.";
+        setErrorMessage(msg);
       }
     } catch (error: any) {
-      const msg = error.response?.data?.message || "비밀번호 재설정 중 오류가 발생했습니다. 이메일을 다시 확인해 주세요.";
-      setErrorMessage(msg);
+      setErrorMessage("서버와 통신 중 오류가 발생했습니다. 네트워크 상태를 확인해 주세요.");
     } finally {
       setIsLoading(false);
     }
