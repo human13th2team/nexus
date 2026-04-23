@@ -1,10 +1,10 @@
 package com.team.nexus.domain.auth.service;
 
-import com.team.nexus.domain.auth.dto.PasswordResetRequest;
-import com.team.nexus.domain.auth.dto.PasswordResetResponse;
-import com.team.nexus.domain.auth.dto.LoginRequest;
-import com.team.nexus.domain.auth.dto.LoginResponse;
-import com.team.nexus.domain.auth.dto.SignupRequest;
+import com.team.nexus.domain.auth.dto.PasswordResetRequestDto;
+import com.team.nexus.domain.auth.dto.PasswordResetResponseDto;
+import com.team.nexus.domain.auth.dto.LoginRequestDto;
+import com.team.nexus.domain.auth.dto.LoginResponseDto;
+import com.team.nexus.domain.auth.dto.SignupRequestDto;
 import com.team.nexus.domain.auth.repository.UserRepository;
 import com.team.nexus.global.entity.User;
 import com.team.nexus.global.util.JwtTokenProvider;
@@ -27,7 +27,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void signup(SignupRequest request) {
+    public void signup(SignupRequestDto request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             log.error("이미 존재하는 이메일입니다: {}", request.getEmail());
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
@@ -49,7 +49,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional(readOnly = true)
-    public LoginResponse login(LoginRequest request) {
+    public LoginResponseDto login(LoginRequestDto request) {
         // 1. 사용자 조회
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 이메일입니다."));
@@ -62,7 +62,7 @@ public class AuthServiceImpl implements AuthService {
         // 3. 토큰 생성
         String token = jwtTokenProvider.createToken(user.getEmail());
 
-        return LoginResponse.builder()
+        return LoginResponseDto.builder()
                 .accessToken(token)
                 .nickname(user.getNickname())
                 .userType(user.getUserType())
@@ -71,7 +71,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public PasswordResetResponse resetPassword(PasswordResetRequest request) {
+    public PasswordResetResponseDto resetPassword(PasswordResetRequestDto request) {
         // 1. 사용자 조회
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("가입되지 않은 이메일입니다."));
@@ -85,7 +85,7 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("비밀번호 재설정 완료: {}", request.getEmail());
 
-        return PasswordResetResponse.builder()
+        return PasswordResetResponseDto.builder()
                 .temporaryPassword(temporaryPassword)
                 .build();
     }

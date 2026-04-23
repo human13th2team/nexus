@@ -11,7 +11,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @Schema(description = "로그인 요청 데이터")
-public class LoginRequest {
+public class LoginRequestDto {
 
     @Email(message = "유효한 이메일 형식이 아닙니다.")
     @NotBlank(message = "이메일은 필수 입력값입니다.")

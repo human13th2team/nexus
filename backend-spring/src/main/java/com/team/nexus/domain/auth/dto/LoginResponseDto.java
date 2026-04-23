@@ -9,7 +9,7 @@ import lombok.Getter;
 @Builder
 @AllArgsConstructor
 @Schema(description = "로그인 응답 데이터")
-public class LoginResponse {
+public class LoginResponseDto {
 
     @Schema(description = "JWT 엑세스 토큰")
     private String accessToken;

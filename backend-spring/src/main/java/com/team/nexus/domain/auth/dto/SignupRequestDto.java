@@ -11,7 +11,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Schema(description = "회원가입 요청 데이터")
-public class SignupRequest {
+public class SignupRequestDto {
 
     @Schema(description = "사용자 이메일 (로그인 ID)", example = "user@example.com")
     @NotBlank(message = "이메일은 필수 입력 항목입니다.")

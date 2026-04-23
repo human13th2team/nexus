@@ -5,6 +5,6 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class PasswordResetResponse {
+public class PasswordResetResponseDto {
     private String temporaryPassword;
 }

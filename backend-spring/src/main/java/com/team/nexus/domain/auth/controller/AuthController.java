@@ -1,10 +1,10 @@
 package com.team.nexus.domain.auth.controller;
 
-import com.team.nexus.domain.auth.dto.LoginRequest;
-import com.team.nexus.domain.auth.dto.LoginResponse;
-import com.team.nexus.domain.auth.dto.PasswordResetRequest;
-import com.team.nexus.domain.auth.dto.PasswordResetResponse;
-import com.team.nexus.domain.auth.dto.SignupRequest;
+import com.team.nexus.domain.auth.dto.LoginRequestDto;
+import com.team.nexus.domain.auth.dto.LoginResponseDto;
+import com.team.nexus.domain.auth.dto.PasswordResetRequestDto;
+import com.team.nexus.domain.auth.dto.PasswordResetResponseDto;
+import com.team.nexus.domain.auth.dto.SignupRequestDto;
 import com.team.nexus.domain.auth.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,7 +27,7 @@ public class AuthController {
 
     @Operation(summary = "회원가입", description = "신규 사용자를 등록합니다. 일반 회원과 사업가 회원을 구분하여 가입할 수 있습니다.")
     @PostMapping("/signup")
-    public ResponseEntity<Map<String, Object>> signup(@Valid @RequestBody SignupRequest request) {
+    public ResponseEntity<Map<String, Object>> signup(@Valid @RequestBody SignupRequestDto request) {
         Map<String, Object> response = new HashMap<>();
         try {
             authService.signup(request);
@@ -47,10 +47,10 @@ public class AuthController {
 
     @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인하여 JWT 토큰을 발급받습니다.")
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody LoginRequestDto request) {
         Map<String, Object> response = new HashMap<>();
         try {
-            LoginResponse loginResponse = authService.login(request);
+            LoginResponseDto loginResponse = authService.login(request);
             response.put("status", "success");
             response.put("data", loginResponse);
             return ResponseEntity.ok(response);
@@ -67,10 +67,10 @@ public class AuthController {
 
     @Operation(summary = "비밀번호 재설정", description = "이메일을 입력받아 임시 비밀번호를 생성하고 반환합니다.")
     @PostMapping("/reset-password")
-    public ResponseEntity<Map<String, Object>> resetPassword(@Valid @RequestBody PasswordResetRequest request) {
+    public ResponseEntity<Map<String, Object>> resetPassword(@Valid @RequestBody PasswordResetRequestDto request) {
         Map<String, Object> response = new HashMap<>();
         try {
-            PasswordResetResponse resetResponse = authService.resetPassword(request);
+            PasswordResetResponseDto resetResponse = authService.resetPassword(request);
             response.put("status", "success");
             response.put("data", resetResponse);
             response.put("message", "임시 비밀번호가 생성되었습니다.");
