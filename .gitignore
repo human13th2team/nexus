@@ -63,3 +63,9 @@ backend-fastapi/lib64/
 
 # --- Docker ---
 docker-data/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
