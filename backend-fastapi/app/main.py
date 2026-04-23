@@ -1,5 +1,8 @@
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import httpx
+import os
 from pydantic import BaseModel
 from typing import Optional
 from sqlalchemy import text
@@ -9,13 +12,55 @@ from app.domain.simulation import simulationRouter as simulation
 from app.domain.compliance import complianceRouter as compliance
 from app.domain.community import communityRouter as community
 from app.domain.dashboard import dashboardRouter as dashboard
-from app.core.database import get_db
+from app.core.database import get_db, AsyncSessionLocal
+from app.domain.branding.brandingService import initialize_industry_cache
+from app.core.ai_client import get_ai_client
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 서버 시작 시 실행될 로직
+    print("🚀 Nexus API Server 시작 중...")
+    
+    # 1. AI 임베딩 모델 프리로딩
+    get_ai_client("gemini") 
+    
+    # 2. 업종 카테고리 데이터 캐싱
+    async with AsyncSessionLocal() as db:
+        await initialize_industry_cache(db)
+        
+    print("✨ 모든 초기화가 완료되었습니다. 서비스를 시작합니다.")
+    yield
+    # 서버 종료 시 실행될 로직 (필요 시)
 
 app = FastAPI(
     title="Nexus API Server",
     description="Nexus 프로젝트를 위한 통합 API 서버입니다. MSA 구조의 개별 도메인 로직을 담당합니다.",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
+
+# CORS 설정 추가
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # 실 운영 시에는 특정 도메인으로 제한 권장
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 정적 파일 서빙 설정
+static_candidates_path = "app/static/candidates"
+static_final_logos_path = "app/static/final_logos"
+static_assets_path = "app/static/assets"
+
+for path in [static_candidates_path, static_final_logos_path, static_assets_path]:
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+app.mount("/static/candidates", StaticFiles(directory=static_candidates_path), name="candidates")
+app.mount("/static/final_logos", StaticFiles(directory=static_final_logos_path), name="final_logos")
+app.mount("/static/assets", StaticFiles(directory=static_assets_path), name="assets")
 
 # Spring Boot 서버 주소 (8080)
 SPRING_BOOT_URL = "http://localhost:8080"
