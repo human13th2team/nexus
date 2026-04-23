@@ -48,9 +48,9 @@ class GeminiClient(BaseAIClient):
         
         # 로컬 임베딩 모델 로드 (최초 1회)
         if GeminiClient._local_model is None:
-            print("🧠 로컬 임베딩 모델(768차원) 로딩 중... 잠시만 기다려주세요.")
+            print("Loading local embedding model (768d)... Please wait.")
             GeminiClient._local_model = SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')
-            print("✅ 로컬 모델 로딩 완료!")
+            print("Local model loading completed!")
 
     @retry_async(max_retries=3, delay=2)
     async def generate_response(self, system_instruction: str, chat_history: List[Dict[str, str]]) -> str:

@@ -38,6 +38,7 @@ public class Comment {
     @JoinColumn(name = "parent_comment_id")
     private Comment parent;
 
+    @Builder.Default
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
     private List<Comment> children = new ArrayList<>();
 }
