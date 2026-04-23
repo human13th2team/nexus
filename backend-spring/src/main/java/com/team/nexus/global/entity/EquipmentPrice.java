@@ -22,15 +22,15 @@ public class EquipmentPrice {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id", nullable = false)
+    @JoinColumn(name = "industry_category_id")
     private IndustryCategory industryCategory;
 
-    @Column(name = "item_name", nullable = false, length = 100)
-    private String itemName;
+    @Column(name = "equipment_kr", nullable = false, length = 50)
+    private String equipmentKr;
 
-    @Column(name = "standard_price")
-    private Integer standardPrice;
+    @Column(name = "equipment_eng", nullable = false, length = 50)
+    private String equipmentEng;
 
-    @Column(name = "unit", length = 20)
-    private String unit;
+    @Column(name = "price")
+    private Integer price;
 }
