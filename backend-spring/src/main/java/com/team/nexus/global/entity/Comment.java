@@ -1,4 +1,5 @@
 package com.team.nexus.global.entity;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -41,4 +42,17 @@ public class Comment {
     @Builder.Default
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
     private List<Comment> children = new ArrayList<>();
+
+    @Builder.Default
+    @Column(name = "report_count")
+    private Integer reportCount = 0;
+
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        if (this.reportCount == null) this.reportCount = 0;
+    }
 }

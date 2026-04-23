@@ -16,7 +16,8 @@ import {
   Info,
   ChevronLeft,
   ChevronRight,
-  Plus
+  Plus,
+  CornerDownRight
 } from "lucide-react";
 
 interface Post {
@@ -38,6 +39,15 @@ interface TopPost {
   viewCount: number;
 }
 
+interface Comment {
+  id: string;
+  content: string;
+  author: string;
+  createdAt: string;
+  reportCount: number;
+  children: Comment[];
+}
+
 export default function BoardDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -48,6 +58,13 @@ export default function BoardDetailPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Comments State
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentContent, setCommentContent] = useState("");
+  const [replyContent, setReplyContent] = useState("");
+  const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fetchedRef = React.useRef(false);
 
   const lastFetchedId = React.useRef<string | null>(null);
@@ -57,6 +74,7 @@ export default function BoardDetailPage() {
       if (lastFetchedId.current !== params.id) {
         lastFetchedId.current = params.id as string;
         fetchPostDetail(params.id as string);
+        fetchComments(params.id as string);
       }
       fetchTopPosts();
       fetchPosts(currentPage);
@@ -103,6 +121,86 @@ export default function BoardDetailPage() {
       }
     } catch (error) {
       console.error("Failed to fetch top posts:", error);
+    }
+  };
+
+  const fetchComments = async (id: string) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/comments/${id}`);
+      if (!response.ok) return;
+      
+      const result = await response.json();
+      if (result.status === "success") {
+        setComments(result.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch comments:", error);
+    }
+  };
+
+  const handleCommentSubmit = async (parentId: string | null = null) => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      alert("로그인이 필요한 서비스입니다. 로그인 페이지로 이동합니다.");
+      router.push("/auth/login");
+      return;
+    }
+
+    const content = parentId ? replyContent : commentContent;
+    if (!content.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/comments/${params.id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          content,
+          parentId
+        })
+      });
+
+      const result = await response.json();
+      if (result.status === "success") {
+        setCommentContent("");
+        setReplyContent("");
+        setReplyTargetId(null);
+        fetchComments(params.id as string);
+      }
+    } catch (error) {
+      console.error("Failed to submit comment:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleReport = async (commentId: string) => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      alert("로그인이 필요한 서비스입니다. 로그인 페이지로 이동합니다.");
+      router.push("/auth/login");
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/comments/report/${commentId}`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      const result = await response.json();
+      if (result.status === "success") {
+        alert("신고가 접수되었습니다.");
+        fetchComments(params.id as string);
+      } else {
+        alert(result.message || "신고 처리에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("Failed to report comment:", error);
     }
   };
 
@@ -206,10 +304,64 @@ export default function BoardDetailPage() {
                 <ThumbsUp className="w-6 h-6 text-zinc-400 group-hover:text-[#3b4890] mb-1" />
                 <span className="text-[12px] font-bold text-zinc-600">0</span>
               </button>
-              <button className="flex flex-col items-center justify-center w-20 h-20 border border-zinc-200 rounded hover:bg-zinc-50 transition-all">
+              <button 
+                onClick={() => {
+                  const element = document.getElementById("comment-section");
+                  element?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="flex flex-col items-center justify-center w-20 h-20 border border-zinc-200 rounded hover:bg-zinc-50 transition-all"
+              >
                 <MessageSquare className="w-6 h-6 text-zinc-400 mb-1" />
                 <span className="text-[12px] font-bold text-zinc-600">댓글</span>
               </button>
+            </div>
+
+            {/* Comment Section */}
+            <div id="comment-section" className="border-t border-zinc-200 pt-10">
+              <div className="flex items-center gap-2 mb-6">
+                <MessageSquare className="w-5 h-5 text-black" />
+                <h3 className="text-lg font-bold">댓글 <span className="text-[#3b4890]">{comments.length}</span></h3>
+              </div>
+
+              {/* Comment Input */}
+              <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 mb-10">
+                <textarea 
+                  value={commentContent}
+                  onChange={(e) => setCommentContent(e.target.value)}
+                  placeholder="타인의 권리를 침해하거나 명예를 훼손하는 댓글은 운영원칙 및 관련 법률에 의해 제재를 받을 수 있습니다."
+                  className="w-full h-24 bg-transparent resize-none focus:outline-none text-sm"
+                />
+                <div className="flex justify-end mt-2">
+                  <button 
+                    disabled={isSubmitting}
+                    onClick={() => handleCommentSubmit(null)}
+                    className="bg-[#3b4890] text-white px-6 py-2 rounded font-bold text-sm hover:bg-[#2e3770] transition-all disabled:opacity-50"
+                  >
+                    {isSubmitting ? "등록 중..." : "등록"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Comment List */}
+              <div className="space-y-6">
+                {comments.map((comment) => (
+                  <CommentItem 
+                    key={comment.id} 
+                    comment={comment} 
+                    onReport={handleReport}
+                    onReply={(id) => setReplyTargetId(id)}
+                    replyTargetId={replyTargetId}
+                    replyContent={replyContent}
+                    onReplyContentChange={setReplyContent}
+                    onReplySubmit={handleCommentSubmit}
+                    isSubmitting={isSubmitting}
+                    formatDate={formatDate}
+                  />
+                ))}
+                {comments.length === 0 && (
+                  <div className="text-center py-10 text-zinc-400 text-sm">첫 번째 댓글을 남겨보세요.</div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -336,6 +488,119 @@ export default function BoardDetailPage() {
   );
 }
 
-function cn(...classes: string[]) {
+function cn(...classes: (string | boolean | undefined)[]) {
   return classes.filter(Boolean).join(" ");
+}
+
+interface CommentItemProps {
+  comment: Comment;
+  onReport: (id: string) => void;
+  onReply: (id: string | null) => void;
+  replyTargetId: string | null;
+  replyContent: string;
+  onReplyContentChange: (content: string) => void;
+  onReplySubmit: (parentId: string) => void;
+  isSubmitting: boolean;
+  formatDate: (date: string) => string;
+  isChild?: boolean;
+}
+
+function CommentItem({ 
+  comment, 
+  onReport, 
+  onReply, 
+  replyTargetId, 
+  replyContent, 
+  onReplyContentChange, 
+  onReplySubmit,
+  isSubmitting,
+  formatDate,
+  isChild = false 
+}: CommentItemProps) {
+  const isDeleted = comment.content === "삭제된 댓글입니다.";
+  const myNickname = typeof window !== "undefined" ? localStorage.getItem("nickname") : null;
+  const isMine = comment.author === myNickname;
+
+  return (
+    <div className={cn("flex flex-col gap-3 relative", isChild && "pt-4")}>
+      <div className="flex justify-between items-start">
+        <div className="flex items-center gap-2">
+          {isChild && <CornerDownRight className="w-3.5 h-3.5 text-zinc-300" />}
+          <span className={cn("font-bold text-sm", isDeleted ? "text-zinc-300" : "text-black")}>
+            {comment.author}
+          </span>
+          <span className="text-zinc-300 text-xs">|</span>
+          <span className="text-zinc-400 text-xs">{formatDate(comment.createdAt)}</span>
+        </div>
+        {!isDeleted && !isMine && (
+          <button 
+            onClick={() => onReport(comment.id)}
+            className="text-xs text-zinc-400 hover:text-red-500 flex items-center gap-1 transition-colors"
+          >
+            <AlertCircle className="w-3 h-3" />
+            신고
+          </button>
+        )}
+      </div>
+      
+      <p className={cn("text-sm leading-relaxed", isDeleted ? "text-zinc-400 italic" : "text-zinc-800", isChild && "ml-5")}>
+        {comment.content}
+      </p>
+
+      {!isDeleted && (
+        <div className={cn("flex items-center gap-4", isChild && "ml-5")}>
+          <button 
+            onClick={() => onReply(replyTargetId === comment.id ? null : comment.id)}
+            className="text-[11px] font-bold text-[#3b4890] hover:underline"
+          >
+            답글달기
+          </button>
+        </div>
+      )}
+
+      {replyTargetId === comment.id && (
+        <div className={cn("mt-4 bg-zinc-50 border border-zinc-200 rounded-lg p-3", isChild && "ml-5")}>
+          <textarea 
+            value={replyContent}
+            onChange={(e) => onReplyContentChange(e.target.value)}
+            placeholder="답글을 입력해주세요."
+            className="w-full h-20 bg-transparent resize-none focus:outline-none text-sm"
+          />
+          <div className="flex justify-end mt-2">
+            <button 
+              disabled={isSubmitting}
+              onClick={() => onReplySubmit(comment.id)}
+              className="bg-black text-white px-4 py-1.5 rounded font-bold text-[11px] hover:bg-zinc-800 transition-all disabled:opacity-50"
+            >
+              답글등록
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Children Comments (Recursion) */}
+      {comment.children && comment.children.length > 0 && (
+        <div className={cn(
+          "flex flex-col gap-6 mt-2", 
+          !isChild ? "ml-5 border-l-2 border-zinc-100 pl-5" : "ml-0 border-l-0 pl-0"
+        )}>
+          {comment.children.map((child) => (
+            <CommentItem 
+              key={child.id} 
+              comment={child} 
+              onReport={onReport}
+              onReply={onReply}
+              replyTargetId={replyTargetId}
+              replyContent={replyContent}
+              onReplyContentChange={onReplyContentChange}
+              onReplySubmit={onReplySubmit}
+              isSubmitting={isSubmitting}
+              formatDate={formatDate}
+              isChild={true}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
