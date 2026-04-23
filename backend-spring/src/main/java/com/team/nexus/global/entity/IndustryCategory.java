@@ -38,4 +38,7 @@ public class IndustryCategory {
 
     @Column(name = "ksic_code", length = 20)
     private String ksicCode;
+
+    @Column(name = "embedding", columnDefinition = "vector(768)")
+    private double[] embedding;
 }
