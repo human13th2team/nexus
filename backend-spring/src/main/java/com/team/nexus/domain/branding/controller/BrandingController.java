@@ -1,8 +1,8 @@
 package com.team.nexus.domain.branding.controller;
 
+import com.team.nexus.domain.branding.dto.BrandingDetailDto;
 import com.team.nexus.domain.branding.dto.BrandingListDto;
 import com.team.nexus.domain.branding.service.BrandingService;
-import com.team.nexus.global.entity.Branding;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +16,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/branding")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:3000")
 public class BrandingController {
 
     private final BrandingService brandingService;
@@ -28,7 +29,14 @@ public class BrandingController {
 
     @Operation(summary = "브랜딩 상세 조회", description = "특정 브랜딩 프로젝트의 상세 정보를 조회합니다.")
     @GetMapping("/{id}")
-    public ResponseEntity<Branding> getBrandingDetail(@PathVariable UUID id) {
+    public ResponseEntity<BrandingDetailDto> getBrandingDetail(@PathVariable UUID id) {
         return ResponseEntity.ok(brandingService.getBrandingDetail(id));
+    }
+
+    @Operation(summary = "브랜딩 삭제", description = "특정 브랜딩 프로젝트를 삭제합니다.")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteBranding(@PathVariable UUID id) {
+        brandingService.deleteBranding(id);
+        return ResponseEntity.noContent().build();
     }
 }

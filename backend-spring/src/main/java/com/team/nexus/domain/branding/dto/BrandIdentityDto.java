@@ -7,9 +7,10 @@ import java.util.UUID;
 
 @Getter
 @Builder
-public class BrandingListDto {
+public class BrandIdentityDto {
     private UUID id;
-    private String title;
-    private UUID industryCategoryId;
-    private String currentStep;
+    private String brandName;
+    private String slogan;
+    private String brandStory;
+    private Boolean isSelected;
 }
