@@ -16,8 +16,11 @@ public class BoardResponseDto {
     private UUID id;
     private String title;
     private String author;
+    private UUID authorId; // Added for ownership check
     private String content;
     private String imageUrl;
     private LocalDateTime createdAt;
     private Integer viewCount;
+    private Integer likeCount;
+    private Long commentCount;
 }

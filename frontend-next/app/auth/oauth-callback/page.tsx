@@ -10,13 +10,18 @@ export default function OAuthCallbackPage() {
   useEffect(() => {
     const token = searchParams.get("token");
     const provider = searchParams.get("provider");
+    const rawNickname = searchParams.get("nickname");
+    const nickname = rawNickname ? decodeURIComponent(rawNickname) : null;
+    const userId = searchParams.get("userId");
 
     if (token) {
       // 로컬 스토리지에 토큰 저장
       localStorage.setItem("accessToken", token);
+      if (nickname) localStorage.setItem("nickname", nickname);
+      if (userId) localStorage.setItem("userId", userId);
       
       const providerName = provider === "google" ? "구글" : provider === "kakao" ? "카카오" : "소셜";
-      alert(`${providerName} 로그인에 성공했습니다!`);
+      alert(`${nickname || "회원"}님, ${providerName} 로그인에 성공했습니다!`);
       router.push("/");
     } else {
       alert("로그인 정보를 가져오지 못했습니다.");

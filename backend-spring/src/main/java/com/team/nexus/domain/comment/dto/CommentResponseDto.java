@@ -15,6 +15,7 @@ public class CommentResponseDto {
     private UUID id;
     private String content;
     private String author;
+    private UUID authorId;
     private LocalDateTime createdAt;
     private Integer reportCount;
     private List<CommentResponseDto> children;

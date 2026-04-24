@@ -54,10 +54,11 @@ export default function LoginPage() {
       const result = await response.json();
 
       if (response.ok && result.status === "success") {
-        const { accessToken, nickname } = result.data;
+        const { accessToken, nickname, userId } = result.data;
         // 로컬 스토리지에 토큰 저장
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("nickname", nickname);
+        localStorage.setItem("userId", userId);
         
         alert(`${nickname}님, 환영합니다!`);
         router.push("/"); // 메인 페이지로 이동

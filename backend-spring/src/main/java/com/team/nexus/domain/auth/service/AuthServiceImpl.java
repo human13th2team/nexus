@@ -65,6 +65,7 @@ public class AuthServiceImpl implements AuthService {
         return LoginResponseDto.builder()
                 .accessToken(token)
                 .nickname(user.getNickname())
+                .userId(user.getId().toString())
                 .userType(user.getUserType())
                 .build();
     }

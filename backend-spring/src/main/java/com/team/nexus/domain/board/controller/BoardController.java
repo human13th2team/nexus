@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Tag(name = "Board", description = "자유게시판 관련 API")
 @RestController
@@ -49,6 +50,24 @@ public class BoardController {
         Map<String, Object> response = new HashMap<>();
         response.put("status", "success");
         response.put("data", boardService.getTopPosts());
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "인기글 목록 조회", description = "추천수가 10개 이상인 인기 게시글 목록을 페이징하여 조회합니다.")
+    @GetMapping("/popular")
+    public ResponseEntity<Map<String, Object>> getPopularPosts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        
+        Page<BoardResponseDto> boardPage = boardService.getPopularPosts(page, size);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("data", boardPage.getContent());
+        response.put("currentPage", boardPage.getNumber());
+        response.put("totalPages", boardPage.getTotalPages());
+        response.put("totalElements", boardPage.getTotalElements());
+        
         return ResponseEntity.ok(response);
     }
 
@@ -90,6 +109,35 @@ public class BoardController {
             
             response.put("status", "success");
             response.put("message", "게시글이 작성되었습니다.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @Operation(summary = "게시글 삭제", description = "게시글을 삭제합니다. (본인 작성 글만 가능)")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, String>> deletePost(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal String email) {
+        
+        Map<String, String> response = new HashMap<>();
+        try {
+            if (email == null) {
+                response.put("status", "error");
+                response.put("message", "로그인이 필요합니다.");
+                return ResponseEntity.status(401).body(response);
+            }
+
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+            
+            boardService.deletePost(id, user);
+            
+            response.put("status", "success");
+            response.put("message", "게시글이 삭제되었습니다.");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.put("status", "error");

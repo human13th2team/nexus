@@ -41,6 +41,10 @@ public class Board {
     @Column(name = "view_count")
     private Integer viewCount;
 
+    @Builder.Default
+    @Column(name = "like_count")
+    private Integer likeCount = 0;
+
     @Column(name = "image_url", columnDefinition = "text")
     private String imageUrl;
 

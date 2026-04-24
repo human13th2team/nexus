@@ -11,7 +11,8 @@ import {
   Eye,
   Clock,
   User,
-  AlertCircle
+  AlertCircle,
+  ThumbsUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
@@ -23,6 +24,8 @@ interface Post {
   imageUrl?: string;
   createdAt: string;
   viewCount: number;
+  commentCount: number;
+  likeCount: number;
 }
 
 export default function BoardPage() {
@@ -32,15 +35,18 @@ export default function BoardPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'all' | 'popular'>('all');
 
   useEffect(() => {
-    fetchPosts(currentPage);
-  }, [currentPage]);
+    fetchPosts(currentPage, activeTab);
+  }, [currentPage, activeTab]);
 
-  const fetchPosts = async (page: number) => {
+  const fetchPosts = async (page: number, tab: 'all' | 'popular' = 'all') => {
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/board?page=${page}&size=10`);
+      const baseUrl = "http://localhost:8080/api/v1/board";
+      const url = tab === "popular" ? `${baseUrl}/popular` : baseUrl;
+      const response = await fetch(`${url}?page=${page}&size=10`);
       const result = await response.json();
       
       if (result.status === "success") {
@@ -94,6 +100,29 @@ export default function BoardPage() {
           </button>
         </div>
 
+        {/* Tabs */}
+        <div className="flex items-center gap-6 mb-6 px-2">
+          <button 
+            onClick={() => { setActiveTab('all'); setCurrentPage(0); }}
+            className={cn(
+              "pb-2 text-sm font-bold transition-all border-b-2",
+              activeTab === 'all' ? "border-[#3b4890] text-[#3b4890]" : "border-transparent text-zinc-400 hover:text-zinc-600"
+            )}
+          >
+            전체글
+          </button>
+          <button 
+            onClick={() => { setActiveTab('popular'); setCurrentPage(0); }}
+            className={cn(
+              "pb-2 text-sm font-bold transition-all border-b-2 flex items-center gap-1.5",
+              activeTab === 'popular' ? "border-[#3b4890] text-[#3b4890]" : "border-transparent text-zinc-400 hover:text-zinc-600"
+            )}
+          >
+            인기글
+            <div className="bg-red-50 text-red-500 text-[10px] px-1.5 py-0.5 rounded border border-red-100 font-black">HOT</div>
+          </button>
+        </div>
+
         {/* Search Bar (Optional) */}
         <div className="relative mb-8">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
@@ -141,9 +170,17 @@ export default function BoardPage() {
                       </span>
                     </td>
                     <td className="py-5 px-4 text-center">
-                      <span className="text-zinc-900 font-bold group-hover:text-black transition-colors">
-                        {post.title}
-                      </span>
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-zinc-900 font-bold group-hover:text-black transition-colors flex items-center justify-center gap-2">
+                          {post.likeCount >= 10 && (
+                            <span className="bg-red-50 text-red-500 text-[9px] px-1 py-0.5 rounded border border-red-100 font-black shrink-0">인기</span>
+                          )}
+                          {post.title}
+                          {post.commentCount > 0 && (
+                            <span className="text-[#3b4890] text-[11px] font-black shrink-0">[{post.commentCount}]</span>
+                          )}
+                        </span>
+                      </div>
                     </td>
                       <td className="py-5 px-4 text-center">
                         <div className="flex items-center justify-center gap-1.5 text-zinc-600 font-medium text-sm">
@@ -157,9 +194,16 @@ export default function BoardPage() {
                         </span>
                       </td>
                     <td className="py-5 px-4 text-center">
-                      <span className="text-sm text-zinc-500 font-medium">
-                        {post.viewCount}
-                      </span>
+                      <div className="flex items-center justify-center gap-3">
+                        <div className="flex items-center gap-1 text-xs text-zinc-500 font-medium">
+                          <Eye className="w-3.5 h-3.5" />
+                          {post.viewCount}
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-[#3b4890] font-bold">
+                          <ThumbsUp className="w-3.5 h-3.5" />
+                          {post.likeCount || 0}
+                        </div>
+                      </div>
                     </td>
                     </tr>
                   ))

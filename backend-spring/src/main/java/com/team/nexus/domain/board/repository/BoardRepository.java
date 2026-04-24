@@ -12,4 +12,5 @@ import java.util.UUID;
 public interface BoardRepository extends JpaRepository<Board, UUID> {
     Page<Board> findAllByOrderByCreatedAtDesc(Pageable pageable);
     java.util.List<Board> findTop3ByOrderByViewCountDesc();
+    Page<Board> findAllByLikeCountGreaterThanEqualOrderByCreatedAtDesc(int likeCount, Pageable pageable);
 }

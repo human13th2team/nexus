@@ -85,6 +85,20 @@ public class CommentServiceImpl implements CommentService {
         commentRepository.save(comment);
     }
 
+
+    @Override
+    @Transactional
+    public void deleteComment(UUID commentId, User user) {
+        Comment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
+        
+        if (comment.getUser() == null || !comment.getUser().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("본인의 댓글만 삭제할 수 있습니다.");
+        }
+        
+        commentRepository.delete(comment);
+    }
+
     private CommentResponseDto convertToDto(Comment comment) {
         boolean isReported = comment.getReportCount() != null && comment.getReportCount() >= 3;
         
@@ -92,6 +106,7 @@ public class CommentServiceImpl implements CommentService {
                 .id(comment.getId())
                 .content(isReported ? "삭제된 댓글입니다." : comment.getContent())
                 .author(isReported ? "---" : (comment.getUser() != null ? comment.getUser().getNickname() : "알 수 없음"))
+                .authorId(comment.getUser() != null ? comment.getUser().getId() : null)
                 .createdAt(comment.getCreatedAt())
                 .reportCount(comment.getReportCount())
                 .children(comment.getChildren().stream()

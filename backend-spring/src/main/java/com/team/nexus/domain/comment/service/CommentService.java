@@ -11,4 +11,5 @@ public interface CommentService {
     void createComment(UUID boardId, CommentRequestDto requestDto, User user);
     List<CommentResponseDto> getCommentsByBoard(UUID boardId);
     void reportComment(UUID commentId, User user);
+    void deleteComment(UUID commentId, User user);
 }

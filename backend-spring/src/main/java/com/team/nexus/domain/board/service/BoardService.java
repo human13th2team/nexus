@@ -15,5 +15,9 @@ public interface BoardService {
     
     BoardResponseDto getPostDetail(UUID id);
     
+    Page<BoardResponseDto> getPopularPosts(int page, int size);
+    
     void createPost(BoardCreateRequestDto requestDto, User user);
+    
+    void deletePost(UUID id, User user);
 }

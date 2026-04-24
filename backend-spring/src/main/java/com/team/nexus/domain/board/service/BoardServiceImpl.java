@@ -3,6 +3,7 @@ package com.team.nexus.domain.board.service;
 import com.team.nexus.domain.board.dto.BoardCreateRequestDto;
 import com.team.nexus.domain.board.dto.BoardResponseDto;
 import com.team.nexus.domain.board.repository.BoardRepository;
+import com.team.nexus.domain.comment.repository.CommentRepository;
 import com.team.nexus.global.entity.Board;
 import com.team.nexus.global.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +20,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class BoardServiceImpl implements BoardService {
-
     private final BoardRepository boardRepository;
+    private final CommentRepository commentRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -32,9 +33,12 @@ public class BoardServiceImpl implements BoardService {
                 .id(board.getId())
                 .title(board.getTitle())
                 .author(board.getIsAnonymous() ? "익명" : board.getUser().getNickname())
+                .authorId(board.getUser().getId())
                 .imageUrl(board.getImageUrl())
                 .createdAt(board.getCreatedAt())
                 .viewCount(board.getViewCount() == null ? 0 : board.getViewCount())
+                .likeCount(board.getLikeCount() == null ? 0 : board.getLikeCount())
+                .commentCount(commentRepository.countByBoardId(board.getId()))
                 .build());
     }
 
@@ -45,7 +49,9 @@ public class BoardServiceImpl implements BoardService {
                 .map(board -> BoardResponseDto.builder()
                         .id(board.getId())
                         .title(board.getTitle())
+                        .authorId(board.getUser().getId())
                         .viewCount(board.getViewCount() == null ? 0 : board.getViewCount())
+                        .likeCount(board.getLikeCount() == null ? 0 : board.getLikeCount())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -65,9 +71,31 @@ public class BoardServiceImpl implements BoardService {
                 .content(board.getContent())
                 .imageUrl(board.getImageUrl())
                 .author(board.getIsAnonymous() ? "익명" : board.getUser().getNickname())
+                .authorId(board.getUser().getId())
                 .createdAt(board.getCreatedAt())
                 .viewCount(board.getViewCount())
+                .likeCount(board.getLikeCount() == null ? 0 : board.getLikeCount())
+                .commentCount(commentRepository.countByBoardId(board.getId()))
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<BoardResponseDto> getPopularPosts(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Board> boards = boardRepository.findAllByLikeCountGreaterThanEqualOrderByCreatedAtDesc(10, pageable);
+        
+        return boards.map(board -> BoardResponseDto.builder()
+                .id(board.getId())
+                .title(board.getTitle())
+                .author(board.getIsAnonymous() ? "익명" : board.getUser().getNickname())
+                .authorId(board.getUser().getId())
+                .imageUrl(board.getImageUrl())
+                .createdAt(board.getCreatedAt())
+                .viewCount(board.getViewCount() == null ? 0 : board.getViewCount())
+                .likeCount(board.getLikeCount() == null ? 0 : board.getLikeCount())
+                .commentCount(commentRepository.countByBoardId(board.getId()))
+                .build());
     }
 
     @Override
@@ -85,5 +113,18 @@ public class BoardServiceImpl implements BoardService {
                 .build();
         
         boardRepository.save(board);
+    }
+
+    @Override
+    @Transactional
+    public void deletePost(UUID id, User user) {
+        Board board = boardRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+        
+        if (!board.getUser().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("본인의 게시글만 삭제할 수 있습니다.");
+        }
+        
+        boardRepository.delete(board);
     }
 }

@@ -24,9 +24,12 @@ interface Post {
   id: string;
   title: string;
   author: string;
+  authorId: string;
   imageUrl?: string;
   createdAt: string;
   viewCount: number;
+  commentCount: number;
+  likeCount: number;
 }
 
 interface PostDetail extends Post {
@@ -43,6 +46,7 @@ interface Comment {
   id: string;
   content: string;
   author: string;
+  authorId: string;
   createdAt: string;
   reportCount: number;
   children: Comment[];
@@ -65,6 +69,8 @@ export default function BoardDetailPage() {
   const [replyContent, setReplyContent] = useState("");
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isLikeLoading, setIsLikeLoading] = useState(false);
   const fetchedRef = React.useRef(false);
 
   const lastFetchedId = React.useRef<string | null>(null);
@@ -75,6 +81,7 @@ export default function BoardDetailPage() {
         lastFetchedId.current = params.id as string;
         fetchPostDetail(params.id as string);
         fetchComments(params.id as string);
+        fetchLikeStatus(params.id as string);
       }
       fetchTopPosts();
       fetchPosts(currentPage);
@@ -135,6 +142,56 @@ export default function BoardDetailPage() {
       }
     } catch (error) {
       console.error("Failed to fetch comments:", error);
+    }
+  };
+  
+  const fetchLikeStatus = async (id: string) => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+    
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/board/like/${id}/status`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      const result = await response.json();
+      if (result.status === "success") {
+        setIsLiked(result.isLiked);
+      }
+    } catch (error) {
+      console.error("Failed to fetch like status:", error);
+    }
+  };
+
+  const handleLike = async () => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      alert("로그인이 필요한 서비스입니다. 로그인 페이지로 이동합니다.");
+      router.push("/auth/login");
+      return;
+    }
+
+    if (isLikeLoading) return;
+
+    setIsLikeLoading(true);
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/board/like/${params.id}`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      const result = await response.json();
+      if (result.status === "success") {
+        setIsLiked(result.isLiked);
+        // Refresh post detail to get updated like count
+        fetchPostDetail(params.id as string);
+      }
+    } catch (error) {
+      console.error("Failed to toggle like:", error);
+    } finally {
+      setIsLikeLoading(false);
     }
   };
 
@@ -204,7 +261,58 @@ export default function BoardDetailPage() {
     }
   };
 
+  const handleDeletePost = async () => {
+    if (!window.confirm("정말로 이 게시글을 삭제하시겠습니까?")) return;
+
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/board/${params.id}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      const result = await response.json();
+      if (result.status === "success") {
+        alert("게시글이 삭제되었습니다.");
+        router.push("/board");
+      } else {
+        alert(result.message || "삭제에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("Failed to delete post:", error);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!window.confirm("정말로 이 댓글을 삭제하시겠습니까?")) return;
+
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/comments/${commentId}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
+      const result = await response.json();
+      if (result.status === "success") {
+        alert("댓글이 삭제되었습니다.");
+        fetchComments(params.id as string);
+      } else {
+        alert(result.message || "삭제에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("Failed to delete comment:", error);
+    }
+  };
+
   const formatDate = (dateString: string) => {
+    if (!dateString) return "";
     const date = new Date(dateString);
     return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
   };
@@ -253,16 +361,31 @@ export default function BoardDetailPage() {
           <div className="flex-1 min-w-0">
             {/* Post Header */}
             <div className="bg-[#fcfcfc] border-t border-zinc-200 py-3 px-4 mb-1">
-              <h2 className="text-[15px] font-bold">
-                <span className="text-zinc-500 mr-1">[일반]</span> {post.title}
+              <h2 className="text-[15px] font-bold flex items-center gap-2">
+                <span className="text-zinc-500">[일반]</span>
+                {post.likeCount >= 10 && (
+                  <span className="bg-red-50 text-red-500 text-[10px] px-1.5 py-0.5 rounded border border-red-100 font-black">인기글</span>
+                )}
+                {post.title}
               </h2>
             </div>
-            <div className="border-b border-zinc-100 py-2 px-4 flex justify-between items-center text-[12px]">
-              <div className="flex items-center gap-2">
-                <span className="font-bold">{post.author}</span>
-                <span className="text-zinc-300">|</span>
-                <span className="text-zinc-500">{formatDate(post.createdAt)}</span>
-              </div>
+              <div className="border-b border-zinc-100 py-2 px-4 flex justify-between items-center text-[12px]">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold">{post.author}</span>
+                  <span className="text-zinc-300">|</span>
+                  <span className="text-zinc-500">{formatDate(post.createdAt)}</span>
+                  {typeof window !== "undefined" && post.authorId && localStorage.getItem("userId")?.toLowerCase() === post.authorId.toLowerCase() && (
+                    <>
+                      <span className="text-zinc-300">|</span>
+                      <button 
+                        onClick={handleDeletePost}
+                        className="text-red-500 hover:underline font-bold"
+                      >
+                        삭제
+                      </button>
+                    </>
+                  )}
+                </div>
               <div className="flex items-center gap-4 text-zinc-500">
                 <div className="flex items-center gap-1">
                   <span className="bg-zinc-200 w-5 h-5 rounded-sm flex items-center justify-center"><Share2 className="w-3 h-3 text-white fill-white" /></span>
@@ -270,9 +393,9 @@ export default function BoardDetailPage() {
                 <div className="flex items-center gap-1">
                   <span>조회 {post.viewCount}</span>
                   <span className="text-zinc-300">|</span>
-                  <span>추천 0</span>
+                  <span>추천 {post.likeCount || 0}</span>
                   <span className="text-zinc-300">|</span>
-                  <span className="bg-zinc-100 px-2 py-0.5 rounded-full text-zinc-600 font-bold">댓글 0</span>
+                  <span className="bg-zinc-100 px-2 py-0.5 rounded-full text-zinc-600 font-bold">댓글 {post.commentCount || 0}</span>
                 </div>
               </div>
             </div>
@@ -300,9 +423,22 @@ export default function BoardDetailPage() {
 
             {/* Bottom Actions */}
             <div className="flex justify-center gap-3 py-12 border-t border-zinc-100">
-              <button className="flex flex-col items-center justify-center w-20 h-20 border border-zinc-200 rounded hover:bg-zinc-50 transition-all group">
-                <ThumbsUp className="w-6 h-6 text-zinc-400 group-hover:text-[#3b4890] mb-1" />
-                <span className="text-[12px] font-bold text-zinc-600">0</span>
+              <button 
+                onClick={handleLike}
+                disabled={isLikeLoading}
+                className={cn(
+                  "flex flex-col items-center justify-center w-20 h-20 border rounded transition-all group",
+                  isLiked ? "border-[#3b4890] bg-blue-50/30" : "border-zinc-200 hover:bg-zinc-50"
+                )}
+              >
+                <ThumbsUp className={cn(
+                  "w-6 h-6 mb-1 transition-colors",
+                  isLiked ? "text-[#3b4890] fill-[#3b4890]/10" : "text-zinc-400 group-hover:text-[#3b4890]"
+                )} />
+                <span className={cn(
+                  "text-[12px] font-bold",
+                  isLiked ? "text-[#3b4890]" : "text-zinc-600"
+                )}>{post.likeCount || 0}</span>
               </button>
               <button 
                 onClick={() => {
@@ -312,12 +448,55 @@ export default function BoardDetailPage() {
                 className="flex flex-col items-center justify-center w-20 h-20 border border-zinc-200 rounded hover:bg-zinc-50 transition-all"
               >
                 <MessageSquare className="w-6 h-6 text-zinc-400 mb-1" />
-                <span className="text-[12px] font-bold text-zinc-600">댓글</span>
+                <span className="text-[12px] font-bold text-zinc-600">{post.commentCount || 0}</span>
               </button>
             </div>
+          </div>
 
-            {/* Comment Section */}
-            <div id="comment-section" className="border-t border-zinc-200 pt-10">
+          {/* Right Sidebar */}
+          <div className="hidden lg:block w-[300px] flex-shrink-0">
+            {/* Advertisement Area - Further Expanded */}
+            <div className="w-full bg-[#f2f2f2] border border-zinc-200 p-4 rounded-sm mb-4 h-[600px] flex flex-col items-center justify-center text-zinc-400 text-sm">
+              <div className="w-full h-full bg-gradient-to-br from-zinc-100 to-zinc-200 flex flex-col items-center justify-center gap-6 text-center p-8">
+                <div className="bg-white p-4 rounded-full shadow-md">
+                  <Info className="w-8 h-8 text-[#3b4890]" />
+                 </div>
+                 <div>
+                   <p className="font-black text-zinc-700 text-lg mb-2">PREMIUM AD</p>
+                   <p className="font-bold text-zinc-500 text-sm leading-relaxed">이곳에 광고를<br/>게재할 수 있습니다</p>
+                 </div>
+                 <div className="mt-auto">
+                   <button className="bg-[#3b4890] text-white px-4 py-2 rounded-lg text-[11px] font-bold hover:bg-[#2e3770] transition-all">
+                     광고 문의하기
+                   </button>
+                 </div>
+               </div>
+             </div>
+             
+             {/* Popular Posts Area - Compact for 3 items */}
+             <div className="border border-zinc-200 rounded-sm p-4 text-[12px] min-h-[220px] flex flex-col bg-white">
+               <h3 className="font-bold border-b border-zinc-100 pb-2 mb-4 text-[#3b4890] text-sm">인기 게시물 TOP 3</h3>
+               <ul className="space-y-4 flex-1">
+                 {topPosts.slice(0, 3).map((tp) => (
+                   <li 
+                     key={tp.id} 
+                     onClick={() => router.push(`/board/${tp.id}`)}
+                     className="flex justify-between text-zinc-600 hover:underline cursor-pointer group items-center"
+                   >
+                     <span className="truncate mr-2 group-hover:text-black transition-colors font-medium">{tp.title}</span>
+                     <span className="text-zinc-400 bg-zinc-50 px-2 py-0.5 rounded-full text-[10px]">{tp.viewCount}</span>
+                   </li>
+                 ))}
+                 {topPosts.length === 0 && (
+                   <li className="text-center py-10 text-zinc-400">인기글이 없습니다.</li>
+                 )}
+               </ul>
+             </div>
+           </div>
+         </div>
+
+         {/* Comment Section - Expanded to Full Width */}
+         <div id="comment-section" className="border-t border-zinc-200 pt-10">
               <div className="flex items-center gap-2 mb-6">
                 <MessageSquare className="w-5 h-5 text-black" />
                 <h3 className="text-lg font-bold">댓글 <span className="text-[#3b4890]">{comments.length}</span></h3>
@@ -354,6 +533,7 @@ export default function BoardDetailPage() {
                     replyContent={replyContent}
                     onReplyContentChange={setReplyContent}
                     onReplySubmit={handleCommentSubmit}
+                    onDelete={handleDeleteComment}
                     isSubmitting={isSubmitting}
                     formatDate={formatDate}
                   />
@@ -362,40 +542,7 @@ export default function BoardDetailPage() {
                   <div className="text-center py-10 text-zinc-400 text-sm">첫 번째 댓글을 남겨보세요.</div>
                 )}
               </div>
-            </div>
-          </div>
-
-          {/* Right Sidebar */}
-          <div className="hidden lg:block w-[300px] flex-shrink-0">
-            <div className="w-full bg-[#f2f2f2] border border-zinc-200 p-4 rounded-sm mb-4 h-[250px] flex flex-col items-center justify-center text-zinc-400 text-sm">
-              <div className="w-full h-full bg-gradient-to-br from-zinc-100 to-zinc-200 flex flex-col items-center justify-center gap-4 text-center p-6">
-                <div className="bg-white p-3 rounded-full shadow-sm">
-                  <Info className="w-6 h-6 text-[#3b4890]" />
-                </div>
-                <p className="font-bold text-zinc-600">광고 및 추천<br/>영역입니다</p>
-              </div>
-            </div>
-            
-            <div className="border border-zinc-200 rounded-sm p-4 text-[12px]">
-              <h3 className="font-bold border-b border-zinc-100 pb-2 mb-2 text-[#3b4890]">인기 게시물</h3>
-              <ul className="space-y-2">
-                {topPosts.map((tp) => (
-                  <li 
-                    key={tp.id} 
-                    onClick={() => router.push(`/board/${tp.id}`)}
-                    className="flex justify-between text-zinc-600 hover:underline cursor-pointer group"
-                  >
-                    <span className="truncate mr-2 group-hover:text-black transition-colors">{tp.title}</span>
-                    <span className="text-zinc-400">{tp.viewCount}</span>
-                  </li>
-                ))}
-                {topPosts.length === 0 && (
-                  <li className="text-center py-4 text-zinc-400">인기글이 없습니다.</li>
-                )}
-              </ul>
-            </div>
-          </div>
-        </div>
+         </div>
 
         {/* Board List Bottom Section - SAME UI AS MAIN BOARD */}
         <div className="mt-8">
@@ -446,7 +593,13 @@ export default function BoardDetailPage() {
                           "text-zinc-900 font-bold group-hover:text-black transition-colors",
                           p.id === post.id ? "text-[#3b4890]" : ""
                         )}>
+                          {p.likeCount >= 10 && (
+                            <span className="bg-red-50 text-red-500 text-[9px] px-1 py-0.5 rounded border border-red-100 font-black shrink-0 mr-1.5">인기</span>
+                          )}
                           {p.title}
+                          {p.commentCount > 0 && (
+                            <span className="ml-1.5 text-[#3b4890] text-[10px] font-black">[{p.commentCount}]</span>
+                          )}
                           {p.id === post.id && <span className="ml-2 text-[10px] bg-[#3b4890] text-white px-1.5 py-0.5 rounded-full">읽는 중</span>}
                         </span>
                       </td>
@@ -500,6 +653,7 @@ interface CommentItemProps {
   replyContent: string;
   onReplyContentChange: (content: string) => void;
   onReplySubmit: (parentId: string) => void;
+  onDelete: (id: string) => void;
   isSubmitting: boolean;
   formatDate: (date: string) => string;
   isChild?: boolean;
@@ -513,13 +667,14 @@ function CommentItem({
   replyContent, 
   onReplyContentChange, 
   onReplySubmit,
+  onDelete,
   isSubmitting,
   formatDate,
   isChild = false 
 }: CommentItemProps) {
   const isDeleted = comment.content === "삭제된 댓글입니다.";
-  const myNickname = typeof window !== "undefined" ? localStorage.getItem("nickname") : null;
-  const isMine = comment.author === myNickname;
+  const myUserId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+  const isMine = comment.authorId?.toLowerCase() === myUserId?.toLowerCase();
 
   return (
     <div className={cn("flex flex-col gap-3 relative", isChild && "pt-4")}>
@@ -532,6 +687,7 @@ function CommentItem({
           <span className="text-zinc-300 text-xs">|</span>
           <span className="text-zinc-400 text-xs">{formatDate(comment.createdAt)}</span>
         </div>
+        <div className="flex items-center gap-2">
         {!isDeleted && !isMine && (
           <button 
             onClick={() => onReport(comment.id)}
@@ -541,6 +697,15 @@ function CommentItem({
             신고
           </button>
         )}
+        {isMine && !isDeleted && (
+          <button 
+            onClick={() => onDelete(comment.id)}
+            className="text-xs text-red-400 hover:text-red-600 font-bold transition-colors"
+          >
+            삭제
+          </button>
+        )}
+        </div>
       </div>
       
       <p className={cn("text-sm leading-relaxed", isDeleted ? "text-zinc-400 italic" : "text-zinc-800", isChild && "ml-5")}>
@@ -594,6 +759,7 @@ function CommentItem({
               replyContent={replyContent}
               onReplyContentChange={onReplyContentChange}
               onReplySubmit={onReplySubmit}
+              onDelete={onDelete}
               isSubmitting={isSubmitting}
               formatDate={formatDate}
               isChild={true}
