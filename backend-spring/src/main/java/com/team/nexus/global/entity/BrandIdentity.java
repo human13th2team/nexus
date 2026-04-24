@@ -39,5 +39,5 @@ public class BrandIdentity {
 
     // Vector type (embedding) is skipped for now or mapping to native if needed
     @Column(name = "embedding", columnDefinition = "vector")
-    private double[] embedding; 
+    private double[] embedding;
 }

@@ -25,7 +25,7 @@ CREATE TABLE industry_categories (
     parent_id   UUID REFERENCES industry_categories(id) ON DELETE SET NULL,
     level       SMALLINT NOT NULL, 
     ksic_code   VARCHAR(20),
-    embedding   VECTOR(768),
+    embedding VECTOR(768),       
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 

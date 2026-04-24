@@ -4,3 +4,7 @@ httpx
 sqlalchemy>=2.0
 asyncpg
 python-dotenv
+pgvector
+google-generativeai
+sentence-transformers
+greenlet
