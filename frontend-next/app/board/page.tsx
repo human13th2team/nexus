@@ -21,7 +21,7 @@ interface Post {
   id: string;
   title: string;
   author: string;
-  imageUrl?: string;
+  imageUrls?: string[];
   createdAt: string;
   viewCount: number;
   commentCount: number;

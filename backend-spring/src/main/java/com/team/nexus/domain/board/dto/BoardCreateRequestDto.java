@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Getter
 @Builder
 @NoArgsConstructor
@@ -15,5 +17,5 @@ public class BoardCreateRequestDto {
     private String regionName;
     private String categoryName;
     private Boolean isAnonymous;
-    private String imageUrl;
+    private List<String> imageUrls;
 }

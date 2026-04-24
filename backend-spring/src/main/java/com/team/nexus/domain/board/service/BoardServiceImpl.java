@@ -3,9 +3,11 @@ package com.team.nexus.domain.board.service;
 import com.team.nexus.domain.auth.repository.UserRepository;
 import com.team.nexus.domain.board.dto.BoardCreateRequestDto;
 import com.team.nexus.domain.board.dto.BoardResponseDto;
+import com.team.nexus.domain.board.dto.BoardUpdateRequestDto;
 import com.team.nexus.domain.board.repository.BoardRepository;
 import com.team.nexus.domain.comment.repository.CommentRepository;
 import com.team.nexus.global.entity.Board;
+import com.team.nexus.global.entity.BoardImage;
 import com.team.nexus.global.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -36,7 +38,7 @@ public class BoardServiceImpl implements BoardService {
                 .title(board.getTitle())
                 .author(board.getIsAnonymous() ? "익명" : board.getUser().getNickname())
                 .authorId(board.getUser().getId())
-                .imageUrl(board.getImageUrl())
+                .imageUrls(board.getImages().stream().map(BoardImage::getImageUrl).collect(Collectors.toList()))
                 .createdAt(board.getCreatedAt())
                 .viewCount(board.getViewCount() == null ? 0 : board.getViewCount())
                 .likeCount(board.getLikeCount() == null ? 0 : board.getLikeCount())
@@ -71,7 +73,7 @@ public class BoardServiceImpl implements BoardService {
                 .id(board.getId())
                 .title(board.getTitle())
                 .content(board.getContent())
-                .imageUrl(board.getImageUrl())
+                .imageUrls(board.getImages().stream().map(BoardImage::getImageUrl).collect(Collectors.toList()))
                 .author(board.getIsAnonymous() ? "익명" : board.getUser().getNickname())
                 .authorId(board.getUser().getId())
                 .createdAt(board.getCreatedAt())
@@ -92,7 +94,7 @@ public class BoardServiceImpl implements BoardService {
                 .title(board.getTitle())
                 .author(board.getIsAnonymous() ? "익명" : board.getUser().getNickname())
                 .authorId(board.getUser().getId())
-                .imageUrl(board.getImageUrl())
+                .imageUrls(board.getImages().stream().map(BoardImage::getImageUrl).collect(Collectors.toList()))
                 .createdAt(board.getCreatedAt())
                 .viewCount(board.getViewCount() == null ? 0 : board.getViewCount())
                 .likeCount(board.getLikeCount() == null ? 0 : board.getLikeCount())
@@ -109,10 +111,22 @@ public class BoardServiceImpl implements BoardService {
                 .regionName(requestDto.getRegionName())
                 .categoryName(requestDto.getCategoryName())
                 .isAnonymous(requestDto.getIsAnonymous() != null && requestDto.getIsAnonymous())
-                .imageUrl(requestDto.getImageUrl())
                 .viewCount(0)
                 .user(user)
                 .build();
+        
+        if (requestDto.getImageUrls() != null && !requestDto.getImageUrls().isEmpty()) {
+            List<BoardImage> boardImages = requestDto.getImageUrls().stream()
+                    .map(url -> BoardImage.builder()
+                            .board(board)
+                            .imageUrl(url)
+                            .sortOrder(requestDto.getImageUrls().indexOf(url))
+                            .build())
+                    .collect(Collectors.toList());
+            board.getImages().addAll(boardImages);
+            // 메인 썸네일 설정 (첫 번째 이미지)
+            board.setImageUrl(requestDto.getImageUrls().get(0));
+        }
         
         boardRepository.save(board);
     }
@@ -135,7 +149,7 @@ public class BoardServiceImpl implements BoardService {
 
     @Override
     @Transactional
-    public BoardResponseDto updatePost(UUID id, com.team.nexus.domain.board.dto.BoardUpdateRequestDto request, String email) {
+    public BoardResponseDto updatePost(UUID id, BoardUpdateRequestDto request, String email) {
         Board board = boardRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
 
@@ -151,7 +165,22 @@ public class BoardServiceImpl implements BoardService {
         board.setRegionName(request.getRegionName());
         board.setCategoryName(request.getCategoryName());
         board.setIsAnonymous(request.getIsAnonymous());
-        board.setImageUrl(request.getImageUrl());
+
+        // 이미지 업데이트
+        board.getImages().clear();
+        if (request.getImageUrls() != null && !request.getImageUrls().isEmpty()) {
+            List<BoardImage> boardImages = request.getImageUrls().stream()
+                    .map(url -> BoardImage.builder()
+                            .board(board)
+                            .imageUrl(url)
+                            .sortOrder(request.getImageUrls().indexOf(url))
+                            .build())
+                    .collect(Collectors.toList());
+            board.getImages().addAll(boardImages);
+            board.setImageUrl(request.getImageUrls().get(0));
+        } else {
+            board.setImageUrl(null);
+        }
 
         Board updatedBoard = boardRepository.save(board);
         return convertToDto(updatedBoard);
@@ -162,7 +191,7 @@ public class BoardServiceImpl implements BoardService {
                 .id(board.getId())
                 .title(board.getTitle())
                 .content(board.getContent())
-                .imageUrl(board.getImageUrl())
+                .imageUrls(board.getImages().stream().map(BoardImage::getImageUrl).collect(Collectors.toList()))
                 .author(board.getIsAnonymous() ? "익명" : board.getUser().getNickname())
                 .authorId(board.getUser().getId())
                 .createdAt(board.getCreatedAt())

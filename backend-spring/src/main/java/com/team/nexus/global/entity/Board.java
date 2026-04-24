@@ -5,6 +5,8 @@ import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -50,6 +52,10 @@ public class Board {
 
     @Column(name = "is_anonymous", columnDefinition = "boolean default false")
     private Boolean isAnonymous;
+
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<BoardImage> images = new ArrayList<>();
 
     @Column(name = "created_at", updatable = false, columnDefinition = "TIMESTAMP WITH TIME ZONE DEFAULT NOW()")
     private LocalDateTime createdAt;

@@ -321,3 +321,14 @@ CREATE TABLE chat_messages (
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- 게시글 이미지 테이블 (다중 이미지 지원)
+CREATE TABLE board_images (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    board_id UUID NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+    image_url TEXT NOT NULL,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_board_images_board_id ON board_images(board_id);

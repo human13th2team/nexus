@@ -18,22 +18,28 @@ export default function BoardCreatePage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [images, setImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setImages(prev => [...prev, ...files]);
+      
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreviews(prev => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      });
     }
   };
 
-  const removeImage = () => {
-    setImagePreview(null);
+  const removeImage = (index: number) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,6 +58,25 @@ export default function BoardCreatePage() {
         return;
       }
 
+      // 1. 이미지 업로드 (FastAPI)
+      let imageUrls: string[] = [];
+      if (images.length > 0) {
+        const formData = new FormData();
+        images.forEach(file => {
+          formData.append("files", file);
+        });
+
+        const uploadResponse = await fetch("http://localhost:8000/api/v1/ai/community/upload", {
+          method: "POST",
+          body: formData,
+        });
+        const uploadResult = await uploadResponse.json();
+        if (uploadResult.status === "success") {
+          imageUrls = uploadResult.urls;
+        }
+      }
+
+      // 2. 게시글 저장 (Spring Boot)
       const response = await fetch("http://localhost:8080/api/v1/board", {
         method: "POST",
         headers: {
@@ -62,7 +87,7 @@ export default function BoardCreatePage() {
           title,
           content,
           isAnonymous,
-          imageUrl: imagePreview // 임시로 Base64 또는 null 전달
+          imageUrls
         })
       });
 
@@ -114,28 +139,43 @@ export default function BoardCreatePage() {
               </div>
 
               {/* Image Upload Area */}
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-zinc-900 ml-1">사진 첨부 (선택)</label>
-                {!imagePreview ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between ml-1">
+                  <label className="text-sm font-bold text-zinc-900">사진 첨부 ({images.length}장)</label>
+                  <label className="cursor-pointer bg-zinc-100 hover:bg-zinc-200 px-3 py-1.5 rounded-xl text-xs font-bold text-zinc-600 transition-all flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5" />
+                    추가하기
+                    <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageChange} />
+                  </label>
+                </div>
+                
+                {imagePreviews.length === 0 ? (
                   <label className="flex flex-col items-center justify-center w-full h-48 bg-zinc-50 border-2 border-dashed border-zinc-200 rounded-[32px] cursor-pointer hover:bg-zinc-100/50 hover:border-zinc-300 transition-all group">
                     <div className="flex flex-col items-center justify-center pt-5 pb-6">
                       <div className="p-4 bg-white rounded-2xl shadow-sm mb-3 group-hover:scale-110 transition-transform">
                         <Camera className="w-6 h-6 text-zinc-400" />
                       </div>
-                      <p className="text-sm text-zinc-500 font-medium">클릭하여 사진 업로드</p>
+                      <p className="text-sm text-zinc-500 font-medium">클릭하여 사진 업로드 (여러 장 가능)</p>
                     </div>
-                    <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                    <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageChange} />
                   </label>
                 ) : (
-                  <div className="relative w-full h-64 rounded-[32px] overflow-hidden group">
-                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                    <button 
-                      type="button"
-                      onClick={removeImage}
-                      className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black text-white rounded-full transition-all backdrop-blur-md"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} className="relative aspect-square rounded-2xl overflow-hidden group shadow-md">
+                        <img src={preview} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                        <button 
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-500 text-white rounded-full transition-all backdrop-blur-sm opacity-0 group-hover:opacity-100"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                        {index === 0 && (
+                          <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 text-white text-[10px] font-bold rounded-lg backdrop-blur-sm">대표</div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>

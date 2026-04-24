@@ -2,6 +2,7 @@ package com.team.nexus.domain.board.controller;
 
 import com.team.nexus.domain.board.dto.BoardCreateRequestDto;
 import com.team.nexus.domain.board.dto.BoardResponseDto;
+import com.team.nexus.domain.board.dto.BoardUpdateRequestDto;
 import com.team.nexus.domain.board.service.BoardService;
 import com.team.nexus.domain.auth.repository.UserRepository;
 import com.team.nexus.global.entity.User;
@@ -128,7 +129,7 @@ public class BoardController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updatePost(
             @PathVariable UUID id,
-            @RequestBody com.team.nexus.domain.board.dto.BoardUpdateRequestDto request,
+            @RequestBody BoardUpdateRequestDto request,
             @AuthenticationPrincipal String email) {
         BoardResponseDto updatedPost = boardService.updatePost(id, request, email);
         return ResponseEntity.ok().body(Map.of(

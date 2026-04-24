@@ -25,7 +25,7 @@ interface Post {
   title: string;
   author: string;
   authorId: string;
-  imageUrl?: string;
+  imageUrls?: string[];
   createdAt: string;
   viewCount: number;
   commentCount: number;
@@ -333,7 +333,7 @@ export default function BoardDetailPage() {
           title: editTitle,
           content: editContent,
           isAnonymous: post?.author === "익명",
-          imageUrl: post?.imageUrl
+          imageUrls: post?.imageUrls
         })
       });
       
@@ -520,13 +520,17 @@ export default function BoardDetailPage() {
                     {post.content}
                   </div>
                   
-                  {post.imageUrl && (
-                    <div className="relative inline-block max-w-full">
-                      <img 
-                        src={post.imageUrl} 
-                        alt="Post content" 
-                        className="max-w-full h-auto border border-zinc-200"
-                      />
+                  {post.imageUrls && post.imageUrls.length > 0 && (
+                    <div className="flex flex-col gap-4 mt-6">
+                      {post.imageUrls.map((url, idx) => (
+                        <div key={idx} className="relative inline-block max-w-full">
+                          <img 
+                            src={url} 
+                            alt={`Post content ${idx}`} 
+                            className="max-w-full h-auto border border-zinc-100 rounded-lg shadow-sm"
+                          />
+                        </div>
+                      ))}
                     </div>
                   )}
                 </>
