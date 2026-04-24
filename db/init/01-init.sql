@@ -16,7 +16,6 @@ CREATE TABLE users (
     biz_no VARCHAR(12),
     address VARCHAR(255),
     login_type INT DEFAULT 0, 
-    access_token VARCHAR(255),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

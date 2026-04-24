@@ -31,7 +31,7 @@ public class User {
     private String passwd;
 
     @Column(name = "user_type")
-    private Integer userType;
+    private Integer userType; // 0: 일반, 1: 사업가, 2: 관리자
 
     @Column(name = "biz_no", length = 12)
     private String bizNo;
@@ -41,7 +41,4 @@ public class User {
 
     @Column(name = "login_type")
     private Integer loginType;
-
-    @Column(name = "access_token")
-    private String accessToken;
 }

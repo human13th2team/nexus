@@ -60,6 +60,13 @@ backend-fastapi/.installed.cfg
 backend-fastapi/*.egg
 backend-fastapi/lib/
 backend-fastapi/lib64/
+backend-fastapi/app/static/
 
 # --- Docker ---
 docker-data/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
