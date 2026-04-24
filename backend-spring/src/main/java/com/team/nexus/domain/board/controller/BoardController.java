@@ -117,32 +117,24 @@ public class BoardController {
         }
     }
 
-    @Operation(summary = "게시글 삭제", description = "게시글을 삭제합니다. (본인 작성 글만 가능)")
+    @Operation(summary = "게시글 삭제", description = "본인이 작성한 게시글을 삭제합니다.")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, String>> deletePost(
-            @PathVariable UUID id,
-            @AuthenticationPrincipal String email) {
-        
-        Map<String, String> response = new HashMap<>();
-        try {
-            if (email == null) {
-                response.put("status", "error");
-                response.put("message", "로그인이 필요합니다.");
-                return ResponseEntity.status(401).body(response);
-            }
+    public ResponseEntity<?> deletePost(@PathVariable UUID id, @AuthenticationPrincipal String email) {
+        boardService.deletePost(id, email);
+        return ResponseEntity.ok().body(Map.of("status", "success", "message", "게시글이 삭제되었습니다."));
+    }
 
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-            
-            boardService.deletePost(id, user);
-            
-            response.put("status", "success");
-            response.put("message", "게시글이 삭제되었습니다.");
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            response.put("status", "error");
-            response.put("message", e.getMessage());
-            return ResponseEntity.badRequest().body(response);
-        }
+    @Operation(summary = "게시글 수정", description = "본인이 작성한 게시글을 수정합니다.")
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updatePost(
+            @PathVariable UUID id,
+            @RequestBody com.team.nexus.domain.board.dto.BoardUpdateRequestDto request,
+            @AuthenticationPrincipal String email) {
+        BoardResponseDto updatedPost = boardService.updatePost(id, request, email);
+        return ResponseEntity.ok().body(Map.of(
+                "status", "success",
+                "message", "게시글이 수정되었습니다.",
+                "data", updatedPost
+        ));
     }
 }

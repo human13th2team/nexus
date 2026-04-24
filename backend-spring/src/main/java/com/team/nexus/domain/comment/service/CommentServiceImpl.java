@@ -1,8 +1,10 @@
 package com.team.nexus.domain.comment.service;
 
+import com.team.nexus.domain.auth.repository.UserRepository;
 import com.team.nexus.domain.board.repository.BoardRepository;
 import com.team.nexus.domain.comment.dto.CommentRequestDto;
 import com.team.nexus.domain.comment.dto.CommentResponseDto;
+import com.team.nexus.domain.comment.dto.CommentUpdateRequestDto;
 import com.team.nexus.domain.comment.repository.CommentReportRepository;
 import com.team.nexus.domain.comment.repository.CommentRepository;
 import com.team.nexus.global.entity.Board;
@@ -24,6 +26,7 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final BoardRepository boardRepository;
     private final CommentReportRepository commentReportRepository;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
@@ -85,18 +88,39 @@ public class CommentServiceImpl implements CommentService {
         commentRepository.save(comment);
     }
 
+    @Override
+    @Transactional
+    public void deleteComment(UUID id, String email) {
+        Comment comment = commentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        if (!comment.getUser().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("본인의 댓글만 삭제할 수 있습니다.");
+        }
+
+        comment.setContent("삭제된 댓글입니다.");
+        commentRepository.save(comment);
+    }
 
     @Override
     @Transactional
-    public void deleteComment(UUID commentId, User user) {
-        Comment comment = commentRepository.findById(commentId)
+    public CommentResponseDto updateComment(UUID id, CommentUpdateRequestDto request, String email) {
+        Comment comment = commentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("댓글을 찾을 수 없습니다."));
-        
-        if (comment.getUser() == null || !comment.getUser().getId().equals(user.getId())) {
-            throw new IllegalArgumentException("본인의 댓글만 삭제할 수 있습니다.");
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        if (!comment.getUser().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("자신이 작성한 댓글만 수정할 수 있습니다.");
         }
-        
-        commentRepository.delete(comment);
+
+        comment.setContent(request.getContent());
+        Comment updatedComment = commentRepository.save(comment);
+        return convertToDto(updatedComment);
     }
 
     private CommentResponseDto convertToDto(Comment comment) {
@@ -104,9 +128,11 @@ public class CommentServiceImpl implements CommentService {
         
         return CommentResponseDto.builder()
                 .id(comment.getId())
+                .boardId(comment.getBoard().getId())
                 .content(isReported ? "삭제된 댓글입니다." : comment.getContent())
                 .author(isReported ? "---" : (comment.getUser() != null ? comment.getUser().getNickname() : "알 수 없음"))
                 .authorId(comment.getUser() != null ? comment.getUser().getId() : null)
+                .parentId(comment.getParent() != null ? comment.getParent().getId() : null)
                 .createdAt(comment.getCreatedAt())
                 .reportCount(comment.getReportCount())
                 .children(comment.getChildren().stream()

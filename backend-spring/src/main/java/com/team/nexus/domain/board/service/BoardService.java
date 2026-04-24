@@ -19,5 +19,6 @@ public interface BoardService {
     
     void createPost(BoardCreateRequestDto requestDto, User user);
     
-    void deletePost(UUID id, User user);
+    void deletePost(UUID id, String email);
+    BoardResponseDto updatePost(UUID id, com.team.nexus.domain.board.dto.BoardUpdateRequestDto request, String email);
 }

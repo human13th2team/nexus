@@ -11,5 +11,6 @@ public interface CommentService {
     void createComment(UUID boardId, CommentRequestDto requestDto, User user);
     List<CommentResponseDto> getCommentsByBoard(UUID boardId);
     void reportComment(UUID commentId, User user);
-    void deleteComment(UUID commentId, User user);
+    void deleteComment(UUID id, String email);
+    com.team.nexus.domain.comment.dto.CommentResponseDto updateComment(UUID id, com.team.nexus.domain.comment.dto.CommentUpdateRequestDto request, String email);
 }

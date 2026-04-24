@@ -1,5 +1,6 @@
 package com.team.nexus.domain.board.service;
 
+import com.team.nexus.domain.auth.repository.UserRepository;
 import com.team.nexus.domain.board.dto.BoardCreateRequestDto;
 import com.team.nexus.domain.board.dto.BoardResponseDto;
 import com.team.nexus.domain.board.repository.BoardRepository;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
 public class BoardServiceImpl implements BoardService {
     private final BoardRepository boardRepository;
     private final CommentRepository commentRepository;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -117,14 +119,56 @@ public class BoardServiceImpl implements BoardService {
 
     @Override
     @Transactional
-    public void deletePost(UUID id, User user) {
+    public void deletePost(UUID id, String email) {
         Board board = boardRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
         
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
         if (!board.getUser().getId().equals(user.getId())) {
             throw new IllegalArgumentException("본인의 게시글만 삭제할 수 있습니다.");
         }
         
         boardRepository.delete(board);
+    }
+
+    @Override
+    @Transactional
+    public BoardResponseDto updatePost(UUID id, com.team.nexus.domain.board.dto.BoardUpdateRequestDto request, String email) {
+        Board board = boardRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        if (!board.getUser().getId().equals(user.getId())) {
+            throw new IllegalArgumentException("자신이 작성한 글만 수정할 수 있습니다.");
+        }
+
+        board.setTitle(request.getTitle());
+        board.setContent(request.getContent());
+        board.setRegionName(request.getRegionName());
+        board.setCategoryName(request.getCategoryName());
+        board.setIsAnonymous(request.getIsAnonymous());
+        board.setImageUrl(request.getImageUrl());
+
+        Board updatedBoard = boardRepository.save(board);
+        return convertToDto(updatedBoard);
+    }
+
+    private BoardResponseDto convertToDto(Board board) {
+        return BoardResponseDto.builder()
+                .id(board.getId())
+                .title(board.getTitle())
+                .content(board.getContent())
+                .imageUrl(board.getImageUrl())
+                .author(board.getIsAnonymous() ? "익명" : board.getUser().getNickname())
+                .authorId(board.getUser().getId())
+                .createdAt(board.getCreatedAt())
+                .viewCount(board.getViewCount())
+                .likeCount(board.getLikeCount() == null ? 0 : board.getLikeCount())
+                .commentCount(commentRepository.countByBoardId(board.getId()))
+                .build();
     }
 }

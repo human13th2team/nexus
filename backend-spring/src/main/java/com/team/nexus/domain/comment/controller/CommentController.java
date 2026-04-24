@@ -102,18 +102,28 @@ public class CommentController {
         
         Map<String, Object> response = new HashMap<>();
         try {
-            if (email == null) {
-                response.put("status", "error");
-                response.put("message", "로그인이 필요합니다.");
-                return ResponseEntity.status(401).body(response);
-            }
-
-            User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-
-            commentService.deleteComment(commentId, user);
+            commentService.deleteComment(commentId, email);
             response.put("status", "success");
             response.put("message", "댓글이 삭제되었습니다.");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("status", "error");
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @PutMapping("/{commentId}")
+    public ResponseEntity<Map<String, Object>> updateComment(
+            @PathVariable UUID commentId,
+            @RequestBody com.team.nexus.domain.comment.dto.CommentUpdateRequestDto requestDto,
+            @AuthenticationPrincipal String email) {
+        
+        Map<String, Object> response = new HashMap<>();
+        try {
+            com.team.nexus.domain.comment.dto.CommentResponseDto updatedComment = commentService.updateComment(commentId, requestDto, email);
+            response.put("status", "success");
+            response.put("data", updatedComment);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.put("status", "error");

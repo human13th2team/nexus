@@ -61,11 +61,16 @@ export default function BoardDetailPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   
   // Comments State
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentContent, setCommentContent] = useState("");
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentContent, setEditCommentContent] = useState("");
   const [replyContent, setReplyContent] = useState("");
   const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -96,6 +101,8 @@ export default function BoardDetailPage() {
       
       if (result.status === "success") {
         setPost(result.data);
+        setEditTitle(result.data.title);
+        setEditContent(result.data.content);
       }
     } catch (error) {
       console.error("Failed to fetch post detail:", error);
@@ -131,7 +138,7 @@ export default function BoardDetailPage() {
     }
   };
 
-  const fetchComments = async (id: string) => {
+  const fetchComments = async (id: string = params.id as string) => {
     try {
       const response = await fetch(`http://localhost:8080/api/v1/comments/${id}`);
       if (!response.ok) return;
@@ -234,44 +241,66 @@ export default function BoardDetailPage() {
     }
   };
 
-  const handleReport = async (commentId: string) => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      alert("로그인이 필요한 서비스입니다. 로그인 페이지로 이동합니다.");
-      router.push("/auth/login");
-      return;
-    }
-
+  const handleReportComment = async (commentId: string) => {
+    if (!confirm("이 댓글을 신고하시겠습니까?")) return;
+    
     try {
       const response = await fetch(`http://localhost:8080/api/v1/comments/report/${commentId}`, {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${token}`
+          "Authorization": `Bearer ${localStorage.getItem("accessToken")}`
         }
       });
       const result = await response.json();
       if (result.status === "success") {
         alert("신고가 접수되었습니다.");
-        fetchComments(params.id as string);
+        fetchComments();
       } else {
-        alert(result.message || "신고 처리에 실패했습니다.");
+        alert(result.message);
       }
     } catch (error) {
-      console.error("Failed to report comment:", error);
+      alert("신고 처리 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleUpdateComment = async (commentId: string) => {
+    if (!editCommentContent.trim()) {
+      alert("댓글 내용을 입력해주세요.");
+      return;
+    }
+    
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/comments/${commentId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("accessToken")}`
+        },
+        body: JSON.stringify({
+          content: editCommentContent
+        })
+      });
+      
+      const result = await response.json();
+      if (result.status === "success") {
+        setEditingCommentId(null);
+        fetchComments();
+      } else {
+        alert(result.message);
+      }
+    } catch (error) {
+      alert("댓글 수정 중 오류가 발생했습니다.");
     }
   };
 
   const handleDeletePost = async () => {
-    if (!window.confirm("정말로 이 게시글을 삭제하시겠습니까?")) return;
-
-    const token = localStorage.getItem("accessToken");
-    if (!token) return;
-
+    if (!confirm("정말 게시글을 삭제하시겠습니까?")) return;
+    
     try {
       const response = await fetch(`http://localhost:8080/api/v1/board/${params.id}`, {
         method: "DELETE",
         headers: {
-          "Authorization": `Bearer ${token}`
+          "Authorization": `Bearer ${localStorage.getItem("accessToken")}`
         }
       });
       const result = await response.json();
@@ -279,10 +308,47 @@ export default function BoardDetailPage() {
         alert("게시글이 삭제되었습니다.");
         router.push("/board");
       } else {
-        alert(result.message || "삭제에 실패했습니다.");
+        alert(result.message);
       }
     } catch (error) {
-      console.error("Failed to delete post:", error);
+      alert("게시글 삭제 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleUpdatePost = async () => {
+    if (!editTitle.trim() || !editContent.trim()) {
+      alert("제목과 내용을 모두 입력해주세요.");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/board/${params.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("accessToken")}`
+        },
+        body: JSON.stringify({
+          title: editTitle,
+          content: editContent,
+          isAnonymous: post?.author === "익명",
+          imageUrl: post?.imageUrl
+        })
+      });
+      
+      const result = await response.json();
+      if (result.status === "success") {
+        alert("게시글이 수정되었습니다.");
+        setPost(result.data);
+        setIsEditing(false);
+      } else {
+        alert(result.message);
+      }
+    } catch (error) {
+      alert("게시글 수정 중 오류가 발생했습니다.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -378,6 +444,13 @@ export default function BoardDetailPage() {
                     <>
                       <span className="text-zinc-300">|</span>
                       <button 
+                        onClick={() => setIsEditing(!isEditing)}
+                        className="text-blue-500 hover:underline font-bold"
+                      >
+                        {isEditing ? "취소" : "수정"}
+                      </button>
+                      <span className="text-zinc-300">|</span>
+                      <button 
                         onClick={handleDeletePost}
                         className="text-red-500 hover:underline font-bold"
                       >
@@ -402,22 +475,61 @@ export default function BoardDetailPage() {
 
             {/* Post Body */}
             <div className="py-8 px-4 min-h-[400px]">
-              <div className="text-[14px] leading-relaxed mb-8 whitespace-pre-wrap font-medium">
-                {post.content}
-              </div>
-              
-              {post.imageUrl && (
-                <div className="relative inline-block max-w-full">
-                  <img 
-                    src={post.imageUrl} 
-                    alt="Post content" 
-                    className="max-w-full h-auto border border-zinc-200"
-                  />
-                  <button className="absolute bottom-4 right-4 bg-black/60 hover:bg-black text-white px-3 py-1.5 rounded text-[11px] font-bold flex items-center gap-1.5 backdrop-blur-sm transition-all">
-                    <span>댓글 열기</span>
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  </button>
+              {isEditing ? (
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">제목 수정</label>
+                    <input 
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="w-full text-lg font-bold border border-zinc-200 rounded-lg p-3 focus:border-black outline-none transition-colors"
+                      placeholder="제목을 입력하세요"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">내용 수정</label>
+                    <textarea 
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className="w-full min-h-[300px] text-sm leading-relaxed border border-zinc-200 rounded-lg p-4 focus:border-black outline-none transition-colors resize-none"
+                      placeholder="내용을 입력하세요"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-2">
+                    <button 
+                      onClick={() => setIsEditing(false)}
+                      className="px-4 py-2 bg-zinc-100 text-zinc-600 rounded-lg font-bold hover:bg-zinc-200 transition-all"
+                    >
+                      취소
+                    </button>
+                    <button 
+                      onClick={handleUpdatePost}
+                      disabled={isSubmitting}
+                      className="px-6 py-2 bg-black text-white rounded-lg font-bold hover:bg-zinc-800 transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                      {isSubmitting ? "저장 중..." : "수정 완료"}
+                    </button>
+                  </div>
                 </div>
+              ) : (
+                <>
+                  <div className="text-[14px] leading-relaxed mb-8 whitespace-pre-wrap font-medium">
+                    {post.content}
+                  </div>
+                  
+                  {post.imageUrl && (
+                    <div className="relative inline-block max-w-full">
+                      <img 
+                        src={post.imageUrl} 
+                        alt="Post content" 
+                        className="max-w-full h-auto border border-zinc-200"
+                      />
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -527,7 +639,7 @@ export default function BoardDetailPage() {
                   <CommentItem 
                     key={comment.id} 
                     comment={comment} 
-                    onReport={handleReport}
+                    onReport={handleReportComment}
                     onReply={(id) => setReplyTargetId(id)}
                     replyTargetId={replyTargetId}
                     replyContent={replyContent}
@@ -536,6 +648,11 @@ export default function BoardDetailPage() {
                     onDelete={handleDeleteComment}
                     isSubmitting={isSubmitting}
                     formatDate={formatDate}
+                    editingCommentId={editingCommentId}
+                    onSetEditingCommentId={setEditingCommentId}
+                    editCommentContent={editCommentContent}
+                    onSetEditCommentContent={setEditCommentContent}
+                    onUpdate={handleUpdateComment}
                   />
                 ))}
                 {comments.length === 0 && (
@@ -657,6 +774,11 @@ interface CommentItemProps {
   isSubmitting: boolean;
   formatDate: (date: string) => string;
   isChild?: boolean;
+  editingCommentId: string | null;
+  onSetEditingCommentId: (id: string | null) => void;
+  editCommentContent: string;
+  onSetEditCommentContent: (content: string) => void;
+  onUpdate: (id: string) => void;
 }
 
 function CommentItem({ 
@@ -670,7 +792,12 @@ function CommentItem({
   onDelete,
   isSubmitting,
   formatDate,
-  isChild = false 
+  isChild = false,
+  editingCommentId,
+  onSetEditingCommentId,
+  editCommentContent,
+  onSetEditCommentContent,
+  onUpdate
 }: CommentItemProps) {
   const isDeleted = comment.content === "삭제된 댓글입니다.";
   const myUserId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
@@ -698,19 +825,55 @@ function CommentItem({
           </button>
         )}
         {isMine && !isDeleted && (
-          <button 
-            onClick={() => onDelete(comment.id)}
-            className="text-xs text-red-400 hover:text-red-600 font-bold transition-colors"
-          >
-            삭제
-          </button>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => {
+                onSetEditingCommentId(comment.id);
+                onSetEditCommentContent(comment.content);
+              }}
+              className="text-xs text-blue-500 hover:text-blue-700 font-bold transition-colors"
+            >
+              수정
+            </button>
+            <span className="text-zinc-200 text-[10px]">|</span>
+            <button 
+              onClick={() => onDelete(comment.id)}
+              className="text-xs text-red-400 hover:text-red-600 font-bold transition-colors"
+            >
+              삭제
+            </button>
+          </div>
         )}
         </div>
       </div>
       
-      <p className={cn("text-sm leading-relaxed", isDeleted ? "text-zinc-400 italic" : "text-zinc-800", isChild && "ml-5")}>
-        {comment.content}
-      </p>
+      {editingCommentId === comment.id ? (
+        <div className={cn("mt-2 bg-white border border-zinc-200 rounded-lg p-3", isChild && "ml-5")}>
+          <textarea 
+            value={editCommentContent}
+            onChange={(e) => onSetEditCommentContent(e.target.value)}
+            className="w-full h-20 bg-transparent resize-none focus:outline-none text-sm"
+          />
+          <div className="flex justify-end gap-2 mt-2">
+            <button 
+              onClick={() => onSetEditingCommentId(null)}
+              className="px-3 py-1 bg-zinc-100 text-zinc-600 rounded text-[11px] font-bold hover:bg-zinc-200"
+            >
+              취소
+            </button>
+            <button 
+              onClick={() => onUpdate(comment.id)}
+              className="bg-black text-white px-4 py-1.5 rounded font-bold text-[11px] hover:bg-zinc-800"
+            >
+              저장
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className={cn("text-sm leading-relaxed", isDeleted ? "text-zinc-400 italic" : "text-zinc-800", isChild && "ml-5")}>
+          {comment.content}
+        </p>
+      )}
 
       {!isDeleted && (
         <div className={cn("flex items-center gap-4", isChild && "ml-5")}>
@@ -763,6 +926,11 @@ function CommentItem({
               isSubmitting={isSubmitting}
               formatDate={formatDate}
               isChild={true}
+              editingCommentId={editingCommentId}
+              onSetEditingCommentId={onSetEditingCommentId}
+              editCommentContent={editCommentContent}
+              onSetEditCommentContent={onSetEditCommentContent}
+              onUpdate={onUpdate}
             />
           ))}
         </div>
