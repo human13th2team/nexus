@@ -592,7 +592,7 @@ export default function BoardDetailPage() {
                  {topPosts.slice(0, 3).map((tp) => (
                    <li 
                      key={tp.id} 
-                     onClick={() => router.push(`/board/${tp.id}`)}
+                     onClick={() => router.push(`/board/detail/${tp.id}`)}
                      className="flex justify-between text-zinc-600 hover:underline cursor-pointer group items-center"
                    >
                      <span className="truncate mr-2 group-hover:text-black transition-colors font-medium">{tp.title}</span>
@@ -692,7 +692,7 @@ export default function BoardDetailPage() {
                       key={p.id} 
                       onClick={() => {
                         if (p.id !== post.id) {
-                          router.push(`/board/${p.id}`);
+                          router.push(`/board/detail/${p.id}`);
                         }
                       }}
                       className={cn(

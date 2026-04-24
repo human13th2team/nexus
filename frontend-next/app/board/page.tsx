@@ -162,7 +162,7 @@ export default function BoardPage() {
                     <tr 
                       key={post.id} 
                       className="group hover:bg-zinc-50/50 transition-colors cursor-pointer"
-                      onClick={() => router.push(`/board/${post.id}`)}
+                      onClick={() => router.push(`/board/detail/${post.id}`)}
                     >
                     <td className="py-5 px-4 text-center">
                       <span className="text-sm font-medium text-zinc-400">
