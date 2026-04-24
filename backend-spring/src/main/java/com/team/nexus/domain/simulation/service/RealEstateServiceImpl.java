@@ -13,12 +13,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.web.reactive.function.client.WebClient;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 
 @Service
 @RequiredArgsConstructor
 public class RealEstateServiceImpl implements RealEstateService {
     private final APIProperties apiProperties;
     private final WebClient realEstateWebClient;
+    private static final XmlMapper XML_MAPPER = new XmlMapper();
 
     private static final int TARGET_COUNT = 5;
 
@@ -27,19 +29,25 @@ public class RealEstateServiceImpl implements RealEstateService {
     public List<ProcessedRealEstateDto> getProcessedRealEstateList(Integer regionCode) {
         List<ProcessedRealEstateDto> under100M = new ArrayList<>();
         List<ProcessedRealEstateDto> over100M = new ArrayList<>();
-
         LocalDate searchDate = LocalDate.now();
 
         for (int i = 0; i < 12; i++) {
             String dealYMD = searchDate.minusMonths(i).format(DateTimeFormatter.ofPattern("yyyyMM"));
+            int pageNo = 1;
+            boolean hasNextPage = true;
 
-            RealEstateAPIResponseDto response = fetchApi(regionCode, dealYMD);
+            while (hasNextPage) {
+                RealEstateAPIResponseDto response = fetchApi(regionCode, dealYMD, pageNo);
 
-            if (response != null && response.getResponse().getBody() != null) {
-                List<RealEstateResponseItemDto> items = response.getResponse().getBody().getItems().getItem();
+                if (response == null || response.getResponse() == null || response.getResponse().getBody() == null) {
+                    break;
+                }
+
+                var body = response.getResponse().getBody();
+                var items = body.getItems() != null ? body.getItems().getItem() : null;
 
                 if (items != null) {
-                    for (RealEstateResponseItemDto item : items) {
+                    for (var item : items) {
                         ProcessedRealEstateDto processed = mapAndCalculate(item);
 
                         if (Boolean.TRUE.equals(processed.getIsWithin100M())) {
@@ -55,23 +63,36 @@ public class RealEstateServiceImpl implements RealEstateService {
                         }
                     }
                 }
+
+                if (pageNo * body.getNumOfRows() < body.getTotalCount()) {
+                    pageNo++;
+                } else {
+                    hasNextPage = false;
+                }
             }
         }
         return combine(under100M, over100M);
     }
 
-    private RealEstateAPIResponseDto fetchApi(Integer regionCode, String dealYMD) {
-        return realEstateWebClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .queryParam("serviceKey", apiProperties.getKey())
-                        .queryParam("LAWD_CD", regionCode)
-                        .queryParam("DEAL_YMD", dealYMD)
-                        .queryParam("numOfRows", 100)
-                        .queryParam("_type", "json")
-                        .build())
-                .retrieve()
-                .bodyToMono(RealEstateAPIResponseDto.class)
-                .block();
+    private RealEstateAPIResponseDto fetchApi(Integer regionCode, String dealYMD, int pageNo) {
+        try {
+            String xmlResponse = realEstateWebClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .queryParam("serviceKey", apiProperties.getKey())
+                            .queryParam("LAWD_CD", regionCode)
+                            .queryParam("DEAL_YMD", dealYMD)
+                            .queryParam("pageNo", pageNo)
+                            .queryParam("numOfRows", 20)
+                            .build())
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            
+            return XML_MAPPER.readValue(xmlResponse, RealEstateAPIResponseDto.class);
+        } catch (Exception e) {
+            System.err.println("Error fetching real estate data: " + e.getMessage());
+            return null;
+        }
     }
 
     private ProcessedRealEstateDto mapAndCalculate(RealEstateResponseItemDto raw) {

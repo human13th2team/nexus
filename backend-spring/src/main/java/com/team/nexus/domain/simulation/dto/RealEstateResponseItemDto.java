@@ -1,5 +1,8 @@
 package com.team.nexus.domain.simulation.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class RealEstateResponseItemDto {
     // API 원본 응답 매핑
     public String sggCd;

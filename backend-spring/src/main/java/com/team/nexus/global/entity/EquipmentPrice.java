@@ -45,7 +45,7 @@ public class EquipmentPrice {
 
     @Column(name = "image_url", length = 500)
     private String image_url;
-
+    // "NAVER", "LLM_NAVER_FIX", "RAG", "LLM"
     @Column(name = "source")
     private String source;
 }

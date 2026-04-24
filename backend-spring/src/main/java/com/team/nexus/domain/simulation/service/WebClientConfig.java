@@ -12,8 +12,8 @@ public class WebClientConfig {
     private final APIProperties apiProperties;
 
     @Bean
-    public WebClient realEstateWebClient() {
-        return WebClient.builder()
+    public WebClient realEstateWebClient(WebClient.Builder builder) {
+        return builder
                 .baseUrl(apiProperties.getUrl())
                 .build();
     }

@@ -1,7 +1,9 @@
 package com.team.nexus.domain.simulation.controller;
 
+import com.team.nexus.domain.simulation.dto.EquipPriceResponseDto;
 import com.team.nexus.domain.simulation.dto.ProcessedRealEstateDto;
 import com.team.nexus.domain.simulation.dto.SimSearchListDto;
+import com.team.nexus.domain.simulation.service.EquipPriceService;
 import com.team.nexus.domain.simulation.service.RealEstateService;
 import com.team.nexus.domain.simulation.service.SimSearchListService;
 import lombok.RequiredArgsConstructor;
@@ -21,15 +23,22 @@ import java.util.List;
 public class SimController {
     private final SimSearchListService simSearchListService;
     private final RealEstateService realEstateService;
+    private final EquipPriceService equipPriceService;
 
-    @GetMapping("search-list")
+    @GetMapping("/search-list")
     public ResponseEntity<SimSearchListDto> getSearchList() {
         return ResponseEntity.ok(simSearchListService.getRegionIndustryList());
     }
 
-    @GetMapping("real-estate")
-    public ResponseEntity<List<ProcessedRealEstateDto>> getProcessedRealEstateList(@RequestParam(defaultValue = "11110") Integer regionCode){
+    @GetMapping("/real-estate")
+    public ResponseEntity<List<ProcessedRealEstateDto>> getProcessedRealEstateList(
+            @RequestParam(defaultValue = "11110") Integer regionCode) {
         return ResponseEntity.ok(realEstateService.getProcessedRealEstateList(regionCode));
     }
-    // @GetMapping("equip-price/{category}")
+
+    @GetMapping("/equip-price")
+    public ResponseEntity<EquipPriceResponseDto> getEquipPriceList(
+            @RequestParam(defaultValue = "R91121") String ksicCode) {
+        return ResponseEntity.ok(equipPriceService.getEquipPriceList(ksicCode));
+    }
 }
