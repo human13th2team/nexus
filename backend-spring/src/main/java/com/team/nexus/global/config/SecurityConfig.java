@@ -30,8 +30,23 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable) // API 서버이므로 CSRF 비활성화
             .authorizeHttpRequests(auth -> auth
+<<<<<<< Updated upstream
                 .requestMatchers("/api/v1/auth/**", "/api/v1/status/**", "/api/v1/comm/**", "/login/oauth2/**", "/oauth2/**").permitAll() // 인증 관련 및 OAuth2 경로 허용
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll() // Swagger 허용
+=======
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/auth/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/status/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/board/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/region-board/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/comments/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/v1/comm/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/login/oauth2/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/oauth2/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/v3/api-docs/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/swagger-ui/**")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/swagger-ui.html")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/error")).permitAll()
+>>>>>>> Stashed changes
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth2 -> oauth2
