@@ -210,7 +210,12 @@ CREATE TABLE equipment_prices (
     industry_category_id UUID REFERENCES industry_categories(id),
     equipment_kr VARCHAR(50) NOT NULL,
     equipment_eng VARCHAR(50) NOT NULL,
-    price INT DEFAULT 0
+    product_name VARCHAR(100),
+    price INT DEFAULT 0,
+    detail VARCHAR(255),
+    link VARCHAR(500),
+    image_url VARCHAR(500),
+    source VARCHAR(20)
 );
 
 CREATE TABLE labor_contracts (
