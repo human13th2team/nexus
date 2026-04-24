@@ -2,6 +2,7 @@ package com.team.nexus.domain.board.service;
 
 import com.team.nexus.domain.board.dto.BoardCreateRequestDto;
 import com.team.nexus.domain.board.dto.BoardResponseDto;
+import com.team.nexus.domain.board.dto.BoardUpdateRequestDto;
 import com.team.nexus.global.entity.User;
 import org.springframework.data.domain.Page;
 
@@ -20,5 +21,6 @@ public interface BoardService {
     void createPost(BoardCreateRequestDto requestDto, User user);
     
     void deletePost(UUID id, String email);
-    BoardResponseDto updatePost(UUID id, com.team.nexus.domain.board.dto.BoardUpdateRequestDto request, String email);
+    BoardResponseDto updatePost(UUID id, BoardUpdateRequestDto request, String email);
+    Page<BoardResponseDto> searchPosts(String keyword, String type, int page, int size);
 }

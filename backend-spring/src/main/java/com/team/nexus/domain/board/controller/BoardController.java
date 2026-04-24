@@ -31,9 +31,16 @@ public class BoardController {
     @GetMapping
     public ResponseEntity<Map<String, Object>> getBoardList(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "all") String type) {
         
-        Page<BoardResponseDto> boardPage = boardService.getBoardList(page, size);
+        Page<BoardResponseDto> boardPage;
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            boardPage = boardService.searchPosts(keyword, type, page, size);
+        } else {
+            boardPage = boardService.getBoardList(page, size);
+        }
         
         Map<String, Object> response = new HashMap<>();
         response.put("status", "success");

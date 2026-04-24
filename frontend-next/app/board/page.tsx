@@ -36,17 +36,29 @@ export default function BoardPage() {
   const [totalElements, setTotalElements] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'popular'>('all');
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchType, setSearchType] = useState("all");
 
   useEffect(() => {
-    fetchPosts(currentPage, activeTab);
-  }, [currentPage, activeTab]);
+    fetchPosts(currentPage, activeTab, searchQuery, searchType);
+  }, [currentPage, activeTab, searchQuery, searchType]);
 
-  const fetchPosts = async (page: number, tab: 'all' | 'popular' = 'all') => {
+  const fetchPosts = async (page: number, tab: 'all' | 'popular' = 'all', keyword: string = "", type: string = "all") => {
     setIsLoading(true);
     try {
       const baseUrl = "http://localhost:8080/api/v1/board";
-      const url = tab === "popular" ? `${baseUrl}/popular` : baseUrl;
-      const response = await fetch(`${url}?page=${page}&size=10`);
+      let url = tab === "popular" ? `${baseUrl}/popular` : baseUrl;
+      
+      const params = new URLSearchParams();
+      params.append("page", page.toString());
+      params.append("size", "10");
+      if (keyword) {
+        params.append("keyword", keyword);
+        params.append("type", type);
+      }
+
+      const response = await fetch(`${url}?${params.toString()}`);
       const result = await response.json();
       
       if (result.status === "success") {
@@ -61,6 +73,13 @@ export default function BoardPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setActiveTab('all');
+    setSearchQuery(searchKeyword);
+    setCurrentPage(0);
   };
 
   const handleCreatePost = () => {
@@ -78,13 +97,24 @@ export default function BoardPage() {
     return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`;
   };
 
+  const handleReset = () => {
+    setSearchKeyword("");
+    setSearchQuery("");
+    setSearchType("all");
+    setActiveTab("all");
+    setCurrentPage(0);
+  };
+
   return (
     <div className="min-h-screen bg-[#fcfcfc] py-12 px-6">
       <div className="max-w-5xl mx-auto">
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div>
-            <h1 className="text-4xl font-black tracking-tighter text-zinc-900 mb-2 flex items-center gap-3">
+            <h1 
+              onClick={handleReset}
+              className="text-4xl font-black tracking-tighter text-zinc-900 mb-2 flex items-center gap-3 cursor-pointer hover:opacity-70 transition-opacity active:scale-95"
+            >
               <MessageSquare className="w-10 h-10 text-black" />
               자유게시판
             </h1>
@@ -99,6 +129,40 @@ export default function BoardPage() {
             게시글 작성
           </button>
         </div>
+
+        {/* Search Bar */}
+        <form onSubmit={handleSearch} className="mb-8">
+          <div className="flex gap-2">
+            <select 
+              value={searchType}
+              onChange={(e) => setSearchType(e.target.value)}
+              className="h-14 px-4 bg-white border border-zinc-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-black/5 focus:border-black transition-all font-bold text-zinc-700 shadow-sm text-sm outline-none"
+            >
+              <option value="all">전체</option>
+              <option value="title">제목</option>
+              <option value="author">작성자</option>
+            </select>
+            <div className="relative flex-1 group">
+              <input 
+                type="text" 
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                placeholder="검색어를 입력하세요"
+                className="w-full h-14 pl-14 pr-6 bg-white border border-zinc-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-black/5 focus:border-black transition-all font-medium text-zinc-900 shadow-sm group-hover:border-zinc-300"
+              />
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400 group-hover:text-black transition-colors" />
+              {searchQuery && (
+                <button 
+                  type="button"
+                  onClick={() => {setSearchKeyword(""); setSearchQuery(""); setSearchType("all");}}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-zinc-400 hover:text-black transition-colors bg-zinc-100 px-2 py-1 rounded-lg"
+                >
+                  초기화
+                </button>
+              )}
+            </div>
+          </div>
+        </form>
 
         {/* Tabs */}
         <div className="flex items-center gap-6 mb-6 px-2">
@@ -123,15 +187,6 @@ export default function BoardPage() {
           </button>
         </div>
 
-        {/* Search Bar (Optional) */}
-        <div className="relative mb-8">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-          <input 
-            type="text" 
-            placeholder="궁금한 내용을 검색해 보세요"
-            className="w-full h-14 pl-12 pr-6 bg-white border border-zinc-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-black/5 focus:border-black transition-all text-sm"
-          />
-        </div>
 
         {/* Board List Table-like cards */}
         <div className="bg-white rounded-[32px] border border-zinc-100 shadow-sm overflow-hidden mb-8">

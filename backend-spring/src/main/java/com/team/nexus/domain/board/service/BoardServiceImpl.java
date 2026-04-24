@@ -186,6 +186,29 @@ public class BoardServiceImpl implements BoardService {
         return convertToDto(updatedBoard);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public Page<BoardResponseDto> searchPosts(String keyword, String type, int page, int size) {
+        String trimmedKeyword = (keyword != null) ? keyword.trim() : "";
+        org.springframework.data.domain.Sort sort = org.springframework.data.domain.Sort.by("createdAt").descending();
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<Board> boards;
+        
+        if ("title".equals(type)) {
+            boards = boardRepository.findByTitleContainingOrderByCreatedAtDesc(trimmedKeyword, pageable);
+        } else if ("author".equals(type)) {
+            if ("익명".equals(trimmedKeyword)) {
+                boards = boardRepository.findByIsAnonymousTrueOrderByCreatedAtDesc(pageable);
+            } else {
+                boards = boardRepository.findByPublicUserNickname(trimmedKeyword, pageable);
+            }
+        } else {
+            boards = boardRepository.findByKeywordAll(trimmedKeyword, pageable);
+        }
+        
+        return boards.map(this::convertToDto);
+    }
+
     private BoardResponseDto convertToDto(Board board) {
         return BoardResponseDto.builder()
                 .id(board.getId())
