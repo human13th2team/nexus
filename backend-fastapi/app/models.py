@@ -156,7 +156,7 @@ class Survey(Base):
 
     # Relationships
     license_industry: Mapped["LicenseIndustry"] = relationship(back_populates="surveys")
-    condition_documents: Mapped[List["ConditionDocument"]] = relationship(back_populates="survey", cascade="all, delete-orphan")
+    survey_documents: Mapped[List["SurveyDocument"]] = relationship(back_populates="survey", cascade="all, delete-orphan")
 
 class Document(Base):
     __tablename__ = "documents"
@@ -169,10 +169,10 @@ class Document(Base):
 
     # Relationships
     license_industry: Mapped["LicenseIndustry"] = relationship(back_populates="documents")
-    condition_links: Mapped[List["ConditionDocument"]] = relationship(back_populates="document")
+    survey_links: Mapped[List["SurveyDocument"]] = relationship(back_populates="document")
 
-class ConditionDocument(Base):
-    __tablename__ = "condition_documents"
+class SurveyDocument(Base):
+    __tablename__ = "survey_documents"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     survey_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("surveys.id", ondelete="CASCADE"), nullable=False)
@@ -180,8 +180,8 @@ class ConditionDocument(Base):
     document_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("documents.id"), nullable=False)
 
     # Relationships
-    survey: Mapped["Survey"] = relationship(back_populates="condition_documents")
-    document: Mapped["Document"] = relationship(back_populates="condition_links")
+    survey: Mapped["Survey"] = relationship(back_populates="survey_documents")
+    document: Mapped["Document"] = relationship(back_populates="survey_links")
 
 class ChecklistStep(Base):
     __tablename__ = "checklist_steps"

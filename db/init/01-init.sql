@@ -109,7 +109,7 @@ CREATE TABLE documents (
     is_common BOOLEAN NOT NULL DEFAULT FALSE
 );
 
-CREATE TABLE condition_documents (
+CREATE TABLE survey_documents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     survey_id UUID NOT NULL REFERENCES surveys(id) ON DELETE CASCADE,
     answer BOOLEAN NOT NULL,

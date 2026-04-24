@@ -7,13 +7,13 @@ import org.hibernate.annotations.GenericGenerator;
 import java.util.UUID;
 
 @Entity
-@Table(name = "condition_documents")
+@Table(name = "survey_documents")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ConditionDocument {
+public class SurveyDocument {
 
     @Id
     @GeneratedValue(generator = "UUID")
