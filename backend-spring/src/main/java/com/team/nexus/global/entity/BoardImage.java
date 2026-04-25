@@ -7,13 +7,13 @@ import org.hibernate.annotations.GenericGenerator;
 import java.util.UUID;
 
 @Entity
-@Table(name = "condition_documents")
+@Table(name = "board_images")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ConditionDocument {
+public class BoardImage {
 
     @Id
     @GeneratedValue(generator = "UUID")
@@ -22,13 +22,12 @@ public class ConditionDocument {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "survey_id", nullable = false)
-    private Survey survey;
+    @JoinColumn(name = "board_id", nullable = false)
+    private Board board;
 
-    @Column(name = "answer", nullable = false)
-    private Boolean answer;
+    @Column(name = "image_url", nullable = false, columnDefinition = "text")
+    private String imageUrl;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "document_id", nullable = false)
-    private Document document;
+    @Column(name = "sort_order")
+    private Integer sortOrder;
 }

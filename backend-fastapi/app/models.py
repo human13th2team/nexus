@@ -38,9 +38,14 @@ class EquipmentPrice(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     industry_category_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("industry_categories.id"))
-    equipment_kr: Mapped[str] = mapped_column(String(50), nullable=False)
-    equipment_eng: Mapped[str] = mapped_column(String(50), nullable=False)
-    price: Mapped[int] = mapped_column(Integer, server_default=text("0"))
+    equipment_kr: Mapped[Optional[str]] = mapped_column(String)
+    equipment_eng: Mapped[Optional[str]] = mapped_column(String)
+    product_name: Mapped[Optional[str]] = mapped_column(String)
+    price: Mapped[Optional[int]] = mapped_column(Integer)
+    detail: Mapped[Optional[str]] = mapped_column(String)
+    link: Mapped[Optional[str]] = mapped_column(String(500))
+    image_url: Mapped[Optional[str]] = mapped_column(String(500))
+    source: Mapped[Optional[str]] = mapped_column(String)
 
     # Relationships
     industry_category: Mapped[Optional["IndustryCategory"]] = relationship(back_populates="equipment_prices")
@@ -99,7 +104,7 @@ class BrandIdentity(Base):
     slogan: Mapped[Optional[str]] = mapped_column(String(255))
     brand_story: Mapped[Optional[str]] = mapped_column(Text)
     is_selected: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text("false"))
-    # embedding column (vector) is skipped or mapped to Text/JSON for now if pgvector is not available in the model
+    embedding: Mapped[Optional[Vector]] = mapped_column(Vector(768)) # AI 의미 검색용 벡터
     
     # Relationships
     branding: Mapped["Branding"] = relationship(back_populates="identities")
@@ -156,7 +161,7 @@ class Survey(Base):
 
     # Relationships
     license_industry: Mapped["LicenseIndustry"] = relationship(back_populates="surveys")
-    condition_documents: Mapped[List["ConditionDocument"]] = relationship(back_populates="survey", cascade="all, delete-orphan")
+    survey_documents: Mapped[List["SurveyDocument"]] = relationship(back_populates="survey", cascade="all, delete-orphan")
 
 class Document(Base):
     __tablename__ = "documents"
@@ -169,10 +174,10 @@ class Document(Base):
 
     # Relationships
     license_industry: Mapped["LicenseIndustry"] = relationship(back_populates="documents")
-    condition_links: Mapped[List["ConditionDocument"]] = relationship(back_populates="document")
+    survey_links: Mapped[List["SurveyDocument"]] = relationship(back_populates="document")
 
-class ConditionDocument(Base):
-    __tablename__ = "condition_documents"
+class SurveyDocument(Base):
+    __tablename__ = "survey_documents"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     survey_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("surveys.id", ondelete="CASCADE"), nullable=False)
@@ -180,8 +185,8 @@ class ConditionDocument(Base):
     document_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("documents.id"), nullable=False)
 
     # Relationships
-    survey: Mapped["Survey"] = relationship(back_populates="condition_documents")
-    document: Mapped["Document"] = relationship(back_populates="condition_links")
+    survey: Mapped["Survey"] = relationship(back_populates="survey_documents")
+    document: Mapped["Document"] = relationship(back_populates="survey_links")
 
 class ChecklistStep(Base):
     __tablename__ = "checklist_steps"
@@ -239,7 +244,7 @@ class Subsidy(Base):
     description: Mapped[Optional[str]] = mapped_column(Text)
     eligibility: Mapped[Optional[str]] = mapped_column(Text)
     apply_url: Mapped[Optional[str]] = mapped_column(String(500))
-    # embedding column (vector) is skipped
+    embedding: Mapped[Optional[Vector]] = mapped_column(Vector(1536)) # AI 의미 검색용 벡터
     updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
 class Sale(Base):
@@ -332,6 +337,7 @@ class Board(Base):
     region_name: Mapped[Optional[str]] = mapped_column(String(20))
     category_name: Mapped[Optional[str]] = mapped_column(String(20))
     view_count: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("0"))
+    like_count: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("0"))
     image_url: Mapped[Optional[str]] = mapped_column(String(255))
     is_anonymous: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text("false"))
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
@@ -339,6 +345,18 @@ class Board(Base):
     # Relationships
     user: Mapped["User"] = relationship(back_populates="boards")
     comments: Mapped[List["Comment"]] = relationship(back_populates="board", cascade="all, delete-orphan")
+    images: Mapped[List["BoardImage"]] = relationship(back_populates="board", cascade="all, delete-orphan")
+
+class BoardImage(Base):
+    __tablename__ = "board_images"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    board_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("boards.id", ondelete="CASCADE"), nullable=False)
+    image_url: Mapped[str] = mapped_column(Text, nullable=False)
+    sort_order: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("0"))
+
+    # Relationships
+    board: Mapped["Board"] = relationship(back_populates="images")
 
 class Comment(Base):
     __tablename__ = "comments"

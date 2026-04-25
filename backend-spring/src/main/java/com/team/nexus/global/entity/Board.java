@@ -40,9 +40,26 @@ public class Board {
     @Column(name = "view_count")
     private Integer viewCount;
 
+    @Column(name = "like_count")
+    private Integer likeCount;
+
     @Column(name = "image_url")
     private String imageUrl;
 
     @Column(name = "is_anonymous")
     private Boolean isAnonymous;
+
+    @Column(name = "created_at", updatable = false)
+    private java.time.LocalDateTime createdAt;
+
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private java.util.List<BoardImage> images = new java.util.ArrayList<>();
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = java.time.LocalDateTime.now();
+        if (this.viewCount == null) this.viewCount = 0;
+        if (this.likeCount == null) this.likeCount = 0;
+    }
 }

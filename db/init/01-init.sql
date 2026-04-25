@@ -109,7 +109,7 @@ CREATE TABLE documents (
     is_common BOOLEAN NOT NULL DEFAULT FALSE
 );
 
-CREATE TABLE condition_documents (
+CREATE TABLE survey_documents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     survey_id UUID NOT NULL REFERENCES surveys(id) ON DELETE CASCADE,
     answer BOOLEAN NOT NULL,
@@ -210,7 +210,12 @@ CREATE TABLE equipment_prices (
     industry_category_id UUID REFERENCES industry_categories(id),
     equipment_kr VARCHAR(50) NOT NULL,
     equipment_eng VARCHAR(50) NOT NULL,
-    price INT DEFAULT 0
+    product_name VARCHAR(100),
+    price INT DEFAULT 0,
+    detail VARCHAR(255),
+    link VARCHAR(500),
+    image_url VARCHAR(500),
+    source VARCHAR(20)
 );
 
 CREATE TABLE labor_contracts (
@@ -242,9 +247,17 @@ CREATE TABLE boards (
     region_name VARCHAR(20),
     category_name VARCHAR(20),
     view_count INT DEFAULT 0,
+    like_count INT DEFAULT 0,
     image_url VARCHAR(255),
     is_anonymous BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE board_images (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    board_id UUID NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+    image_url TEXT NOT NULL,
+    sort_order INT DEFAULT 0
 );
 
 CREATE TABLE comments (
