@@ -34,4 +34,7 @@ public class ChatMessage {
 
     @Column(name = "is_read")
     private Boolean isRead;
+
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private java.time.LocalDateTime createdAt;
 }

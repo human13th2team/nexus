@@ -41,4 +41,7 @@ public class IndustryCategory {
 
     @Column(name = "embedding", columnDefinition = "vector(768)")
     private double[] embedding;
+
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private java.time.LocalDateTime createdAt;
 }

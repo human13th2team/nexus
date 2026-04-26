@@ -41,4 +41,7 @@ public class User {
 
     @Column(name = "login_type")
     private Integer loginType;
+
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private java.time.LocalDateTime createdAt;
 }

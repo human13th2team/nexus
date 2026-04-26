@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -22,6 +23,7 @@ public class BrandingServiceImpl implements BrandingService {
 
     private final BrandingRepository brandingRepository;
     private final BrandIdentityRepository brandIdentityRepository;
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
     @Override
     public List<BrandingListDto> getBrandingList(UUID userId) {
@@ -31,6 +33,7 @@ public class BrandingServiceImpl implements BrandingService {
                         .title(branding.getTitle())
                         .industryCategoryId(branding.getIndustryCategoryId())
                         .currentStep(branding.getCurrentStep())
+                        .createdAt(branding.getCreatedAt() != null ? branding.getCreatedAt().format(DATE_FORMATTER) : null)
                         .build())
                 .collect(Collectors.toList());
     }
@@ -48,6 +51,7 @@ public class BrandingServiceImpl implements BrandingService {
                 .industryCategoryId(branding.getIndustryCategoryId())
                 .keywords(branding.getKeywords())
                 .currentStep(branding.getCurrentStep())
+                .createdAt(branding.getCreatedAt() != null ? branding.getCreatedAt().format(DATE_FORMATTER) : null)
                 .identities(identities.stream()
                         .map(identity -> BrandIdentityDto.builder()
                                 .id(identity.getId())

@@ -12,4 +12,5 @@ public class BrandingListDto {
     private String title;
     private UUID industryCategoryId;
     private String currentStep;
+    private String createdAt;
 }

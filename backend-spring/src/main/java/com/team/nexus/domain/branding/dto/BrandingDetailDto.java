@@ -15,5 +15,6 @@ public class BrandingDetailDto {
     private UUID industryCategoryId;
     private Map<String, Object> keywords;
     private String currentStep;
+    private String createdAt;
     private List<BrandIdentityDto> identities;
 }
