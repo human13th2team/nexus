@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, func
+from sqlalchemy import select, update, func, and_
 from sqlalchemy.orm import load_only
-from app.models import Branding, BrandIdentity, LogoAsset, IndustryCategory
+from app.models import Branding, BrandIdentity, LogoAsset, IndustryCategory, MarketingAsset
 from app.domain.branding.brandingSchema import BrandingCreateRequest, BrandingInterviewRequest, ChatRequest
 from app.core.ai_client import get_ai_client
 import json
@@ -282,11 +282,22 @@ async def generate_brand_logo(db: AsyncSession, identity_id: uuid.UUID):
     if not identity:
         return None
         
-    # [대표님 요청] 최종 브랜드 이름이 결정되었으므로 Branding 프로젝트의 제목을 업데이트합니다.
-    if identity.branding and identity.branding.title != identity.brand_name:
-        identity.branding.title = identity.brand_name
+    if identity.branding:
+        # [대표님 요청] 최종 브랜드 이름이 결정되었으므로 Branding 프로젝트의 제목을 업데이트합니다.
+        if identity.branding.title != identity.brand_name:
+            identity.branding.title = identity.brand_name
+        
         # current_step도 업데이트 (인터뷰 -> 로고 생성 단계로)
         identity.branding.current_step = "LOGO_GENERATION"
+        
+        # [상태 반영] 선택된 아이덴티티의 is_selected를 True로, 나머지는 False로 설정
+        await db.execute(
+            update(BrandIdentity)
+            .where(BrandIdentity.branding_id == identity.branding_id)
+            .values(is_selected=False)
+        )
+        identity.is_selected = True
+        
         await db.commit()
         
     # 2. 로고용 시각화 프롬프트 3종 생성
@@ -412,7 +423,30 @@ async def generate_marketing_assets(db: AsyncSession, identity_id: uuid.UUID):
 
         tasks = [create_asset_file(b, i) for i, b in enumerate(asset_blocks[:3])]
         results = await asyncio.gather(*tasks)
-        return [r for r in results if r is not None]
+        
+        # [DB 저장] 생성된 에셋 정보를 marketing_assets 테이블에 저장
+        final_results = []
+        for r in results:
+            if r:
+                # Type 정규화 (Business Card -> BUSINESS_CARD 등)
+                raw_type = r.get("type", "Marketing Asset").upper().replace(" ", "_")
+                
+                new_asset = MarketingAsset(
+                    id=uuid.UUID(r["id"]),
+                    identity_id=identity_id,
+                    type=raw_type,
+                    file_url=r["imageUrl"]
+                )
+                db.add(new_asset)
+                final_results.append(r)
+        
+        # 브랜딩 단계 완료 업데이트
+        if identity.branding:
+            identity.branding.current_step = "COMPLETED"
+            identity.branding.title = identity.brand_name # 최종 브랜드 이름으로 제목 업데이트
+            
+        await db.commit()
+        return final_results
     except Exception as e:
         import traceback
         print(f"CRITICAL ERROR in generate_marketing_assets:\n{traceback.format_exc()}")
@@ -466,6 +500,8 @@ async def finalize_brand_logo(db: AsyncSession, identity_id: uuid.UUID, image_ur
             .where(Branding.id == identity.branding_id)
             .values(title=identity.brand_name, current_step="LOGO_GENERATION")
         )
+        # 아이덴티티 선택 상태 보장
+        identity.is_selected = True
         await db.commit()
         
     return new_logo

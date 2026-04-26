@@ -3,10 +3,15 @@ package com.team.nexus.domain.branding.service;
 import com.team.nexus.domain.branding.dto.BrandIdentityDto;
 import com.team.nexus.domain.branding.dto.BrandingDetailDto;
 import com.team.nexus.domain.branding.dto.BrandingListDto;
+import com.team.nexus.domain.branding.dto.MarketingAssetDto;
 import com.team.nexus.domain.branding.repository.BrandIdentityRepository;
 import com.team.nexus.domain.branding.repository.BrandingRepository;
+import com.team.nexus.domain.branding.repository.LogoAssetRepository;
+import com.team.nexus.domain.branding.repository.MarketingAssetRepository;
 import com.team.nexus.global.entity.BrandIdentity;
 import com.team.nexus.global.entity.Branding;
+import com.team.nexus.global.entity.LogoAsset;
+import com.team.nexus.global.entity.MarketingAsset;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +28,8 @@ public class BrandingServiceImpl implements BrandingService {
 
     private final BrandingRepository brandingRepository;
     private final BrandIdentityRepository brandIdentityRepository;
+    private final LogoAssetRepository logoAssetRepository;
+    private final MarketingAssetRepository marketingAssetRepository;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy.MM.dd");
 
     @Override
@@ -59,6 +66,18 @@ public class BrandingServiceImpl implements BrandingService {
                                 .slogan(identity.getSlogan())
                                 .brandStory(identity.getBrandStory())
                                 .isSelected(identity.getIsSelected())
+                                .logoUrl(logoAssetRepository.findByBrandIdentity(identity).stream()
+                                        .filter(logo -> Boolean.TRUE.equals(logo.getIsFinal()))
+                                        .findFirst()
+                                        .map(LogoAsset::getImageUrl)
+                                        .orElse(null))
+                                .marketingAssets(marketingAssetRepository.findByBrandIdentity(identity).stream()
+                                        .map(asset -> MarketingAssetDto.builder()
+                                                .id(asset.getId())
+                                                .type(asset.getType())
+                                                .fileUrl(asset.getFileUrl())
+                                                .build())
+                                        .collect(Collectors.toList()))
                                 .build())
                         .collect(Collectors.toList()))
                 .build();

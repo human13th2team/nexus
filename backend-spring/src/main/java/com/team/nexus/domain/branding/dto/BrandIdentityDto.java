@@ -13,4 +13,6 @@ public class BrandIdentityDto {
     private String slogan;
     private String brandStory;
     private Boolean isSelected;
+    private String logoUrl;
+    private java.util.List<MarketingAssetDto> marketingAssets;
 }

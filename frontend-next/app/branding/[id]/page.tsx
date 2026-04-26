@@ -17,6 +17,12 @@ interface BrandIdentity {
   slogan: string;
   brandStory: string;
   isSelected: boolean;
+  logoUrl?: string;
+  marketingAssets?: {
+    id: string;
+    type: string;
+    fileUrl: string;
+  }[];
 }
 
 interface BrandDetail {
@@ -29,6 +35,7 @@ interface BrandDetail {
 }
 
 const API_BASE_URL = "http://localhost:8080/api/v1";
+const FASTAPI_BASE_URL = "http://localhost:8000";
 
 export default function BrandDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -106,31 +113,57 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
                 <h4 className="text-2xl font-black mb-2">{identity.brandName}</h4>
                 <p className="text-sm font-bold italic text-gray-400 mb-6">"{identity.slogan}"</p>
-                <div className="p-4 bg-gray-50 rounded-2xl">
+                <div className="p-4 bg-gray-50 rounded-2xl mb-6">
                   <p className="text-xs leading-relaxed text-gray-600 line-clamp-4">{identity.brandStory}</p>
                 </div>
+                
+                {identity.isSelected && identity.logoUrl && (
+                  <div className="mt-4 p-4 border border-dashed border-gray-200 rounded-2xl flex flex-col items-center gap-2">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase">Confirmed Logo</span>
+                    <img 
+                      src={`${FASTAPI_BASE_URL}${identity.logoUrl}`} 
+                      alt="Selected Logo" 
+                      className="h-20 object-contain"
+                    />
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </section>
 
-        {/* Assets Preview (Mock) */}
+        {/* Assets Preview */}
         <section className="space-y-8">
           <h3 className="text-2xl font-black tracking-tight">Brand Assets</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              { label: 'Logo Pack', icon: <Palette className="w-6 h-6" /> },
-              { label: 'Typography', icon: <Layers className="w-6 h-6" /> },
-              { label: 'Marketing Kit', icon: <Share2 className="w-6 h-6" /> },
-              { label: 'Social Banners', icon: <Calendar className="w-6 h-6" /> },
-            ].map((asset, i) => (
-              <div key={i} className="aspect-square bg-white border border-gray-100 rounded-[2rem] flex flex-col items-center justify-center gap-4 hover:shadow-lg transition-all cursor-pointer group">
-                <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                  {asset.icon}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {brand.identities.find(i => i.isSelected)?.marketingAssets?.length ? (
+              brand.identities.find(i => i.isSelected)?.marketingAssets?.map((asset) => (
+                <div key={asset.id} className="group flex flex-col gap-4">
+                  <div className="relative aspect-[4/3] bg-gray-50 rounded-[2rem] overflow-hidden border border-gray-100 transition-all hover:shadow-xl hover:-translate-y-1">
+                    <img 
+                      src={`${FASTAPI_BASE_URL}${asset.fileUrl}`} 
+                      alt={asset.type} 
+                      className="w-full h-full object-cover transition-all group-hover:scale-105" 
+                    />
+                  </div>
+                  <div className="px-2">
+                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                      {asset.type.replace('_', ' ')}
+                    </h4>
+                    <p className="text-sm font-bold text-gray-900 mt-1">
+                      {asset.type === 'BUSINESS_CARD' ? 'Business Card Mockup' : 
+                       asset.type === 'MENU' ? 'Restaurant Menu Design' : 
+                       asset.type === 'POSTER' ? 'Brand Promotion Poster' : 'Marketing Asset'}
+                    </p>
+                  </div>
                 </div>
-                <span className="text-xs font-bold">{asset.label}</span>
+              ))
+            ) : (
+              <div className="col-span-full py-20 bg-gray-50 rounded-[3rem] border border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400">
+                <Palette className="w-12 h-12 mb-4 opacity-20" />
+                <p className="text-sm font-medium">마케팅 에셋이 아직 생성되지 않았습니다.</p>
               </div>
-            ))}
+            )}
           </div>
         </section>
       </main>
