@@ -44,6 +44,9 @@ dependencies {
 
     // Webclient
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // XML parsing
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 }
 
 tasks.named('test') {
