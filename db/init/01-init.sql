@@ -33,7 +33,9 @@ CREATE TABLE region_codes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     region_code INT NOT NULL,
     city_name VARCHAR(10) NOT NULL,
-    county_name VARCHAR(10) NOT NULL
+    county_name VARCHAR(10),
+    latitude DECIMAL(13, 10),
+    longitude DECIMAL(13, 10)
 );
 
 ---------------------------------------
