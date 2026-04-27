@@ -4,6 +4,12 @@ httpx
 sqlalchemy>=2.0
 asyncpg
 python-dotenv
+pytesseract
+pillow
+ollama
+python-multipart
+pydantic
+psycopg2-binary
 pgvector
 google-generativeai
 sentence-transformers
