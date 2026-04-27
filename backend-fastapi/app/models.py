@@ -38,9 +38,14 @@ class EquipmentPrice(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     industry_category_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("industry_categories.id"))
-    equipment_kr: Mapped[str] = mapped_column(String(50), nullable=False)
-    equipment_eng: Mapped[str] = mapped_column(String(50), nullable=False)
-    price: Mapped[int] = mapped_column(Integer, server_default=text("0"))
+    equipment_kr: Mapped[Optional[str]] = mapped_column(String)
+    equipment_eng: Mapped[Optional[str]] = mapped_column(String)
+    product_name: Mapped[Optional[str]] = mapped_column(String)
+    price: Mapped[Optional[int]] = mapped_column(Integer)
+    detail: Mapped[Optional[str]] = mapped_column(String)
+    link: Mapped[Optional[str]] = mapped_column(String(500))
+    image_url: Mapped[Optional[str]] = mapped_column(String(500))
+    source: Mapped[Optional[str]] = mapped_column(String)
 
     # Relationships
     industry_category: Mapped[Optional["IndustryCategory"]] = relationship(back_populates="equipment_prices")

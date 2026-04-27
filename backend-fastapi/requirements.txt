@@ -10,3 +10,7 @@ ollama
 python-multipart
 pydantic
 psycopg2-binary
+pgvector
+google-generativeai
+sentence-transformers
+greenlet
