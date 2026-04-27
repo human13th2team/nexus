@@ -3,6 +3,7 @@ package com.team.nexus.domain.branding.dto;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -14,5 +15,5 @@ public class BrandIdentityDto {
     private String brandStory;
     private Boolean isSelected;
     private String logoUrl;
-    private java.util.List<MarketingAssetDto> marketingAssets;
+    private List<MarketingAssetDto> marketingAssets;
 }
