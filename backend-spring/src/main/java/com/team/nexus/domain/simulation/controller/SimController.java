@@ -28,23 +28,34 @@ public class SimController {
     private final EquipPriceService equipPriceService;
     private final StoresService storesService;
 
+    // 창업 시뮬레이션 업종 및 지역 검색 리스트
     @GetMapping("/search-list")
     public ResponseEntity<SimSearchListDto> getSearchList() {
         return ResponseEntity.ok(simSearchListService.getRegionIndustryList());
     }
 
+    // 상권지도 업종 및 지역 검색 리스트
+    @GetMapping("/store-list")
+    public ResponseEntity<SimSearchListDto> getStoreList() {
+        return ResponseEntity.ok(simSearchListService.getRegionSemasIndustryList());
+    }
+
+    // 지역기반 상업용 부동산 매매가 요청
     @GetMapping("/real-estate")
     public ResponseEntity<List<ProcessedRealEstateDto>> getProcessedRealEstateList(
             @RequestParam(defaultValue = "11110") Integer regionCode) {
         return ResponseEntity.ok(realEstateService.getProcessedRealEstateList(regionCode));
     }
 
+    // 업종기반 필수설비 및 장비별 가격 요청
     @GetMapping("/equip-price")
     public ResponseEntity<EquipPriceResponseDto> getEquipPriceList(
             @RequestParam(defaultValue = "R91121") String ksicCode) {
         return ResponseEntity.ok(equipPriceService.getEquipPriceList(ksicCode));
     }
-    @GetMapping("/markets")
+
+    // 업종기반 지역별 업소수 요청
+    @GetMapping("/stores")
     public ResponseEntity<StoresResponseDto> getStore(
             @RequestParam(defaultValue = "G20405") String semasKsicCode) {
         return ResponseEntity.ok(storesService.getStoreList(semasKsicCode));

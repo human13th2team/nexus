@@ -1,8 +1,6 @@
 package com.team.nexus.domain.simulation.service;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
@@ -11,13 +9,11 @@ import org.springframework.stereotype.Component;
 @Component
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class APIProperties {
     // 공공데이터포탈 api
-    private final DataPortal dataPortal = new DataPortal();
+    private DataPortal dataPortal = new DataPortal();
     // 카카오지도 api
-    private final Kakao kakao = new Kakao();
+    private Kakao kakao = new Kakao();
 
     @Getter
     @Setter
@@ -34,3 +30,4 @@ public class APIProperties {
         private String url;
     }
 }
+

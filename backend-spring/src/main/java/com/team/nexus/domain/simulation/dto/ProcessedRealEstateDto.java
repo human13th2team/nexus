@@ -21,7 +21,7 @@ public class ProcessedRealEstateDto {
     private Long pricePerPyeong; // dealAmount /(buildingAr * 0.3025)
     private String dealDate; // dealYear + dealMonth + dealDay
     private Integer buildAge; // thisYear - buildYear
-    private Boolean isWithin100M; // dealAmount <= 1M
+    private Boolean isWithin100M; // dealAmount <= 100M
 
     public Long getDealAmount() {
         if (dealAmount == null || dealAmount.isBlank())

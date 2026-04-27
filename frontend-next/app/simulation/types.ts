@@ -2,7 +2,7 @@
 // /api/v1/sim/search-list
 // ──────────────────────────────────────────────
 export interface SimIndustCatsDto {
-  name: string;
+  industryName: string;
   ksicCode: string;
 }
 
