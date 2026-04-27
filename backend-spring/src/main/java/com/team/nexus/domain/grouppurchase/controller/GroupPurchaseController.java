@@ -54,6 +54,15 @@ public class GroupPurchaseController {
         return ResponseEntity.ok(groupPurchaseService.getGroupPurchase(id));
     }
 
+    @Operation(summary = "공동구매 삭제 및 환불", description = "공동구매를 취소하고 참여자들에게 일괄 환불을 진행합니다.")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteGroupPurchase(
+            @PathVariable UUID id,
+            @RequestParam UUID userId) {
+        groupPurchaseService.deleteGroupPurchase(id, userId);
+        return ResponseEntity.noContent().build();
+    }
+
     @Operation(summary = "공동구매 참여(결제)", description = "특정 공동구매에 참여하고 결제 정보를 기록합니다.")
     @PostMapping("/{id}/participate")
     public ResponseEntity<Void> participate(

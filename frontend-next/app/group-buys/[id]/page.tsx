@@ -22,6 +22,7 @@ interface GroupBuy {
   imageUrl: string;
   region: string;
   description: string;
+  creatorId: string;
 }
 
 export default function GroupBuyDetailPage() {
@@ -30,6 +31,9 @@ export default function GroupBuyDetailPage() {
   const [gb, setGb] = useState<GroupBuy | null>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: false });
   const [isLoading, setIsLoading] = useState(true);
+
+  // 현재 사용자 ID (방장 확인용)
+  const currentUserId = typeof window !== 'undefined' ? localStorage.getItem('userId') || 'd38bc69d-9660-4e11-a50d-9ee90ff38673' : '';
 
   useEffect(() => {
     fetch(`http://localhost:8080/api/v1/group-buys/${params.id}`)
@@ -75,12 +79,15 @@ export default function GroupBuyDetailPage() {
     if (!gb || timeLeft.isExpired) return;
 
     if (provider === 'TOSS') {
-      const clientKey = "test_ck_kYG57Eba3G9lxJR12bvlrpWDOxmA";
-      
-      if (typeof window !== 'undefined' && window.TossPayments) {
-        const tossPayments = window.TossPayments(clientKey);
+      try {
+        // 백엔드에서 설정값 가져오기
+        const configRes = await fetch('http://localhost:8080/api/v1/config');
+        const configData = await configRes.json();
+        const clientKey = configData.tossClientKey;
         
-        try {
+        if (typeof window !== 'undefined' && window.TossPayments) {
+          const tossPayments = window.TossPayments(clientKey);
+          
           await tossPayments.requestPayment('카드', {
             amount: gb.itemPrice,
             orderId: `ORDER_${Date.now()}`,
@@ -88,14 +95,14 @@ export default function GroupBuyDetailPage() {
             successUrl: `${window.location.origin}/group-buys/${gb.id}/success`,
             failUrl: `${window.location.origin}/group-buys/${gb.id}/fail`,
           });
-        } catch (error: any) {
-          if (error.code !== 'USER_CANCEL') {
-            console.error('Toss payment error:', error);
-            alert('결제창을 띄우는 중 오류가 발생했습니다.');
-          }
+        } else {
+          alert('토스 결제 모듈이 아직 로드되지 않았습니다.');
         }
-      } else {
-        alert('토스 결제 모듈이 아직 로드되지 않았습니다.');
+      } catch (error: any) {
+        if (error.code !== 'USER_CANCEL') {
+          console.error('Toss payment error:', error);
+          alert('결제창을 띄우는 중 오류가 발생했습니다.');
+        }
       }
     } else if (provider === 'KAKAO_PAY') {
       // 카카오페이는 즉시 성공 페이지로 이동 (시뮬레이션)
@@ -104,10 +111,35 @@ export default function GroupBuyDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!gb) return;
+    
+    if (!confirm('정말로 이 공동구매를 취소하시겠습니까? 참여자들의 결제 내역이 모두 자동으로 환불됩니다.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/group-buys/${gb.id}?userId=${currentUserId}`, {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        alert('공동구매가 취소되었으며, 환불 처리가 시작되었습니다.');
+        router.push('/group-buys');
+      } else {
+        alert('취소 처리에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert('오류가 발생했습니다.');
+    }
+  };
+
   if (isLoading) return <div className="min-h-screen bg-[#f8fafc] flex justify-center items-center font-bold text-blue-600">Loading...</div>;
   if (!gb) return <div className="min-h-screen bg-[#f8fafc] flex justify-center items-center font-bold">항목을 찾을 수 없습니다.</div>;
 
   const progress = (gb.currentCount / gb.targetCount) * 100;
+  const isOwner = gb.creatorId === currentUserId;
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#1e293b] p-8 pb-32">
@@ -203,8 +235,18 @@ export default function GroupBuyDetailPage() {
                   <ShoppingBag className="w-6 h-6" />
                   {timeLeft.isExpired ? '모집이 마감되었습니다' : '결제하고 참여하기'}
                 </button>
+
+                {isOwner && (
+                  <button 
+                    onClick={handleDelete}
+                    className="w-full py-4 rounded-2xl font-bold text-lg bg-white text-red-500 border-2 border-red-100 hover:bg-red-50 transition-all active:scale-95"
+                  >
+                    이 공동구매 취소하기 (전체 환불)
+                  </button>
+                )}
+                
                 <p className="text-center text-xs text-slate-400 font-medium">
-                  토스 페이먼츠의 안전한 결제 시스템을 이용합니다.
+                  {isOwner ? '방장은 공동구매를 관리하거나 취소할 수 있습니다.' : '토스 페이먼츠의 안전한 결제 시스템을 이용합니다.'}
                 </p>
               </div>
             </div>

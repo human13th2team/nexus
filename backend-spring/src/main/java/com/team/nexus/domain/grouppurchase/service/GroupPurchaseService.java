@@ -5,6 +5,7 @@ import com.team.nexus.domain.grouppurchase.dto.GroupPurchaseRequestDto;
 import com.team.nexus.domain.grouppurchase.dto.GroupPurchaseResponseDto;
 import com.team.nexus.domain.grouppurchase.repository.GroupOrderRepository;
 import com.team.nexus.domain.grouppurchase.repository.GroupPurchaseRepository;
+import com.team.nexus.global.entity.GroupOrder;
 import com.team.nexus.global.entity.GroupPurchase;
 import com.team.nexus.global.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,7 @@ public class GroupPurchaseService {
     private final UserRepository userRepository;
     private final com.team.nexus.global.service.ExternalApiService externalApiService;
     
-    @org.springframework.beans.factory.annotation.Value("${toss.payments.secret-key}")
+    @org.springframework.beans.factory.annotation.Value("${toss.secret-key}")
     private String tossSecretKey;
 
     @Transactional
@@ -123,6 +124,17 @@ public class GroupPurchaseService {
 
     @Transactional
     public void confirmPayment(UUID groupBuyId, UUID userId, com.team.nexus.domain.grouppurchase.dto.PaymentConfirmRequestDto confirmDto) {
+        // 모의 결제(Mock) 처리: MOCK_으로 시작하면 토스 API 호출 없이 바로 성공 처리
+        if (confirmDto.getPaymentKey() != null && confirmDto.getPaymentKey().startsWith("MOCK_")) {
+            com.team.nexus.domain.grouppurchase.dto.GroupOrderRequestDto orderDto = new com.team.nexus.domain.grouppurchase.dto.GroupOrderRequestDto();
+            orderDto.setOrderCount(1);
+            orderDto.setPgProvider("KAKAO_PAY_MOCK");
+            orderDto.setPaymentMethod("MOCK_PAYMENT");
+            orderDto.setPgTid(confirmDto.getPaymentKey());
+            participate(groupBuyId, userId, orderDto);
+            return;
+        }
+
         // 1. 토스 결제 승인 API 호출
         String url = "https://api.tosspayments.com/v1/payments/confirm";
         
@@ -171,6 +183,51 @@ public class GroupPurchaseService {
         }
     }
 
+    @Transactional
+    public void deleteGroupPurchase(UUID id, UUID userId) {
+        GroupPurchase groupPurchase = groupPurchaseRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Group purchase not found"));
+
+        // 권한 확인: 등록자만 삭제 가능
+        if (!groupPurchase.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Only the creator can delete this group purchase.");
+        }
+
+        // 1. 환불 처리: 결제된 모든 주문 정보 조회
+        List<GroupOrder> orders = groupPurchase.getOrders();
+        
+        // 토스 인증 헤더 준비
+        String auth = java.util.Base64.getEncoder().encodeToString((tossSecretKey + ":").getBytes());
+        java.util.Map<String, String> headers = new java.util.HashMap<>();
+        headers.put("Authorization", "Basic " + auth);
+        headers.put("Content-Type", "application/json");
+
+        for (GroupOrder order : orders) {
+            // pgTid(결제 키)가 있고, 수동 모의 결제가 아닌 경우 환불 진행
+            if (order.getPgTid() != null && !"KAKAO_PAY_MOCK".equals(order.getPgProvider())) {
+                try {
+                    log.info("Attempting refund for order {}: pgTid={}", order.getId(), order.getPgTid());
+                    
+                    java.util.Map<String, String> body = new java.util.HashMap<>();
+                    body.put("cancelReason", "공동구매 취소로 인한 자동 환불");
+
+                    String cancelUrl = "https://api.tosspayments.com/v1/payments/" + order.getPgTid() + "/cancel";
+                    externalApiService.post(cancelUrl, body, headers, String.class);
+                    
+                    log.info("Successfully refunded order {}", order.getId());
+                } catch (Exception e) {
+                    log.error("Failed to refund order {}: {}", order.getId(), e.getMessage());
+                    // 환불 실패 시에도 로그를 남기고 다음 주문으로 진행하거나, 전체를 중단할지 정책 결정 필요
+                    // 일단은 로그를 남기고 진행합니다.
+                }
+            }
+        }
+
+        // 2. 공동구매 삭제 (Cascade 설정으로 orders도 함께 삭제됨)
+        groupPurchaseRepository.delete(groupPurchase);
+        log.info("Group purchase {} deleted by user {}", id, userId);
+    }
+
     private GroupPurchaseResponseDto convertToDto(GroupPurchase entity) {
         return GroupPurchaseResponseDto.builder()
                 .id(entity.getId())
@@ -186,6 +243,7 @@ public class GroupPurchaseService {
                 .imageUrl(entity.getImageUrl())
                 .region(entity.getRegion())
                 .creatorNickname(entity.getUser().getNickname())
+                .creatorId(entity.getUser().getId())
                 .build();
     }
 

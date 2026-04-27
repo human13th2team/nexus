@@ -23,4 +23,5 @@ public class GroupPurchaseResponseDto {
     private String imageUrl;
     private String region;
     private String creatorNickname;
+    private UUID creatorId;
 }
