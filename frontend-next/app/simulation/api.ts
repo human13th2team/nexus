@@ -4,7 +4,7 @@ import {
   EquipPriceResponseDto,
 } from "./types";
 
-const BASE = "/api/v1/sim";
+const BASE = "/simulation/api/proxy?path=/api/v1/sim";
 
 /** 업종 / 지역 검색 목록 */
 export async function fetchSearchList(): Promise<SimSearchListDto> {
@@ -17,7 +17,7 @@ export async function fetchSearchList(): Promise<SimSearchListDto> {
 export async function fetchRealEstate(
   regionCode: number
 ): Promise<ProcessedRealEstateDto[]> {
-  const res = await fetch(`${BASE}/real-estate?regionCode=${regionCode}`);
+  const res = await fetch(`${BASE}/real-estate&regionCode=${regionCode}`);
   if (!res.ok) throw new Error(`real-estate 요청 실패: ${res.status}`);
   return res.json();
 }
@@ -26,7 +26,7 @@ export async function fetchRealEstate(
 export async function fetchEquipPrice(
   ksicCode: string
 ): Promise<EquipPriceResponseDto> {
-  const res = await fetch(`${BASE}/equip-price?ksicCode=${ksicCode}`);
+  const res = await fetch(`${BASE}/equip-price&ksicCode=${ksicCode}`);
   if (!res.ok) throw new Error(`equip-price 요청 실패: ${res.status}`);
   return res.json();
 }

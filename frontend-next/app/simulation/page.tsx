@@ -15,40 +15,31 @@ import {
   ProcessedRealEstateDto,
   EquipPriceResponseDto,
 } from "./types";
-import styles from "./page.module.css";
+import { Sparkles, Info } from "lucide-react";
 
 type Step = "search" | "result";
 
 export default function SimulationPage() {
-  // ── 검색 목록 (초기 로드) ──
+  const [mounted, setMounted] = useState(false);
   const [searchList, setSearchList] = useState<SimSearchListDto | null>(null);
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
-
-  // ── 시뮬레이션 요청 상태 ──
   const [simLoading, setSimLoading] = useState(false);
   const [simError, setSimError] = useState<string | null>(null);
-
-  // ── 결과 데이터 ──
   const [realEstateList, setRealEstateList] = useState<ProcessedRealEstateDto[]>([]);
   const [equipData, setEquipData] = useState<EquipPriceResponseDto | null>(null);
-
-  // ── 선택 값 ──
   const [selectedIndust, setSelectedIndust] = useState<SimIndustCatsDto | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<SimRegCodesDto | null>(null);
-
-  // ── 화면 단계 ──
   const [step, setStep] = useState<Step>("search");
 
-  // 검색 목록 초기 로드
   useEffect(() => {
+    setMounted(true);
     fetchSearchList()
       .then(setSearchList)
       .catch((err) => setListError(err.message))
       .finally(() => setListLoading(false));
   }, []);
 
-  // 시뮬레이션 요청 실행
   const handleSubmit = async (
     industry: SimIndustCatsDto,
     region: SimRegCodesDto
@@ -59,7 +50,6 @@ export default function SimulationPage() {
     setSimError(null);
 
     try {
-      // 두 API 병렬 호출
       const [reList, eq] = await Promise.all([
         fetchRealEstate(region.regionCode),
         fetchEquipPrice(industry.ksicCode),
@@ -79,25 +69,41 @@ export default function SimulationPage() {
     setSimError(null);
   };
 
-  // ── 초기 로딩 ──
+  // Hydration Mismatch 방지: 서버에서는 null 또는 기본 배경만 렌더링
+  if (!mounted) {
+    return <div className="min-h-screen bg-[var(--nexus-bg)]" />;
+  }
+
   if (listLoading) {
     return (
-      <div className={styles.loadingScreen}>
-        <div className={styles.loadingSpinner} />
-        <p>업종·지역 목록을 불러오는 중...</p>
+      <div className="min-h-screen bg-[var(--nexus-bg)] flex flex-col items-center justify-center gap-6">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-[var(--nexus-primary)]/10 border-t-[var(--nexus-primary)] rounded-full animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Sparkles size={16} className="text-[var(--nexus-primary)] animate-pulse" />
+          </div>
+        </div>
+        <div className="text-center space-y-2">
+          <p className="text-sm font-bold text-[var(--nexus-primary)] tracking-widest uppercase opacity-40">Initializing Nexus Engine</p>
+          <p className="text-lg font-light opacity-60">업종·지역 목록을 분석하고 있습니다...</p>
+        </div>
       </div>
     );
   }
 
-  // ── 목록 로드 에러 ──
   if (listError) {
     return (
-      <div className={styles.errorScreen}>
-        <span className={styles.errorIcon}>⚠️</span>
-        <p>목록 로드 실패: {listError}</p>
+      <div className="min-h-screen bg-[var(--nexus-bg)] flex flex-col items-center justify-center px-6 text-center gap-8">
+        <div className="w-20 h-20 bg-red-50 text-red-500 rounded-[32px] flex items-center justify-center shadow-sm">
+          <Info size={40} />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold text-[var(--nexus-primary)]">데이터 로드 실패</h2>
+          <p className="opacity-60 max-w-xs">{listError}</p>
+        </div>
         <button
-          className={styles.retryBtn}
           onClick={() => window.location.reload()}
+          className="bg-[var(--nexus-primary)] text-white px-8 py-3 rounded-2xl font-bold hover:scale-105 transition-all shadow-xl"
         >
           다시 시도
         </button>
@@ -106,14 +112,12 @@ export default function SimulationPage() {
   }
 
   return (
-    <div className={styles.page}>
-      {/* 시뮬레이션 에러 토스트 */}
+    <div className="relative min-h-screen bg-[var(--nexus-bg)]">
       {simError && (
-        <div className={styles.errorToast}>
-          ⚠️ {simError}
-          <button className={styles.toastClose} onClick={() => setSimError(null)}>
-            ×
-          </button>
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[999] bg-red-900/90 border border-red-500/50 text-red-100 px-5 py-3 rounded-2xl flex items-center gap-3 shadow-2xl backdrop-blur-md">
+          <span className="text-lg">⚠️</span>
+          <span className="text-sm font-medium">{simError}</span>
+          <button className="ml-2 text-xl leading-none opacity-60 hover:opacity-100" onClick={() => setSimError(null)}>×</button>
         </div>
       )}
 
@@ -128,7 +132,7 @@ export default function SimulationPage() {
 
       {step === "result" && equipData && selectedIndust && selectedRegion && (
         <SimResultStep
-          industName={selectedIndust.name}
+          industName={selectedIndust.industryName}
           regionLabel={`${selectedRegion.cityName} ${selectedRegion.countyName}`}
           realEstateList={realEstateList}
           equipData={equipData}

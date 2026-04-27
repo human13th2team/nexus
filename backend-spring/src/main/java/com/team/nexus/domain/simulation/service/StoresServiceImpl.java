@@ -72,14 +72,21 @@ public class StoresServiceImpl implements StoresService {
                                 .build())
                         .retrieve()
                         .bodyToMono(SemasAPIDto.class)
-                        .retryWhen(reactor.util.retry.Retry.backoff(3, java.time.Duration.ofMillis(500))) // 3번 재시도
-                        .map(response -> StoreByRegionDto.builder()
-                                .regionCode(region.getRegionCode())
-                                .regionName(region.getCityName() + " " + region.getCountyName())
-                                .storeCount(response.getBody() != null ? response.getBody().getTotalCount() : 0)
-                                .latitude(region.getLatitude())
-                                .longitude(region.getLongitude())
-                                .build())
+                        .timeout(java.time.Duration.ofSeconds(5))
+                        .retryWhen(reactor.util.retry.Retry.backoff(2, java.time.Duration.ofMillis(200)))
+                        .map(response -> {
+                            Integer count = 0;
+                            if (response != null && response.getBody() != null && response.getBody().getTotalCount() != null) {
+                                count = response.getBody().getTotalCount();
+                            }
+                            return StoreByRegionDto.builder()
+                                    .regionCode(region.getRegionCode())
+                                    .regionName(region.getCityName() + " " + region.getCountyName())
+                                    .storeCount(count)
+                                    .latitude(region.getLatitude())
+                                    .longitude(region.getLongitude())
+                                    .build();
+                        })
                         .onErrorResume(e -> {
                             System.err.println("API Error for region " + region.getCountyName() + ": " + e.getMessage());
                             return reactor.core.publisher.Mono.just(StoreByRegionDto.builder()
@@ -90,8 +97,11 @@ public class StoresServiceImpl implements StoresService {
                                     .longitude(region.getLongitude())
                                     .build());
                         }),
-                        30 // Concurrency 대폭 상향 (성능 우선)
-                ).collectList().block();
+                        50 // Concurrency 상향
+                )
+                .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
+                .collectList()
+                .block();
         
         // 2. 캐시 저장
         if (storeByRegionDtoList != null) {
@@ -100,4 +110,5 @@ public class StoresServiceImpl implements StoresService {
 
         return processRanking(storeByRegionDtoList);
     }
+
 }

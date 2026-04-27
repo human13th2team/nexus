@@ -1,7 +1,20 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import styles from "./SimResultStep.module.css";
+import { 
+  ArrowLeft, 
+  Building2, 
+  Settings, 
+  Calculator, 
+  TrendingUp, 
+  Layers, 
+  Clock, 
+  Trash2, 
+  Plus, 
+  Minus, 
+  ExternalLink,
+  Sparkles
+} from "lucide-react";
 import {
   ProcessedRealEstateDto,
   EquipPriceItem,
@@ -26,15 +39,12 @@ export default function SimResultStep({
   equipData,
   onBack,
 }: Props) {
-  // ── 설비 목록 초기화 (qty = 1) ──
   const [equips, setEquips] = useState<EquipPriceItemWithQty[]>(() =>
     (equipData.equip_prices ?? []).map((e: EquipPriceItem) => ({ ...e, qty: 1 }))
   );
 
-  // ── 선택된 부동산 매물 ──
   const [selectedRE, setSelectedRE] = useState<ProcessedRealEstateDto | null>(null);
 
-  // ── 설비 수량 조정 ──
   const changeQty = (idx: number, delta: number) => {
     setEquips((prev) =>
       prev.map((e, i) =>
@@ -43,22 +53,18 @@ export default function SimResultStep({
     );
   };
 
-  // ── 설비 삭제 ──
   const removeEquip = (idx: number) => {
     setEquips((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  // ── 설비 총액 ──
   const totalEquipCost = useMemo(
     () => equips.reduce((sum, e) => sum + (e.product_price ?? 0) * e.qty, 0),
     [equips]
   );
 
-  // ── 총 창업 비용 (선택 부동산 + 설비) ──
   const selectedREAmount = selectedRE?.dealAmount ?? 0;
   const grandTotal = (selectedREAmount as number) + totalEquipCost;
 
-  // ── 부동산 통계 계산 ──
   const reStats = useMemo(() => {
     const validDeal = realEstateList
       .map((r) => r.dealAmount)
@@ -91,18 +97,6 @@ export default function SimResultStep({
     return `${n.toLocaleString()}원`;
   };
 
-  // 소스 배지 색상
-  const sourceBadge = (src: string) => {
-    const map: Record<string, string> = {
-      NAVER: styles.badgeNaver,
-      RAG: styles.badgeRag,
-      LLM: styles.badgeLlm,
-      HUMAN: styles.badgeHuman,
-    };
-    return map[src?.toUpperCase()] ?? styles.badgeDefault;
-  };
-
-  // ── 1억 이하 / 초과 탭 분리 ──
   const [priceTab, setPriceTab] = useState<PriceTab>("under");
   const under100M = useMemo(
     () => realEstateList.filter((r) => r.isWithin100M === true),
@@ -114,373 +108,216 @@ export default function SimResultStep({
   );
   const activeList = priceTab === "under" ? under100M : over100M;
 
-  // 건물 유형 카운트 (전체 기준)
-  const buildingTypeStats = useMemo(() => {
-    const cnt: Record<string, number> = {};
-    realEstateList.forEach((r) => {
-      const k = r.buildingUse ?? "기타";
-      cnt[k] = (cnt[k] ?? 0) + 1;
-    });
-    return Object.entries(cnt)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 4);
-  }, [realEstateList]);
+  const getSourceStyle = (src: string) => {
+    switch(src?.toUpperCase()) {
+      case 'NAVER': return 'bg-[#03C75A] text-white';
+      case 'RAG': return 'bg-[var(--nexus-primary)] text-white';
+      case 'LLM': return 'bg-[var(--nexus-secondary)] text-white';
+      case 'HUMAN': return 'bg-[var(--nexus-tertiary-fixed)] text-[var(--nexus-primary)]';
+      default: return 'bg-gray-200 text-gray-700';
+    }
+  };
 
   return (
-    <div className={styles.wrapper}>
+    <div className="min-h-screen bg-[var(--nexus-bg)] pb-48 font-inter">
       {/* ── 상단 헤더 ── */}
-      <div className={styles.topBar}>
-        <button className={styles.backBtn} onClick={onBack} id="sim-back-btn">
-          ← 다시 검색
+      <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-[var(--nexus-outline-variant)]/30 px-6 py-4 flex items-center justify-between">
+        <button 
+          onClick={onBack}
+          className="flex items-center gap-2 text-sm font-bold text-[var(--nexus-primary)] hover:opacity-70 transition-opacity"
+        >
+          <ArrowLeft size={18} /> 다시 검색
         </button>
-        <div className={styles.topBadgeRow}>
-          <span className={styles.chip}>{industName}</span>
-          <span className={styles.chipSep}>·</span>
-          <span className={styles.chip}>{regionLabel}</span>
+        <div className="flex items-center gap-3">
+          <span className="px-3 py-1 bg-[var(--nexus-surface-container)] rounded-full text-[10px] font-black text-[var(--nexus-primary)] uppercase tracking-wider">{industName}</span>
+          <span className="w-1 h-1 bg-[var(--nexus-outline-variant)] rounded-full" />
+          <span className="px-3 py-1 bg-[var(--nexus-surface-container)] rounded-full text-[10px] font-black text-[var(--nexus-secondary)] uppercase tracking-wider">{regionLabel}</span>
         </div>
       </div>
 
-      <div className={styles.content}>
-        <h1 className={styles.pageTitle}>창업 비용 시뮬레이션 결과</h1>
+      <div className="max-w-6xl mx-auto px-6 py-12 space-y-16">
+        <div className="space-y-4">
+          <h1 className="font-manrope text-4xl font-extrabold text-[var(--nexus-primary)] tracking-tight">창업 비용 시뮬레이션 결과</h1>
+          <p className="text-lg opacity-60 font-light">AI가 분석한 {regionLabel} {industName} 창업 가이드입니다.</p>
+        </div>
 
-        {/* ════════════════════════════════════
-            SECTION 1 — 부동산 실거래가 분석
-        ════════════════════════════════════ */}
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionNum}>01</span>
+        {/* ── Section 1: 부동산 ── */}
+        <section className="space-y-8">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-[var(--nexus-primary)] text-white rounded-xl flex items-center justify-center font-bold">01</div>
             <div>
-              <h2 className={styles.sectionTitle}>상업용 부동산 실거래가 분석</h2>
-              <p className={styles.sectionSub}>
-                {regionLabel} 기준 최신 실거래 데이터 {reStats.totalCount}건 분석
-              </p>
+              <h2 className="text-2xl font-bold font-manrope">상업용 부동산 실거래가 분석</h2>
+              <p className="text-sm opacity-50">최근 {reStats.totalCount}건의 실제 거래 데이터를 분석했습니다.</p>
             </div>
           </div>
 
-          {/* 요약 스탯 */}
-          <div className={styles.statGrid}>
-            <div className={styles.statCard}>
-              <div className={styles.statIcon}>💰</div>
-              <div className={styles.statVal}>{formatWon(reStats.avgDeal)}</div>
-              <div className={styles.statKey}>평균 거래금액</div>
-            </div>
-            <div className={styles.statCard}>
-              <div className={styles.statIcon}>📐</div>
-              <div className={styles.statVal}>{formatWon(reStats.avgPyeong)}</div>
-              <div className={styles.statKey}>평균 평당가격</div>
-            </div>
-            <div className={styles.statCard}>
-              <div className={styles.statIcon}>🏗</div>
-              <div className={styles.statVal}>{reStats.avgAr}㎡</div>
-              <div className={styles.statKey}>평균 건물 면적</div>
-            </div>
-            <div className={styles.statCard}>
-              <div className={styles.statIcon}>⏳</div>
-              <div className={styles.statVal}>{reStats.avgAge}년</div>
-              <div className={styles.statKey}>평균 건물 연차</div>
-            </div>
-          </div>
-
-          {/* 건물 용도 분포 */}
-          {buildingTypeStats.length > 0 && (
-            <div className={styles.distPanel}>
-              <div className={styles.distTitle}>주요 건물 용도 분포</div>
-              <div className={styles.distRow}>
-                {buildingTypeStats.map(([type, cnt]) => {
-                  const pct = Math.round((cnt / reStats.totalCount) * 100);
-                  return (
-                    <div key={type} className={styles.distItem}>
-                      <div className={styles.distLabel}>{type}</div>
-                      <div className={styles.distBarWrap}>
-                        <div
-                          className={styles.distBar}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <div className={styles.distPct}>{pct}%</div>
-                    </div>
-                  );
-                })}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: "평균 거래금액", val: formatWon(reStats.avgDeal), icon: TrendingUp, color: "text-blue-600" },
+              { label: "평균 평당가격", val: formatWon(reStats.avgPyeong), icon: Calculator, color: "text-purple-600" },
+              { label: "평균 건물면적", val: `${reStats.avgAr}㎡`, icon: Layers, color: "text-teal-600" },
+              { label: "평균 건물연차", val: `${reStats.avgAge}년`, icon: Clock, color: "text-orange-600" },
+            ].map((s, i) => (
+              <div key={i} className="bg-white p-6 rounded-3xl border border-[var(--nexus-outline-variant)]/20 shadow-sm flex flex-col gap-4">
+                <div className={`w-8 h-8 rounded-lg bg-[var(--nexus-surface-low)] flex items-center justify-center ${s.color}`}>
+                  <s.icon size={16} />
+                </div>
+                <div>
+                  <div className="text-[10px] font-black opacity-40 uppercase tracking-widest mb-1">{s.label}</div>
+                  <div className="text-xl font-bold text-[var(--nexus-primary)]">{s.val}</div>
+                </div>
               </div>
-            </div>
-          )}
+            ))}
+          </div>
 
-          {/* 1억 이하 / 초과 탭 */}
-          {realEstateList.length > 0 && (
-            <div className={styles.priceTabs}>
-              <button
-                className={`${styles.priceTab} ${priceTab === "under" ? styles.priceTabActive : ""}`}
+          {/* 목록 및 탭 */}
+          <div className="bg-white rounded-[32px] border border-[var(--nexus-outline-variant)]/20 overflow-hidden shadow-sm">
+            <div className="flex border-b border-[var(--nexus-outline-variant)]/20">
+              <button 
                 onClick={() => setPriceTab("under")}
+                className={`flex-1 py-4 text-sm font-bold transition-colors flex items-center justify-center gap-2 ${priceTab === 'under' ? 'bg-[var(--nexus-surface-low)] text-[var(--nexus-primary)]' : 'opacity-40 hover:opacity-60'}`}
               >
-                <span className={styles.priceTabDot} style={{ background: "#60a5fa" }} />
-                1억 이하
-                <span className={styles.priceTabCount}>{under100M.length}건</span>
+                1억 이하 <span className="text-[10px] opacity-50">{under100M.length}건</span>
               </button>
-              <button
-                className={`${styles.priceTab} ${priceTab === "over" ? styles.priceTabActive : ""}`}
+              <button 
                 onClick={() => setPriceTab("over")}
+                className={`flex-1 py-4 text-sm font-bold transition-colors flex items-center justify-center gap-2 ${priceTab === 'over' ? 'bg-[var(--nexus-surface-low)] text-[var(--nexus-primary)]' : 'opacity-40 hover:opacity-60'}`}
               >
-                <span className={styles.priceTabDot} style={{ background: "#a78bfa" }} />
-                1억 초과
-                <span className={styles.priceTabCount}>{over100M.length}건</span>
+                1억 초과 <span className="text-[10px] opacity-50">{over100M.length}건</span>
               </button>
             </div>
-          )}
 
-          {/* 실거래 목록 테이블 */}
-          {activeList.length > 0 ? (
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
-                <thead>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-[var(--nexus-surface-low)]/50 text-[10px] font-black uppercase text-[var(--nexus-primary)]/40 tracking-widest">
                   <tr>
-                    <th style={{ width: 36 }} />
-                    <th>주소</th>
-                    <th>건물 용도</th>
-                    <th>면적(㎡)</th>
-                    <th>층</th>
-                    <th>거래금액</th>
-                    <th>평당가격</th>
-                    <th>거래일</th>
-                    <th>건령</th>
+                    <th className="px-6 py-4">주소</th>
+                    <th className="px-6 py-4 text-center">건물 용도</th>
+                    <th className="px-6 py-4 text-right">면적(㎡)</th>
+                    <th className="px-6 py-4 text-right">거래금액</th>
+                    <th className="px-6 py-4 text-center">선택</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {activeList.map((r, idx) => {
-                    const isSelected = selectedRE === r;
-                    return (
-                      <tr
-                        key={idx}
-                        className={isSelected ? styles.selectedRow : ""}
-                        onClick={() => setSelectedRE(isSelected ? null : r)}
-                        style={{ cursor: "pointer" }}
-                      >
-                        <td>
-                          <span className={isSelected ? styles.radioOn : styles.radioOff} />
-                        </td>
-                        <td>{r.address ?? "-"}</td>
-                        <td>
-                          <span className={styles.useTag}>{r.buildingUse ?? "-"}</span>
-                        </td>
-                        <td>{r.buildingAr ?? "-"}</td>
-                        <td>
-                          {r.floor && r.floor.trim() !== ""
-                            ? `${r.floor}층`
-                            : "-"}
-                        </td>
-                        <td className={styles.moneyCell}>
-                          <div className={styles.amountWrap}>
-                            {r.dealAmount ? formatWon(r.dealAmount) : "-"}
-                            {r.buildingType && (
-                              <span
-                                className={
-                                  r.buildingType === "집합"
-                                    ? styles.tagJibhap
-                                    : styles.tagIlban
-                                }
-                              >
-                                {r.buildingType}
-                              </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className={styles.moneyCell}>
-                          {r.pricePerPyeong ? formatWon(r.pricePerPyeong) : "-"}
-                        </td>
-                        <td>{r.dealDate ?? "-"}</td>
-                        <td>{r.buildAge !== null ? `${r.buildAge}년` : "-"}</td>
-                      </tr>
-                    );
-                  })}
+                <tbody className="divide-y divide-[var(--nexus-outline-variant)]/10">
+                  {activeList.map((r, idx) => (
+                    <tr 
+                      key={idx} 
+                      className={`hover:bg-[var(--nexus-surface-low)]/30 cursor-pointer transition-colors ${selectedRE === r ? 'bg-[var(--nexus-surface-container)]/50' : ''}`}
+                      onClick={() => setSelectedRE(selectedRE === r ? null : r)}
+                    >
+                      <td className="px-6 py-5 font-medium">{r.address}</td>
+                      <td className="px-6 py-5 text-center">
+                        <span className="px-2 py-0.5 bg-gray-100 rounded-md text-[10px] font-bold opacity-60">{r.buildingUse}</span>
+                      </td>
+                      <td className="px-6 py-5 text-right opacity-60">{r.buildingAr}</td>
+                      <td className="px-6 py-5 text-right font-bold text-[var(--nexus-primary)]">{formatWon(r.dealAmount ?? 0)}</td>
+                      <td className="px-6 py-5 text-center">
+                        <div className={`w-5 h-5 rounded-full border-2 mx-auto flex items-center justify-center transition-colors ${selectedRE === r ? 'border-[var(--nexus-primary)] bg-[var(--nexus-primary)]' : 'border-[var(--nexus-outline-variant)]'}`}>
+                          {selectedRE === r && <Plus size={12} className="text-white" />}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {activeList.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-12 text-center opacity-40 italic">거래 데이터가 없습니다.</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
-          ) : (
-            <div className={styles.emptyBox}>
-              <span>
-                {priceTab === "under" ? "1억 이하" : "1억 초과"} 거래 데이터가 없습니다.
-              </span>
-            </div>
-          )}
+          </div>
         </section>
 
-        {/* ════════════════════════════════════
-            SECTION 2 — 필수 설비 비용
-        ════════════════════════════════════ */}
-        <section className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionNum}>02</span>
+        {/* ── Section 2: 설비 ── */}
+        <section className="space-y-8">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-[var(--nexus-secondary)] text-white rounded-xl flex items-center justify-center font-bold">02</div>
             <div>
-              <h2 className={styles.sectionTitle}>필수 설비 비용</h2>
-              <p className={styles.sectionSub}>
-                {industName} · 필수 설비 {equipData.essential_equip_cnt}종
-                &nbsp;|&nbsp; 수량을 조정하면 합계가 실시간 변경됩니다
-              </p>
+              <h2 className="text-2xl font-bold font-manrope">필수 설비 비용 분석</h2>
+              <p className="text-sm opacity-50">{industName} 창업에 필요한 핵심 설비 데이터입니다.</p>
             </div>
           </div>
 
-          {/* 출처 배지 */}
-          <div className={styles.sourceBadges}>
-            {[
-              { key: "NAVER", cnt: equipData.naver_sources_cnt, cls: styles.badgeNaver },
-              { key: "RAG", cnt: equipData.rag_sources_cnt, cls: styles.badgeRag },
-              { key: "LLM", cnt: equipData.llm_sources_cnt, cls: styles.badgeLlm },
-              { key: "HUMAN", cnt: equipData.human_sources_cnt, cls: styles.badgeHuman },
-            ]
-              .filter((b) => b.cnt > 0)
-              .map((b) => (
-                <span key={b.key} className={`${styles.sourceBadge} ${b.cls}`}>
-                  {b.key} {b.cnt}건
-                </span>
-              ))}
-          </div>
-
-          {/* 설비 목록 */}
-          {equips.length > 0 ? (
-            <>
-              <div className={styles.equipList}>
-                {equips.map((eq, idx) => (
-                  <div key={idx} className={styles.equipCard}>
-                    {/* 이미지 */}
-                    <div className={styles.equipImg}>
-                      {eq.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={eq.imageUrl} alt={eq.equip_name_kr} />
-                      ) : (
-                        <span className={styles.equipImgPlaceholder}>⚙️</span>
-                      )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {equips.map((eq, idx) => (
+              <div key={idx} className="bg-white p-6 rounded-3xl border border-[var(--nexus-outline-variant)]/20 shadow-sm flex gap-6 hover:border-[var(--nexus-secondary)]/30 transition-colors group">
+                <div className="w-24 h-24 bg-[var(--nexus-surface-low)] rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {eq.imageUrl ? (
+                    <img src={eq.imageUrl} alt={eq.equip_name_kr} className="w-full h-full object-cover" />
+                  ) : (
+                    <Settings className="w-8 h-8 opacity-20" />
+                  )}
+                </div>
+                <div className="flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-start mb-1">
+                      <h3 className="font-bold text-[var(--nexus-primary)]">{eq.equip_name_kr}</h3>
+                      <button onClick={() => removeEquip(idx)} className="opacity-0 group-hover:opacity-30 hover:!opacity-100 transition-opacity">
+                        <Trash2 size={16} />
+                      </button>
                     </div>
-
-                    {/* 정보 */}
-                    <div className={styles.equipInfo}>
-                      <div className={styles.equipNameRow}>
-                        <div className={styles.equipNameKr}>{eq.equip_name_kr}</div>
-                        <button 
-                          className={styles.deleteBtn}
-                          onClick={() => removeEquip(idx)}
-                          title="항목 제거"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      <div className={styles.equipProduct}>{eq.product_name}</div>
-                      {eq.detail && (
-                        <div className={styles.equipDetail}>{eq.detail}</div>
-                      )}
-                      <div className={styles.equipMeta}>
-                        <span className={`${styles.sourceBadge} ${sourceBadge(eq.source)}`}>
-                          {eq.source}
-                        </span>
-                        {eq.link && (
-                          <a
-                            href={eq.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.linkBtn}
-                          >
-                            구매 링크 ↗
-                          </a>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* 단가 + 수량 */}
-                    <div className={styles.equipPriceBlock}>
-                      <div className={styles.equipUnitPrice}>
-                        {eq.product_price
-                          ? formatWon(eq.product_price)
-                          : "가격 미정"}
-                        <span className={styles.equipUnitLabel}>/개</span>
-                      </div>
-                      <div className={styles.qtyControl}>
-                        <button
-                          className={styles.qtyBtn}
-                          onClick={() => changeQty(idx, -1)}
-                          disabled={eq.qty === 0}
-                          aria-label="수량 감소"
-                        >
-                          −
-                        </button>
-                        <span className={styles.qtyVal}>{eq.qty}</span>
-                        <button
-                          className={styles.qtyBtn}
-                          onClick={() => changeQty(idx, 1)}
-                          aria-label="수량 증가"
-                        >
-                          +
-                        </button>
-                      </div>
-                      <div className={styles.equipSubtotal}>
-                        {eq.product_price && eq.qty > 0
-                          ? `소계: ${formatWon(eq.product_price * eq.qty)}`
-                          : eq.qty === 0
-                          ? "미포함"
-                          : ""}
-                      </div>
+                    <p className="text-[10px] opacity-40 line-clamp-1 mb-3">{eq.product_name}</p>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${getSourceStyle(eq.source)}`}>{eq.source}</span>
+                      {eq.link && <a href={eq.link} target="_blank" rel="noopener noreferrer" className="text-[8px] font-bold text-[var(--nexus-secondary)] flex items-center gap-1">LINK <ExternalLink size={8} /></a>}
                     </div>
                   </div>
-                ))}
-              </div>
-
-              {/* 총합 바 */}
-              <div className={styles.totalBar}>
-                <div className={styles.totalLabel}>
-                  <span>설비 총 예상 비용</span>
-                  <span className={styles.totalSub}>
-                    {equips.filter((e) => e.qty > 0).length}종 ×{" "}
-                    {equips.reduce((s, e) => s + e.qty, 0)}개
-                  </span>
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="font-black text-[var(--nexus-primary)]">{formatWon(eq.product_price ?? 0)}</div>
+                    <div className="flex items-center bg-[var(--nexus-surface-low)] rounded-lg p-1">
+                      <button onClick={() => changeQty(idx, -1)} className="p-1 hover:bg-white rounded-md transition-colors"><Minus size={12} /></button>
+                      <span className="w-8 text-center text-xs font-bold">{eq.qty}</span>
+                      <button onClick={() => changeQty(idx, 1)} className="p-1 hover:bg-white rounded-md transition-colors"><Plus size={12} /></button>
+                    </div>
+                  </div>
                 </div>
-                <div className={styles.totalVal}>{formatWon(totalEquipCost)}</div>
               </div>
-            </>
-          ) : (
-            <div className={styles.emptyBox}>
-              <span>설비 데이터가 없습니다.</span>
+            ))}
+          </div>
+
+          <div className="bg-[var(--nexus-primary)] p-8 rounded-[32px] text-white flex flex-col md:flex-row justify-between items-center gap-6 shadow-xl">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
+                <Sparkles className="text-[var(--nexus-tertiary-fixed)]" />
+              </div>
+              <div>
+                <div className="text-[10px] font-black opacity-50 uppercase tracking-widest">예상 설비 총액</div>
+                <div className="text-sm opacity-70">{equips.reduce((s, e) => s + e.qty, 0)}개의 품목이 포함되었습니다.</div>
+              </div>
             </div>
-          )}
+            <div className="text-4xl font-black">{formatWon(totalEquipCost)}</div>
+          </div>
         </section>
       </div>
 
-      {/* ════════════════════════════════════
-          STICKY 총합 패널
-      ════════════════════════════════════ */}
-      <div className={styles.grandTotalBar}>
-        <div className={styles.grandTotalInner}>
-          {/* 부동산 */}
-          <div className={styles.gtItem}>
-            <div className={styles.gtLabel}>🏢 부동산 (선택)</div>
-            <div className={styles.gtValue}>
-              {selectedRE?.dealAmount
-                ? formatWon(selectedRE.dealAmount as number)
-                : <span className={styles.gtEmpty}>미선택</span>}
-            </div>
-            {selectedRE && (
-              <div className={styles.gtSub}>
-                {selectedRE.address} · {selectedRE.buildingAr}㎡
+      {/* ── Sticky Bottom Bar ── */}
+      <div className="fixed bottom-0 left-0 w-full z-50 p-6">
+        <div className="max-w-4xl mx-auto bg-[var(--nexus-primary)]/90 backdrop-blur-2xl rounded-[32px] p-8 shadow-[0_32px_64px_-16px_rgba(11,26,125,0.4)] border border-white/10 text-white flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="flex-1 grid grid-cols-2 md:grid-cols-2 gap-8 w-full">
+            <div className="space-y-1">
+              <div className="text-[10px] font-black opacity-50 uppercase tracking-widest flex items-center gap-2">
+                <Building2 size={12} /> 부동산 (선택)
               </div>
-            )}
-          </div>
-
-          <div className={styles.gtPlus}>+</div>
-
-          {/* 설비 */}
-          <div className={styles.gtItem}>
-            <div className={styles.gtLabel}>⚙️ 설비 합계</div>
-            <div className={styles.gtValue}>{formatWon(totalEquipCost)}</div>
-            <div className={styles.gtSub}>
-              {equips.filter((e) => e.qty > 0).length}종 {equips.reduce((s, e) => s + e.qty, 0)}개
+              <div className="text-xl font-bold truncate">
+                {selectedRE ? formatWon(selectedRE.dealAmount ?? 0) : <span className="opacity-30">미선택</span>}
+              </div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-[10px] font-black opacity-50 uppercase tracking-widest flex items-center gap-2">
+                <Settings size={12} /> 설비 합계
+              </div>
+              <div className="text-xl font-bold">{formatWon(totalEquipCost)}</div>
             </div>
           </div>
 
-          <div className={styles.gtEquals}>=</div>
+          <div className="hidden md:block w-px h-12 bg-white/10" />
 
-          {/* 총합 */}
-          <div className={`${styles.gtItem} ${styles.gtTotal}`}>
-            <div className={styles.gtLabel}>💡 총 창업 예상 비용</div>
-            <div className={styles.gtTotalValue}>{formatWon(grandTotal)}</div>
-            {!selectedRE && (
-              <div className={styles.gtSub}>← 부동산을 선택하면 합산됩니다</div>
-            )}
+          <div className="flex-1 flex flex-col items-end w-full">
+            <div className="text-[10px] font-black opacity-50 uppercase tracking-widest mb-1 flex items-center gap-2">
+              <Calculator size={12} /> 총 창업 예상 비용
+            </div>
+            <div className="text-4xl font-black text-[var(--nexus-tertiary-fixed)]">{formatWon(grandTotal)}</div>
           </div>
         </div>
       </div>
