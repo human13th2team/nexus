@@ -23,18 +23,21 @@ public class ProcessedRealEstateDto {
     private Integer buildAge; // thisYear - buildYear
     private Boolean isWithin100M; // dealAmount <= 1M
 
-    public Long getDealAmount(){
-        if (dealAmount == null || dealAmount.isBlank()) return null;
+    public Long getDealAmount() {
+        if (dealAmount == null || dealAmount.isBlank())
+            return null;
         return Long.parseLong(dealAmount.trim().replace(",", "")) * 10_000L;
     }
 
     public Long getPricePerPyeong() {
-        if (buildingAr == null || buildingAr.isBlank()) return null;
+        if (buildingAr == null || buildingAr.isBlank())
+            return null;
         return (long) (getDealAmount() / (Double.parseDouble(buildingAr.trim()) * 0.3025));
     }
 
     public Boolean getIsWithin100M() {
-        if (getDealAmount() == null) return null;
+        if (getDealAmount() == null)
+            return null;
         return getDealAmount() <= 100_000_000L;
     }
 }

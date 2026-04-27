@@ -3,9 +3,11 @@ package com.team.nexus.domain.simulation.controller;
 import com.team.nexus.domain.simulation.dto.EquipPriceResponseDto;
 import com.team.nexus.domain.simulation.dto.ProcessedRealEstateDto;
 import com.team.nexus.domain.simulation.dto.SimSearchListDto;
+import com.team.nexus.domain.simulation.dto.StoresResponseDto;
 import com.team.nexus.domain.simulation.service.EquipPriceService;
 import com.team.nexus.domain.simulation.service.RealEstateService;
 import com.team.nexus.domain.simulation.service.SimSearchListService;
+import com.team.nexus.domain.simulation.service.StoresService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +26,7 @@ public class SimController {
     private final SimSearchListService simSearchListService;
     private final RealEstateService realEstateService;
     private final EquipPriceService equipPriceService;
+    private final StoresService storesService;
 
     @GetMapping("/search-list")
     public ResponseEntity<SimSearchListDto> getSearchList() {
@@ -40,5 +43,10 @@ public class SimController {
     public ResponseEntity<EquipPriceResponseDto> getEquipPriceList(
             @RequestParam(defaultValue = "R91121") String ksicCode) {
         return ResponseEntity.ok(equipPriceService.getEquipPriceList(ksicCode));
+    }
+    @GetMapping("/markets")
+    public ResponseEntity<StoresResponseDto> getStore(
+            @RequestParam(defaultValue = "G20405") String semasKsicCode) {
+        return ResponseEntity.ok(storesService.getStoreList(semasKsicCode));
     }
 }

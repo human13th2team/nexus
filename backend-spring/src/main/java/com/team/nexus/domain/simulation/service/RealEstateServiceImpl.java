@@ -19,7 +19,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 @RequiredArgsConstructor
 public class RealEstateServiceImpl implements RealEstateService {
     private final APIProperties apiProperties;
-    private final WebClient realEstateWebClient;
+    private final WebClient dataPortalRealEstateWebClient;
     private static final XmlMapper XML_MAPPER = new XmlMapper();
 
     private static final int TARGET_COUNT = 5;
@@ -76,9 +76,9 @@ public class RealEstateServiceImpl implements RealEstateService {
 
     private RealEstateAPIResponseDto fetchApi(Integer regionCode, String dealYMD, int pageNo) {
         try {
-            String xmlResponse = realEstateWebClient.get()
+            String xmlResponse = dataPortalRealEstateWebClient.get()
                     .uri(uriBuilder -> uriBuilder
-                            .queryParam("serviceKey", apiProperties.getKey())
+                            .queryParam("serviceKey", apiProperties.getDataPortal().getKey())
                             .queryParam("LAWD_CD", regionCode)
                             .queryParam("DEAL_YMD", dealYMD)
                             .queryParam("pageNo", pageNo)
@@ -87,7 +87,7 @@ public class RealEstateServiceImpl implements RealEstateService {
                     .retrieve()
                     .bodyToMono(String.class)
                     .block();
-            
+
             return XML_MAPPER.readValue(xmlResponse, RealEstateAPIResponseDto.class);
         } catch (Exception e) {
             System.err.println("Error fetching real estate data: " + e.getMessage());

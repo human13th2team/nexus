@@ -5,5 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.UUID;
 
-public interface SimRegCodesRepository extends JpaRepository<RegionCode, UUID> {
+public interface RegionCodeRepository extends JpaRepository<RegionCode, UUID> {
+
 }
