@@ -32,6 +32,8 @@ public class SimSearchListServiceImpl implements SimSearchListService {
                                                 .regionCode(entity.getRegionCode())
                                                 .cityName(entity.getCityName())
                                                 .countyName(entity.getCountyName())
+                                                .latitude(entity.getLatitude())
+                                                .longitude(entity.getLongitude())
                                                 .build())
                                 .toList();
 
@@ -52,6 +54,8 @@ public class SimSearchListServiceImpl implements SimSearchListService {
                                                 .regionCode(entity.getRegionCode())
                                                 .cityName(entity.getCityName())
                                                 .countyName(entity.getCountyName())
+                                                .latitude(entity.getLatitude())
+                                                .longitude(entity.getLongitude())
                                                 .build())
                                 .toList();
 

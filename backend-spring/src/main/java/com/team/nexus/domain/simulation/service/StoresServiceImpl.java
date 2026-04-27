@@ -21,6 +21,9 @@ public class StoresServiceImpl implements StoresService {
     private final APIProperties apiProperties;
     private final WebClient dataPortalSemasWebClient;
 
+    // Server-side In-memory Cache
+    private static final java.util.Map<String, List<StoreByRegionDto>> cache = new java.util.concurrent.ConcurrentHashMap<>();
+
     private StoresResponseDto processRanking(List<StoreByRegionDto> storeByRegionDtoList) {
         if (storeByRegionDtoList == null || storeByRegionDtoList.isEmpty()) {
             return new StoresResponseDto();
@@ -49,6 +52,12 @@ public class StoresServiceImpl implements StoresService {
     @Override
     @Transactional
     public StoresResponseDto getStoreList(String semasKsicCode) {
+        // 1. 캐시 확인
+        if (cache.containsKey(semasKsicCode)) {
+            System.out.println("[Cache Hit] Returning cached data for: " + semasKsicCode);
+            return processRanking(new java.util.ArrayList<>(cache.get(semasKsicCode)));
+        }
+
         List<RegionCode> regionCodeList = regionCodeRepository.findAll();
 
         List<StoreByRegionDto> storeByRegionDtoList = Flux.fromIterable(regionCodeList)
@@ -63,16 +72,32 @@ public class StoresServiceImpl implements StoresService {
                                 .build())
                         .retrieve()
                         .bodyToMono(SemasAPIDto.class)
+                        .retryWhen(reactor.util.retry.Retry.backoff(3, java.time.Duration.ofMillis(500))) // 3번 재시도
                         .map(response -> StoreByRegionDto.builder()
-                                .regionName(region.getCityName() + region.getCountyName())
-                                .storeCount(response.getBody() != null ? response.getBody().getTotalCount() : 0)
-                                .build())
-                        .onErrorReturn(StoreByRegionDto.builder()
                                 .regionCode(region.getRegionCode())
-                                .regionName(region.getCountyName())
-                                .storeCount(0)
+                                .regionName(region.getCityName() + " " + region.getCountyName())
+                                .storeCount(response.getBody() != null ? response.getBody().getTotalCount() : 0)
+                                .latitude(region.getLatitude())
+                                .longitude(region.getLongitude())
                                 .build())
+                        .onErrorResume(e -> {
+                            System.err.println("API Error for region " + region.getCountyName() + ": " + e.getMessage());
+                            return reactor.core.publisher.Mono.just(StoreByRegionDto.builder()
+                                    .regionCode(region.getRegionCode())
+                                    .regionName(region.getCityName() + " " + region.getCountyName())
+                                    .storeCount(0)
+                                    .latitude(region.getLatitude())
+                                    .longitude(region.getLongitude())
+                                    .build());
+                        }),
+                        30 // Concurrency 대폭 상향 (성능 우선)
                 ).collectList().block();
-    return processRanking(storeByRegionDtoList);
+        
+        // 2. 캐시 저장
+        if (storeByRegionDtoList != null) {
+            cache.put(semasKsicCode, storeByRegionDtoList);
+        }
+
+        return processRanking(storeByRegionDtoList);
     }
 }
