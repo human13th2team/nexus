@@ -19,6 +19,9 @@ export const metadata: Metadata = {
   description: "넥서스(Nexus)는 창업과 비즈니스 성장을 돕는 지능형 브랜딩 및 상권 분석 플랫폼입니다.",
 };
 
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
+
 export default function RootLayout({
   children,
 }: Readonly<{

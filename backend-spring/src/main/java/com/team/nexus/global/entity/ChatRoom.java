@@ -23,4 +23,7 @@ public class ChatRoom {
 
     @Column(name = "title", length = 100)
     private String title;
+
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private java.time.LocalDateTime createdAt;
 }
