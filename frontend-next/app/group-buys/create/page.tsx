@@ -119,7 +119,7 @@ export default function GroupBuyCreatePage() {
           imageUrl: finalImageUrl,
           itemPrice: parseInt(formData.itemPrice),
           targetCount: parseInt(formData.targetCount),
-          endDate: new Date(formData.endDate).toISOString(),
+          endDate: formData.endDate.includes('T') ? formData.endDate : `${formData.endDate}:00`,
         }),
       });
 

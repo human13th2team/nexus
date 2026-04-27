@@ -20,6 +20,10 @@ export default function GroupBuyListPage() {
   const [groupBuys, setGroupBuys] = useState<GroupBuy[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [now, setNow] = useState(new Date().getTime());
+  
+  // 검색 및 필터 상태
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [selectedRegion, setSelectedRegion] = useState('');
 
   // 현재 시간 업데이트 (1분마다)
   useEffect(() => {
@@ -27,8 +31,18 @@ export default function GroupBuyListPage() {
     return () => clearInterval(timer);
   }, []);
 
+  // 검색 및 필터링 로직
   useEffect(() => {
-    fetch('http://localhost:8080/api/v1/group-buys')
+    setIsLoading(true);
+    const params = new URLSearchParams();
+    if (searchKeyword) params.append('itemName', searchKeyword);
+    if (selectedRegion && selectedRegion !== '전체') params.append('region', selectedRegion);
+
+    const url = params.toString() 
+      ? `http://localhost:8080/api/v1/group-buys/search?${params.toString()}`
+      : 'http://localhost:8080/api/v1/group-buys';
+
+    fetch(url)
       .then(res => res.json())
       .then(data => {
         setGroupBuys(data);
@@ -38,12 +52,16 @@ export default function GroupBuyListPage() {
         console.error('Error fetching group buys:', err);
         setIsLoading(false);
       });
-  }, []);
+  }, [searchKeyword, selectedRegion]);
+
+  const regions = [
+    "전체", "서울", "경기", "인천", "부산", "대구", "광주", "대전", "울산", "세종", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주"
+  ];
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#1e293b] p-8">
       <div className="max-w-6xl mx-auto">
-        <header className="flex justify-between items-end mb-12">
+        <header className="flex justify-between items-end mb-8">
           <div>
             <span className="text-blue-600 font-bold tracking-widest text-sm uppercase mb-2 block">Premium Marketplace</span>
             <h1 className="text-5xl font-black text-[#0f172a] tracking-tight">
@@ -57,6 +75,40 @@ export default function GroupBuyListPage() {
             </button>
           </Link>
         </header>
+
+        {/* Search & Filter Section */}
+        <div className="flex flex-col md:flex-row gap-4 mb-12">
+          <div className="flex-1 relative">
+            <input 
+              type="text" 
+              placeholder="찾으시는 물품명을 입력해 주세요"
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              className="w-full pl-14 pr-6 py-5 bg-white rounded-2xl border border-slate-100 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-lg font-medium transition-all"
+            />
+            <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+              </svg>
+            </div>
+          </div>
+          <div className="md:w-64 relative">
+            <select 
+              value={selectedRegion}
+              onChange={(e) => setSelectedRegion(e.target.value)}
+              className="w-full px-6 py-5 bg-[#0f172a] text-white rounded-2xl border-none outline-none text-lg font-bold appearance-none cursor-pointer shadow-lg hover:bg-blue-600 transition-all"
+            >
+              {regions.map(r => (
+                <option key={r} value={r} className="bg-white text-slate-800">{r === '전체' ? '지역 전체' : r}</option>
+              ))}
+            </select>
+            <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-white/50">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+              </svg>
+            </div>
+          </div>
+        </div>
 
         {isLoading ? (
           <div className="flex justify-center items-center h-64">

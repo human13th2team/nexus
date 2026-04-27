@@ -156,7 +156,6 @@ export default function GroupBuyDetailPage() {
 
               <div className="flex items-end gap-3 mb-4">
                 <span className="text-5xl font-black text-blue-600">{gb.itemPrice.toLocaleString()}원</span>
-                <span className="text-xl text-slate-300 line-through font-bold mb-1.5 italic">Early Bird</span>
               </div>
 
               <div className={`rounded-[2rem] p-6 border text-center transition-colors ${timeLeft.isExpired ? 'bg-slate-100 border-slate-200' : 'bg-blue-50/50 border-blue-100'}`}>

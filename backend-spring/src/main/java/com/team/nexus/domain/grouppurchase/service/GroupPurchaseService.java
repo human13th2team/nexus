@@ -18,7 +18,8 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
+@org.springframework.transaction.annotation.Transactional(readOnly = true)
+@lombok.extern.slf4j.Slf4j
 public class GroupPurchaseService {
 
     private final GroupPurchaseRepository groupPurchaseRepository;
@@ -54,7 +55,21 @@ public class GroupPurchaseService {
     }
 
     public List<GroupPurchaseResponseDto> getAllGroupPurchases() {
-        return groupPurchaseRepository.findAll().stream()
+        // 정렬 조건:
+        // 1. 상태가 RECRUITING인 것을 먼저 (CASE 사용)
+        // 2. RECRUITING 중에서는 마감일(endDate)이 빠른 순
+        // 3. 마감된 것들은 나중에
+        return groupPurchaseRepository.findAllCustomSorted().stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<GroupPurchaseResponseDto> searchGroupPurchases(String itemName, String region) {
+        // 검색어가 비어있으면 null로 전달하여 쿼리에서 조건 무시
+        String searchItemName = (itemName != null && !itemName.trim().isEmpty()) ? itemName : null;
+        String searchRegion = (region != null && !region.trim().isEmpty()) ? region : null;
+
+        return groupPurchaseRepository.searchGroupPurchases(searchItemName, searchRegion).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
@@ -172,5 +187,22 @@ public class GroupPurchaseService {
                 .region(entity.getRegion())
                 .creatorNickname(entity.getUser().getNickname())
                 .build();
+    }
+
+    /**
+     * 매 시간 정각에 실행되어 마감 후 1일이 지난 공동구매 삭제
+     */
+    @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 * * * *")
+    @org.springframework.transaction.annotation.Transactional
+    public void cleanupExpiredGroupPurchases() {
+        LocalDateTime threshold = LocalDateTime.now().minusDays(1);
+        
+        // 마감시간이 1일 이상 지난 항목들 조회
+        List<GroupPurchase> expiredItems = groupPurchaseRepository.findAllByEndDateBefore(threshold);
+        
+        if (!expiredItems.isEmpty()) {
+            log.info("Cleaning up {} expired group purchases older than {}", expiredItems.size(), threshold);
+            groupPurchaseRepository.deleteAll(expiredItems);
+        }
     }
 }

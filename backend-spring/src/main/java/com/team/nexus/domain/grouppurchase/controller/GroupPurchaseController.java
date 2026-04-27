@@ -40,6 +40,14 @@ public class GroupPurchaseController {
         return ResponseEntity.ok(groupPurchaseService.getAllGroupPurchases());
     }
 
+    @Operation(summary = "공동구매 검색 및 필터링", description = "물품명 또는 지역으로 공동구매를 검색합니다.")
+    @GetMapping("/search")
+    public ResponseEntity<List<GroupPurchaseResponseDto>> searchGroupPurchases(
+            @RequestParam(required = false) String itemName,
+            @RequestParam(required = false) String region) {
+        return ResponseEntity.ok(groupPurchaseService.searchGroupPurchases(itemName, region));
+    }
+
     @Operation(summary = "공동구매 상세 조회", description = "특정 공동구매 항목의 상세 정보를 조회합니다.")
     @GetMapping("/{id}")
     public ResponseEntity<GroupPurchaseResponseDto> getGroupPurchase(@PathVariable UUID id) {

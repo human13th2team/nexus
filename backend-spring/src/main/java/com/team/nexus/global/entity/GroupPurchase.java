@@ -59,4 +59,8 @@ public class GroupPurchase {
 
     @Column(name = "region", length = 100)
     private String region;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "groupPurchase", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<GroupOrder> orders = new java.util.ArrayList<>();
 }
