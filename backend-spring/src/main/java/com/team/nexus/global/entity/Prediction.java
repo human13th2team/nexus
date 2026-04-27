@@ -40,4 +40,7 @@ public class Prediction {
 
     @OneToMany(mappedBy = "prediction", cascade = CascadeType.ALL)
     private List<DailyPrediction> dailyPredictions = new ArrayList<>();
+
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private LocalDateTime createdAt;
 }

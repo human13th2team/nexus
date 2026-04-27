@@ -19,7 +19,7 @@ interface Brand {
   title: string;
   industryCategoryId: string;
   currentStep: string;
-  createdAt?: string; // We'll mock this for now as it's not in DTO yet
+  createdAt: string;
 }
 
 const API_BASE_URL = "http://localhost:8080/api/v1";

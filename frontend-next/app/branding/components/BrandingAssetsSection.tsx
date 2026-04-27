@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const API_BASE_URL = "http://localhost:8000/api/v1/ai/branding";
 
@@ -26,6 +27,7 @@ export default function BrandingAssetsSection({
   logo: Logo;
   onBack: () => void;
 }) {
+  const router = useRouter();
   const [isGenerating, setIsGenerating] = useState(false);
   const [assets, setAssets] = useState<Asset[]>([]);
 
@@ -182,7 +184,10 @@ export default function BrandingAssetsSection({
           ← Back to Logo Generation
         </button>
         <button
-          onClick={() => alert("모든 브랜딩 과정이 완료되었습니다!")}
+          onClick={() => {
+            alert("모든 브랜딩 과정이 완료되었습니다! 내 브랜딩 목록으로 이동합니다.");
+            router.push("/branding");
+          }}
           className="px-10 py-4 bg-green-500 text-white rounded-2xl text-sm font-bold shadow-lg hover:bg-green-600 transition-all"
         >
           Finish Branding
