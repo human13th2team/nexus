@@ -56,6 +56,16 @@ public class GroupPurchaseController {
         return ResponseEntity.ok().build();
     }
 
+    @Operation(summary = "결제 승인 및 참여 확정", description = "토스 페이먼츠 결제 승인을 거쳐 참여를 확정합니다.")
+    @PostMapping("/{id}/confirm-payment")
+    public ResponseEntity<Void> confirmPayment(
+            @PathVariable UUID id,
+            @RequestParam UUID userId,
+            @RequestBody com.team.nexus.domain.grouppurchase.dto.PaymentConfirmRequestDto confirmDto) {
+        groupPurchaseService.confirmPayment(id, userId, confirmDto);
+        return ResponseEntity.ok().build();
+    }
+
     @Operation(summary = "이미지 업로드", description = "공동구매 물품 이미지를 업로드합니다.")
     @PostMapping("/upload")
     public ResponseEntity<String> uploadImage(@RequestParam("file") MultipartFile file) throws IOException {

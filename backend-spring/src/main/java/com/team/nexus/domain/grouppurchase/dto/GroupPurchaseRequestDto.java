@@ -13,7 +13,10 @@ public class GroupPurchaseRequestDto {
     private String itemName;
     private Integer itemPrice;
     private Integer targetCount;
+
+    @com.fasterxml.jackson.annotation.JsonFormat(shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
     private LocalDateTime endDate;
+
     private String description;
     private String imageUrl;
     private String region;

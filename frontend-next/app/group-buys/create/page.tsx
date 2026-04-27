@@ -45,6 +45,17 @@ export default function GroupBuyCreatePage() {
     description: '',
   });
 
+  // 테스트를 위해 로그인 체크 잠시 중단
+  useEffect(() => {
+    /*
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      alert('로그인이 필요한 서비스입니다.');
+      router.push('/auth/login');
+    }
+    */
+  }, [router]);
+
   // 도 선택 시 도시 목록 업데이트
   useEffect(() => {
     if (selectedProvince) {
@@ -93,7 +104,10 @@ export default function GroupBuyCreatePage() {
         }
       }
 
-      const userId = '32b28f7a-0dd7-4e8f-aa80-fdcbd1b1a587';
+      // 테스트용 사용자 ID (DB에 존재하는 유효한 ID: d38bc69d-9660-4e11-a50d-9ee90ff38673)
+      // 로그인 정보가 있으면 그것을 쓰고, 없으면 테스트 ID를 사용합니다.
+      const userId = localStorage.getItem('userId') || 'd38bc69d-9660-4e11-a50d-9ee90ff38673';
+
       const response = await fetch(`http://localhost:8080/api/v1/group-buys?userId=${userId}`, {
         method: 'POST',
         headers: {

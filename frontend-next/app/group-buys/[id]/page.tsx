@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { ShoppingBag } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -196,23 +197,16 @@ export default function GroupBuyDetailPage() {
                 <button 
                   disabled={timeLeft.isExpired}
                   onClick={() => handlePayment('TOSS')}
-                  className={`w-full py-5 rounded-2xl font-black text-lg flex items-center justify-center gap-4 transition-all shadow-xl transform active:scale-95 ${
-                    timeLeft.isExpired ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-[#0050ff] hover:bg-blue-700 text-white shadow-blue-500/30'
+                  className={`w-full py-6 rounded-2xl font-black text-xl flex items-center justify-center gap-4 transition-all shadow-2xl transform active:scale-95 ${
+                    timeLeft.isExpired ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-500/30'
                   }`}
                 >
-                  <img src="https://static.toss.im/assets/homepage/safety/icn-safety-shield.svg" className={`w-7 h-7 invert ${timeLeft.isExpired && 'opacity-20'}`} alt="" />
-                  {timeLeft.isExpired ? '모집 마감' : 'TOSS 결제하기'}
+                  <ShoppingBag className="w-6 h-6" />
+                  {timeLeft.isExpired ? '모집이 마감되었습니다' : '결제하고 참여하기'}
                 </button>
-                <button 
-                  disabled={timeLeft.isExpired}
-                  onClick={() => handlePayment('KAKAO_PAY')}
-                  className={`w-full py-5 rounded-2xl font-black text-lg flex items-center justify-center gap-4 transition-all shadow-xl transform active:scale-95 ${
-                    timeLeft.isExpired ? 'bg-slate-100 text-slate-300 cursor-not-allowed shadow-none' : 'bg-[#fee500] hover:bg-[#ebd300] text-[#3c1e1e] shadow-yellow-500/20'
-                  }`}
-                >
-                  <img src="https://developers.kakao.com/assets/img/about/logos/kakaotalksharing/kakaotalk_sharing_btn_medium.png" className={`w-7 h-7 ${timeLeft.isExpired && 'opacity-20'}`} alt="" />
-                  {timeLeft.isExpired ? '모집 마감' : '카카오페이 참여'}
-                </button>
+                <p className="text-center text-xs text-slate-400 font-medium">
+                  토스 페이먼츠의 안전한 결제 시스템을 이용합니다.
+                </p>
               </div>
             </div>
           </div>

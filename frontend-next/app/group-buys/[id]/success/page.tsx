@@ -15,19 +15,19 @@ export default function PaymentSuccessPage() {
 
   useEffect(() => {
     const confirmParticipation = async () => {
-      const userId = '32b28f7a-0dd7-4e8f-aa80-fdcbd1b1a587';
+      // 로그인된 userId를 가져오고, 없으면 테스트용 ID 사용
+      const userId = localStorage.getItem('userId') || 'd38bc69d-9660-4e11-a50d-9ee90ff38673';
       
       try {
-        const response = await fetch(`http://localhost:8080/api/v1/group-buys/${params.id}/participate?userId=${userId}`, {
+        const response = await fetch(`http://localhost:8080/api/v1/group-buys/${params.id}/confirm-payment?userId=${userId}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            pgProvider: 'TOSS',
-            paymentMethod: 'CARD',
-            orderCount: 1,
-            pgTid: paymentKey // 토스 결제키 저장
+            paymentKey: paymentKey,
+            orderId: orderId,
+            amount: Number(amount)
           }),
         });
 

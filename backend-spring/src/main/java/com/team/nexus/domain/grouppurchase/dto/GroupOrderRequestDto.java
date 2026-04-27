@@ -10,5 +10,6 @@ import lombok.*;
 public class GroupOrderRequestDto {
     private String pgProvider; // TOSS, KAKAO_PAY
     private String paymentMethod;
+    private String pgTid;
     private Integer orderCount;
 }

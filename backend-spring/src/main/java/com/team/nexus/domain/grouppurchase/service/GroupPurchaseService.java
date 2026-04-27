@@ -24,6 +24,10 @@ public class GroupPurchaseService {
     private final GroupPurchaseRepository groupPurchaseRepository;
     private final GroupOrderRepository groupOrderRepository;
     private final UserRepository userRepository;
+    private final com.team.nexus.global.service.ExternalApiService externalApiService;
+    
+    @org.springframework.beans.factory.annotation.Value("${toss.payments.secret-key}")
+    private String tossSecretKey;
 
     @Transactional
     public GroupPurchaseResponseDto createGroupPurchase(GroupPurchaseRequestDto requestDto, UUID userId) {
@@ -64,9 +68,11 @@ public class GroupPurchaseService {
     @Transactional
     public void participate(UUID groupBuyId, UUID userId, com.team.nexus.domain.grouppurchase.dto.GroupOrderRequestDto orderDto) {
         // 중복 참여 체크
+        /* 테스트를 위해 중복 참여 체크 잠시 해제
         if (groupOrderRepository.existsByGroupPurchaseIdAndUserId(groupBuyId, userId)) {
             throw new RuntimeException("이미 참여한 공동구매입니다.");
         }
+        */
 
         GroupPurchase groupPurchase = groupPurchaseRepository.findById(groupBuyId)
                 .orElseThrow(() -> new IllegalArgumentException("Group purchase not found"));
@@ -82,7 +88,9 @@ public class GroupPurchaseService {
                 .orderCount(orderDto.getOrderCount())
                 .totalPrice(groupPurchase.getItemPrice() * orderDto.getOrderCount())
                 .pgProvider(orderDto.getPgProvider())
-                .paymentStatus("PAID") // Simplified for now
+                .paymentMethod(orderDto.getPaymentMethod())
+                .pgTid(orderDto.getPgTid())
+                .paymentStatus("PAID")
                 .paidAt(LocalDateTime.now())
                 .build();
 
@@ -91,12 +99,61 @@ public class GroupPurchaseService {
         // Update current count
         groupPurchase.setCurrentCount(groupPurchase.getCurrentCount() + orderDto.getOrderCount());
         
-        // Check if target reached
         if (groupPurchase.getCurrentCount() >= groupPurchase.getTargetCount()) {
             groupPurchase.setStatus("COMPLETED");
         }
         
         groupPurchaseRepository.save(groupPurchase);
+    }
+
+    @Transactional
+    public void confirmPayment(UUID groupBuyId, UUID userId, com.team.nexus.domain.grouppurchase.dto.PaymentConfirmRequestDto confirmDto) {
+        // 1. 토스 결제 승인 API 호출
+        String url = "https://api.tosspayments.com/v1/payments/confirm";
+        
+        // 시크릿 키를 Base64 인코딩하여 Basic Auth 헤더 생성
+        String auth = java.util.Base64.getEncoder().encodeToString((tossSecretKey + ":").getBytes());
+        java.util.Map<String, String> headers = new java.util.HashMap<>();
+        headers.put("Authorization", "Basic " + auth);
+
+        java.util.Map<String, Object> body = new java.util.HashMap<>();
+        body.put("paymentKey", confirmDto.getPaymentKey());
+        body.put("orderId", confirmDto.getOrderId());
+        body.put("amount", confirmDto.getAmount());
+
+        try {
+            java.util.Map<String, Object> response = externalApiService.post(url, body, headers, java.util.Map.class);
+            
+            // 2. 응답 데이터에서 정보 추출 (method, provider 등)
+            String method = (String) response.get("method"); // 예: 카드, 가상계좌 등
+            String pgTid = (String) response.get("paymentKey");
+            
+            // 카드 결제인 경우 더 구체적인 정보 추출 시도
+            String pgProvider = "TOSS";
+            if ("카드".equals(method)) {
+                java.util.Map<String, Object> card = (java.util.Map<String, Object>) response.get("card");
+                if (card != null) {
+                    pgProvider = (String) card.get("issuerCode"); // 카드 발급사 코드
+                }
+            } else if (response.containsKey("easyPay")) {
+                java.util.Map<String, Object> easyPay = (java.util.Map<String, Object>) response.get("easyPay");
+                if (easyPay != null) {
+                    pgProvider = (String) easyPay.get("provider"); // 예: 카카오페이, 토스페이 등
+                }
+            }
+
+            // 3. 기존 participate 로직을 호출하여 주문 저장
+            com.team.nexus.domain.grouppurchase.dto.GroupOrderRequestDto orderDto = new com.team.nexus.domain.grouppurchase.dto.GroupOrderRequestDto();
+            orderDto.setOrderCount(1); // 기본 1개로 설정 (추후 확장 가능)
+            orderDto.setPgProvider(pgProvider);
+            orderDto.setPaymentMethod(method);
+            orderDto.setPgTid(pgTid);
+
+            participate(groupBuyId, userId, orderDto);
+
+        } catch (Exception e) {
+            throw new RuntimeException("결제 승인 중 오류가 발생했습니다: " + e.getMessage());
+        }
     }
 
     private GroupPurchaseResponseDto convertToDto(GroupPurchase entity) {

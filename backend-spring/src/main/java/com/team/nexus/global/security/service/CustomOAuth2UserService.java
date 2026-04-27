@@ -53,23 +53,28 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
             loginType = 2;
         }
 
-        saveOrUpdate(email, nickname, loginType);
+        User user = saveOrUpdate(email, nickname, loginType);
+
+        // 추가적인 정보를 attributes에 담아서 반환
+        Map<String, Object> customAttributes = new java.util.HashMap<>(attributes);
+        customAttributes.put("userId", user.getId());
+        customAttributes.put("nickname", user.getNickname());
 
         return new DefaultOAuth2User(
                 Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")),
-                attributes,
+                customAttributes,
                 userNameAttributeName
         );
     }
 
-    private void saveOrUpdate(String email, String nickname, int loginType) {
+    private User saveOrUpdate(String email, String nickname, int loginType) {
         Optional<User> userOptional = userRepository.findByEmail(email);
         
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             // 닉네임 정도만 업데이트하거나 필요 로직 추가
             user.setNickname(nickname);
-            userRepository.save(user);
+            return userRepository.save(user);
         } else {
             User user = User.builder()
                     .email(email)
@@ -77,9 +82,9 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                     .passwd("") // 소셜 로그인은 비밀번호 없음
                     .userType(0) // 기본 일반 회원
                     .loginType(loginType)
-                    .address("") // 소셜 로그인은 주소 정보 없음 (나중에 입력 유도 가능)
+                    .address("") // 소셜 로그인은 주소 정보 없음
                     .build();
-            userRepository.save(user);
+            return userRepository.save(user);
         }
     }
 }
