@@ -42,13 +42,20 @@ public class ChatController {
     @Operation(summary = "채팅방 생성")
     @PostMapping("/rooms")
     public ResponseEntity<com.team.nexus.domain.chat.dto.ChatRoomResponseDto> createRoom(@RequestBody com.team.nexus.domain.chat.dto.ChatRoomRequestDto requestDto) {
-        return ResponseEntity.ok(chatService.createRoom(requestDto.getTitle(), requestDto.getType(), requestDto.getDescription(), requestDto.getCreatorId()));
+        return ResponseEntity.ok(chatService.createRoom(requestDto.getTitle(), requestDto.getType(), requestDto.getDescription(), requestDto.getImageUrl(), requestDto.getCreatorId()));
     }
 
     @Operation(summary = "채팅방 참가")
     @PostMapping("/rooms/{roomId}/join")
     public ResponseEntity<Void> joinRoom(@PathVariable UUID roomId, @RequestParam UUID userId) {
         chatService.joinRoom(roomId, userId);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "채팅방 나가기")
+    @PostMapping("/rooms/{roomId}/leave")
+    public ResponseEntity<Void> leaveRoom(@PathVariable UUID roomId, @RequestParam UUID userId) {
+        chatService.leaveRoom(roomId, userId);
         return ResponseEntity.ok().build();
     }
 

@@ -16,7 +16,10 @@ import {
   Smile,
   Paperclip,
   Image as ImageIcon,
-  MessageSquare
+  MessageSquare,
+  File,
+  Download,
+  LogOut
 } from 'lucide-react';
 import ChatService from '@/lib/chat/chatService';
 import { cn } from '@/lib/utils';
@@ -26,18 +29,23 @@ interface Message {
   senderId: string;
   senderNickname: string;
   message: string;
-  timestamp: string;
-  type: 'TALK' | 'ENTER' | 'LEAVE';
+  createdAt: string;
+  type: 'TALK' | 'ENTER' | 'LEAVE' | 'IMAGE' | 'FILE';
+  fileUrl?: string;
+  fileName?: string;
 }
 
-interface ChatRoom {
+interface ChatRoomResponseDto {
   id: string;
   title: string;
   description?: string;
+  imageUrl?: string;
   lastMessage?: string;
+  lastMessageAt?: string;
+  createdAt: string;
   unreadCount?: number;
-  type: 'GROUP' | 'PRIVATE';
   participantCount?: number;
+  type: 'GROUP' | 'PRIVATE';
 }
 
 const ChatComponent = () => {
@@ -56,6 +64,13 @@ const ChatComponent = () => {
   const [newRoomTitle, setNewRoomTitle] = useState('');
   const [newRoomType, setNewRoomType] = useState<'GROUP' | 'PRIVATE'>('GROUP');
   const [newRoomDescription, setNewRoomDescription] = useState('');
+  const [newRoomImageUrl, setNewRoomImageUrl] = useState('');
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
+  const [joiningRoom, setJoiningRoom] = useState<ChatRoomResponseDto | null>(null);
   
   const chatServiceRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -113,19 +128,50 @@ const ChatComponent = () => {
     }
   };
 
-  const handleJoinRoom = async (roomId: string) => {
-    if (!currentUserId) return;
+  const handleJoinRoom = (room: ChatRoomResponseDto) => {
+    setJoiningRoom(room);
+    setConfirmModalOpen(true);
+  };
+
+  const confirmJoinRoom = async () => {
+    if (!currentUserId || !joiningRoom) return;
+    
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/chat/rooms/${roomId}/join?userId=${currentUserId}`, {
+      const response = await fetch(`http://localhost:8080/api/v1/chat/rooms/${joiningRoom.id}/join?userId=${currentUserId}`, {
         method: 'POST'
       });
       if (response.ok) {
         await fetchMyRooms(currentUserId);
-        setActiveRoomId(roomId);
+        setActiveRoomId(joiningRoom.id);
         setShowAllRooms(false);
+        setConfirmModalOpen(false);
+        setJoiningRoom(null);
       }
     } catch (error) {
       console.error("Failed to join room:", error);
+    }
+  };
+
+  const handleLeaveRoom = () => {
+    const activeRoom = rooms.find(r => r.id === activeRoomId);
+    if (!activeRoom || activeRoom.type !== 'GROUP') return;
+    setLeaveModalOpen(true);
+  };
+
+  const confirmLeaveRoom = async () => {
+    if (!activeRoomId || !currentUserId) return;
+    
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/chat/rooms/${activeRoomId}/leave?userId=${currentUserId}`, {
+        method: 'POST'
+      });
+      if (response.ok) {
+        await fetchMyRooms(currentUserId);
+        setActiveRoomId(null);
+        setLeaveModalOpen(false);
+      }
+    } catch (error) {
+      console.error("Failed to leave room:", error);
     }
   };
 
@@ -145,8 +191,30 @@ const ChatComponent = () => {
     const chatService = new ChatService();
     chatService.connect(
       (message: any) => {
+        // 1. 현재 채팅창 메시지 추가
         setMessages(prev => [...prev, message]);
         scrollToBottom();
+
+        // 2. 왼쪽 채팅방 목록 실시간 업데이트 (미리보기 및 정렬)
+        setRooms(prevRooms => {
+          const updatedRooms = prevRooms.map(room => {
+            if (room.id === message.roomId) {
+              return {
+                ...room,
+                lastMessage: message.type === 'IMAGE' ? '(사진)' : 
+                             message.type === 'FILE' ? '(파일)' : message.message,
+                lastMessageAt: message.createdAt
+              };
+            }
+            return room;
+          });
+          // 최신 메시지 순으로 다시 정렬
+          return [...updatedRooms].sort((a, b) => {
+            const t1 = new Date(a.lastMessageAt || a.createdAt).getTime();
+            const t2 = new Date(b.lastMessageAt || b.createdAt).getTime();
+            return t2 - t1;
+          });
+        });
       },
       activeRoomId,
       () => setIsConnected(true)
@@ -206,6 +274,7 @@ const ChatComponent = () => {
           title: newRoomTitle,
           type: newRoomType,
           description: newRoomDescription,
+          imageUrl: newRoomImageUrl,
           creatorId: currentUserId
         }),
       });
@@ -217,10 +286,100 @@ const ChatComponent = () => {
         setIsCreateModalOpen(false);
         setNewRoomTitle('');
         setNewRoomDescription('');
+        setNewRoomImageUrl('');
         setNewRoomType('GROUP');
       }
     } catch (error) {
       alert("방 생성에 실패했습니다.");
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 미리보기 생성
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // 서버 업로드
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('http://localhost:8080/api/v1/files/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setNewRoomImageUrl(data.url);
+      } else {
+        alert("이미지 업로드에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileMessageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    console.log("File selected:", file);
+    if (!file || !activeRoomId || !currentUserId || !chatServiceRef.current) {
+      console.log("Missing required data:", { file, activeRoomId, currentUserId, connected: !!chatServiceRef.current });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      console.log("Uploading file...");
+      const response = await fetch('http://localhost:8080/api/v1/files/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Upload success:", data);
+        const fileUrl = data.url;
+        const fileName = file.name;
+        const isImage = file.type.startsWith('image/');
+        
+        console.log("Sending file message:", {
+          activeRoomId,
+          currentUserId,
+          text: isImage ? '사진을 보냈습니다.' : `파일을 보냈습니다: ${fileName}`,
+          type: isImage ? 'IMAGE' : 'FILE',
+          fileUrl,
+          fileName
+        });
+
+        chatServiceRef.current.sendMessage(
+          activeRoomId,
+          currentUserId,
+          isImage ? '사진을 보냈습니다.' : `파일을 보냈습니다: ${fileName}`,
+          isImage ? 'IMAGE' : 'FILE',
+          fileUrl,
+          fileName
+        );
+      } else {
+        console.error("Upload failed with status:", response.status);
+        alert("파일 업로드에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("File upload error:", error);
+    } finally {
+      // 같은 파일을 다시 선택해도 이벤트가 발생하도록 초기화
+      e.target.value = '';
     }
   };
 
@@ -305,7 +464,13 @@ const ChatComponent = () => {
               key={room.id}
               onClick={() => {
                 if (showAllRooms) {
-                  handleJoinRoom(room.id);
+                  const isJoined = rooms.some(r => r.id === room.id);
+                  if (isJoined) {
+                    setActiveRoomId(room.id);
+                    setShowAllRooms(false);
+                  } else {
+                    handleJoinRoom(room);
+                  }
                 } else {
                   setActiveRoomId(room.id);
                 }
@@ -316,25 +481,36 @@ const ChatComponent = () => {
                 : 'hover:bg-zinc-100'
               }`}
             >
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg ${
-                room.type === 'GROUP' ? 'bg-zinc-900' : 'bg-zinc-400'
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg overflow-hidden ${
+                room.imageUrl ? 'bg-transparent' : (room.type === 'GROUP' ? 'bg-zinc-900' : 'bg-zinc-400')
               }`}>
-                {room.type === 'GROUP' ? <Hash size={20} /> : room.title[0]}
+                {room.imageUrl ? (
+                  <img src={room.imageUrl} alt={room.title} className="w-full h-full object-cover" />
+                ) : (
+                  room.type === 'GROUP' ? <Hash size={20} /> : room.title[0]
+                )}
               </div>
-              <div className="flex-1 text-left">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-sm truncate max-w-[120px]">{room.title}</span>
-                  {showAllRooms && !rooms.some(r => r.id === room.id) && (
-                    <span className="text-[9px] bg-zinc-200 text-zinc-600 px-1.5 py-0.5 rounded-md font-bold">JOIN</span>
+              <div className="flex-1 text-left min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="font-bold text-sm truncate">{room.title}</span>
+                    <span className="text-[10px] text-zinc-400 font-medium whitespace-nowrap">
+                      {room.participantCount || 0}명
+                    </span>
+                  </div>
+                  {!showAllRooms && room.lastMessageAt && (
+                    <span className="text-[10px] text-zinc-400 whitespace-nowrap">
+                      {new Date(room.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
                   )}
-                  {!showAllRooms && room.unreadCount ? (
-                    <div className="w-5 h-5 bg-black text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                      {room.unreadCount}
-                    </div>
-                  ) : null}
+                  {showAllRooms && !rooms.some(r => r.id === room.id) && (
+                    <span className="text-[9px] bg-zinc-200 text-zinc-600 px-1.5 py-0.5 rounded-md font-bold whitespace-nowrap">JOIN</span>
+                  )}
                 </div>
-                <p className="text-[11px] text-zinc-400 truncate max-w-[180px] mt-0.5 font-medium">
-                  {room.description || (showAllRooms ? '대화에 참여해보세요' : (room.lastMessage || '새로운 대화를 시작해보세요'))}
+                <p className="text-[11px] text-zinc-500 truncate mt-0.5 font-medium">
+                  {showAllRooms 
+                    ? (room.description || '상세 설명이 없는 채팅방입니다.') 
+                    : (room.lastMessage || '새로운 대화를 시작해보세요!')}
                 </p>
               </div>
             </button>
@@ -365,8 +541,12 @@ const ChatComponent = () => {
                 >
                   <ChevronLeft size={20} />
                 </button>
-                <div className="w-10 h-10 bg-zinc-100 rounded-xl flex items-center justify-center font-bold text-zinc-500">
-                  {activeRoom.type === 'GROUP' ? <Hash size={20} /> : <Users size={20} />}
+                <div className="w-10 h-10 bg-zinc-100 rounded-xl flex items-center justify-center font-bold text-zinc-500 overflow-hidden">
+                  {activeRoom.imageUrl ? (
+                    <img src={activeRoom.imageUrl} alt={activeRoom.title} className="w-full h-full object-cover" />
+                  ) : (
+                    activeRoom.type === 'GROUP' ? <Hash size={20} /> : <Users size={20} />
+                  )}
                 </div>
                 <div>
                   <h2 className="font-black text-base tracking-tight">{activeRoom.title}</h2>
@@ -381,7 +561,19 @@ const ChatComponent = () => {
               </div>
               
               <div className="flex items-center gap-2">
-                <button className="p-2.5 text-zinc-400 hover:text-black hover:bg-zinc-50 rounded-xl transition-all"><Info size={20} /></button>
+                {rooms.find(r => r.id === activeRoomId)?.type === 'GROUP' && (
+                  <button 
+                    onClick={handleLeaveRoom}
+                    className="p-2.5 rounded-xl text-red-500 hover:bg-red-50 transition-all flex items-center gap-2 group"
+                    title="방 나가기"
+                  >
+                    <LogOut size={20} className="group-hover:translate-x-1 transition-transform" />
+                    <span className="text-xs font-bold hidden sm:inline">나가기</span>
+                  </button>
+                )}
+                <button className="p-2.5 rounded-xl text-zinc-400 hover:bg-zinc-100 transition-all">
+                  <Info size={20} />
+                </button>
               </div>
             </div>
 
@@ -410,12 +602,44 @@ const ChatComponent = () => {
                         {msg.senderNickname}
                       </span>
                     )}
-                    <div className={`max-w-[70%] group relative px-4 py-3 rounded-2xl text-sm font-medium leading-relaxed ${
+                    <div className={`max-w-[70%] group relative rounded-2xl text-sm font-medium leading-relaxed overflow-hidden ${
                       isMe 
                       ? 'bg-black text-white rounded-tr-none shadow-xl shadow-black/10' 
                       : 'bg-white text-zinc-800 rounded-tl-none shadow-lg shadow-black/5 border border-zinc-100'
                     }`}>
-                      {msg.message}
+                      {msg.type === 'IMAGE' && msg.fileUrl ? (
+                        <div className="flex flex-col">
+                          <img 
+                            src={msg.fileUrl} 
+                            alt="Shared Image" 
+                            className="w-full max-h-[300px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => setSelectedImageUrl(msg.fileUrl!)}
+                          />
+                          <div className="px-4 py-2 text-[11px] opacity-70">
+                            {msg.message}
+                          </div>
+                        </div>
+                      ) : msg.type === 'FILE' && msg.fileUrl ? (
+                        <div className="p-4 flex items-center gap-3 min-w-[200px]">
+                          <div className="w-10 h-10 bg-zinc-100 rounded-xl flex items-center justify-center text-zinc-500">
+                            <File size={20} />
+                          </div>
+                          <div className="flex-1 truncate">
+                            <p className="text-xs font-bold truncate">{msg.fileName}</p>
+                            <a 
+                              href={msg.fileUrl?.replace('/display/', '/download/')} 
+                              download={msg.fileName}
+                              className="text-[10px] text-blue-500 font-black hover:underline mt-1 flex items-center gap-1"
+                            >
+                              <Download size={10} /> 다운로드
+                            </a>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="px-4 py-3">
+                          {msg.message}
+                        </div>
+                      )}
                       <span className={`absolute bottom-[-20px] whitespace-nowrap text-[9px] font-bold text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity ${
                         isMe ? 'right-0' : 'left-0'
                       }`}>
@@ -431,14 +655,27 @@ const ChatComponent = () => {
             <div className="p-6 bg-white">
               <form 
                 onSubmit={handleSendMessage}
-                className="relative bg-zinc-50 rounded-2xl border border-zinc-100 p-2 focus-within:bg-white focus-within:border-black transition-all"
+                className="relative bg-zinc-50 rounded-2xl border border-zinc-100 p-2 focus-within:bg-white focus-within:border-black transition-all flex items-end gap-2"
               >
+                <input 
+                  type="file"
+                  id="chat-image-upload"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={(e) => handleFileMessageUpload(e)}
+                />
+                <input 
+                  type="file"
+                  id="chat-file-upload"
+                  className="hidden"
+                  onChange={(e) => handleFileMessageUpload(e)}
+                />
                 <textarea 
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Type a message..."
+                  placeholder="메시지를 입력하세요..."
                   rows={1}
-                  className="w-full pl-4 pr-16 py-3 bg-transparent border-none focus:ring-0 text-sm resize-none font-medium placeholder:text-zinc-400"
+                  className="flex-1 py-3 px-4 bg-transparent border-none focus:ring-0 text-sm resize-none font-medium placeholder:text-zinc-400"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
@@ -459,13 +696,24 @@ const ChatComponent = () => {
                 </button>
               </form>
               <div className="flex items-center gap-4 mt-3 ml-1">
-                <button className="flex items-center gap-1.5 text-[11px] font-bold text-zinc-400 hover:text-black transition-colors">
+                <button 
+                  type="button"
+                  onClick={() => document.getElementById('chat-file-upload')?.click()}
+                  className="flex items-center gap-1.5 text-[11px] font-bold text-zinc-400 hover:text-black transition-colors"
+                >
                   <Paperclip size={14} /> 파일 첨부
                 </button>
-                <button className="flex items-center gap-1.5 text-[11px] font-bold text-zinc-400 hover:text-black transition-colors">
+                <button 
+                  type="button"
+                  className="flex items-center gap-1.5 text-[11px] font-bold text-zinc-400 hover:text-black transition-colors"
+                >
                   <Smile size={14} /> 이모지
                 </button>
-                <button className="flex items-center gap-1.5 text-[11px] font-bold text-zinc-400 hover:text-black transition-colors">
+                <button 
+                  type="button"
+                  onClick={() => document.getElementById('chat-image-upload')?.click()}
+                  className="flex items-center gap-1.5 text-[11px] font-bold text-zinc-400 hover:text-black transition-colors"
+                >
                   <ImageIcon size={14} /> 이미지
                 </button>
               </div>
@@ -573,6 +821,35 @@ const ChatComponent = () => {
                 />
               </div>
 
+              <div className="space-y-3">
+                <label className="text-xs font-black text-zinc-400 uppercase tracking-widest ml-1">프로필 이미지</label>
+                <div className="flex items-center gap-6 p-6 bg-zinc-50 rounded-2xl border-2 border-dashed border-zinc-200 hover:border-zinc-300 transition-all group">
+                  <div className="w-20 h-20 rounded-2xl bg-white shadow-sm flex items-center justify-center overflow-hidden border border-zinc-100 shrink-0">
+                    {imagePreview ? (
+                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <Plus size={24} className="text-zinc-300 group-hover:scale-110 transition-transform" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-zinc-500 mb-2">이미지를 선택해주세요</p>
+                    <input 
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="room-image-upload"
+                    />
+                    <label 
+                      htmlFor="room-image-upload"
+                      className="inline-block px-4 py-2 bg-white border border-zinc-200 text-zinc-600 rounded-xl text-[11px] font-black hover:bg-zinc-900 hover:text-white hover:border-black transition-all cursor-pointer shadow-sm"
+                    >
+                      {isUploading ? '업로드 중...' : '파일 선택'}
+                    </label>
+                  </div>
+                </div>
+              </div>
+
               <div className="pt-4 flex gap-4">
                 <button 
                   type="button"
@@ -589,6 +866,112 @@ const ChatComponent = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* 4. 이미지 확대 모달 (Lightbox) */}
+      {selectedImageUrl && (
+        <div 
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300"
+          onClick={() => setSelectedImageUrl(null)}
+        >
+          <button 
+            className="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all hover:rotate-90"
+            onClick={() => setSelectedImageUrl(null)}
+          >
+            <Plus className="rotate-45" size={32} />
+          </button>
+          <div 
+            className="relative max-w-5xl max-h-[85vh] w-full h-full flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img 
+              src={selectedImageUrl} 
+              alt="Full view" 
+              className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl animate-in zoom-in-95 duration-300"
+            />
+          </div>
+        </div>
+      )}
+      {/* 5. 입장 확인 커스텀 모달 */}
+      {confirmModalOpen && joiningRoom && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 bg-zinc-100 rounded-3xl mx-auto mb-6 flex items-center justify-center text-zinc-900 overflow-hidden shadow-inner">
+                {joiningRoom.imageUrl ? (
+                  <img src={joiningRoom.imageUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <Users size={40} />
+                )}
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">{joiningRoom.title}</h3>
+              <p className="text-sm text-gray-500 mb-6 px-4">
+                {joiningRoom.description || '이 채팅방에 참여하여 대화를 나눠보세요.'}
+              </p>
+              
+              <div className="flex items-center justify-center gap-4 mb-8">
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">현재 인원</span>
+                  <span className="text-sm font-bold text-zinc-900">{joiningRoom.participantCount || 0}명</span>
+                </div>
+                <div className="w-[1px] h-8 bg-zinc-100" />
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-1">방 유형</span>
+                  <span className="text-sm font-bold text-zinc-900">{joiningRoom.type === 'GROUP' ? '그룹' : '1:1'}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => {
+                    setConfirmModalOpen(false);
+                    setJoiningRoom(null);
+                  }}
+                  className="flex-1 py-4 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-bold rounded-2xl transition-all"
+                >
+                  취소
+                </button>
+                <button 
+                  onClick={confirmJoinRoom}
+                  className="flex-1 py-4 bg-zinc-900 hover:bg-black text-white font-bold rounded-2xl shadow-lg shadow-zinc-200 transition-all"
+                >
+                  입장하기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* 6. 퇴장 확인 커스텀 모달 */}
+      {leaveModalOpen && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 bg-red-50 rounded-3xl mx-auto mb-6 flex items-center justify-center text-red-500 shadow-inner">
+                <LogOut size={40} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">채팅방 나가기</h3>
+              <p className="text-sm text-gray-500 mb-8 px-4 leading-relaxed">
+                정말 이 채팅방을 떠나시겠습니까?<br />
+                <span className="font-bold text-red-500">퇴장 후에는 기존 대화 내역을 볼 수 없으며, 목록에서 삭제됩니다.</span>
+              </p>
+              
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setLeaveModalOpen(false)}
+                  className="flex-1 py-4 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 font-bold rounded-2xl transition-all"
+                >
+                  취소
+                </button>
+                <button 
+                  onClick={confirmLeaveRoom}
+                  className="flex-1 py-4 bg-red-500 hover:bg-red-600 text-white font-bold rounded-2xl shadow-lg shadow-red-100 transition-all"
+                >
+                  방 나가기
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

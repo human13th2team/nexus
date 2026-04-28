@@ -9,10 +9,11 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ChatService {
-    ChatRoomResponseDto createRoom(String title, ChatRoom.ChatRoomType type, String description, UUID creatorId);
+    ChatRoomResponseDto createRoom(String title, ChatRoom.ChatRoomType type, String description, String imageUrl, UUID creatorId);
     void joinRoom(UUID roomId, UUID userId);
     ChatMessageResponseDto saveMessage(ChatMessageRequestDto messageDto);
     List<ChatMessageResponseDto> getMessages(UUID roomId);
     List<ChatRoomResponseDto> getAllRooms();
+    void leaveRoom(UUID roomId, UUID userId);
     List<ChatRoomResponseDto> getJoinedRooms(UUID userId);
 }

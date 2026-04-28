@@ -47,13 +47,15 @@ export class ChatService {
     }
   }
 
-  sendMessage(roomId, senderId, message, type = 'TALK') {
+  sendMessage(roomId, senderId, message, type = 'TALK', fileUrl = null, fileName = null) {
     if (this.client && this.client.connected) {
       const payload = {
         roomId: roomId,
         senderId: senderId,
         message: message,
-        type: type
+        type: type,
+        fileUrl: fileUrl,
+        fileName: fileName
       };
       
       this.client.publish({

@@ -43,11 +43,17 @@ public class ChatMessage {
     @Column(name = "type", length = 20)
     private MessageType type;
 
+    @Column(name = "file_url", length = 500)
+    private String fileUrl;
+
+    @Column(name = "file_name", length = 255)
+    private String fileName;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     public enum MessageType {
-        TALK, ENTER, LEAVE
+        TALK, ENTER, LEAVE, IMAGE, FILE
     }
 
     @PrePersist

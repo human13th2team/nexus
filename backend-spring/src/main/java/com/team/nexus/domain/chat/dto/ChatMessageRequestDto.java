@@ -15,4 +15,6 @@ public class ChatMessageRequestDto {
     private UUID senderId;
     private String message;
     private ChatMessage.MessageType type;
+    private String fileUrl;
+    private String fileName;
 }

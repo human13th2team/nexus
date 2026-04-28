@@ -35,12 +35,18 @@ public class ChatRoom {
     @Column(name = "description", length = 255)
     private String description;
 
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User creator;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "last_message_at")
+    private LocalDateTime lastMessageAt;
 
     public enum ChatRoomType {
         GROUP, PRIVATE
@@ -49,5 +55,6 @@ public class ChatRoom {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        lastMessageAt = createdAt;
     }
 }

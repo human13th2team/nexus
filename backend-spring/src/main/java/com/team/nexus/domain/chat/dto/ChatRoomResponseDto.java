@@ -13,8 +13,12 @@ public class ChatRoomResponseDto {
     private UUID id;
     private String title;
     private String description;
+    private String imageUrl;
     private ChatRoom.ChatRoomType type;
     private UUID creatorId;
     private String creatorNickname;
+    private String lastMessage;
+    private LocalDateTime lastMessageAt;
     private LocalDateTime createdAt;
+    private Long participantCount;
 }

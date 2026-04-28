@@ -31,7 +31,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     @Transactional
-    public ChatRoomResponseDto createRoom(String title, ChatRoom.ChatRoomType type, String description, UUID creatorId) {
+    public ChatRoomResponseDto createRoom(String title, ChatRoom.ChatRoomType type, String description, String imageUrl, UUID creatorId) {
         log.info("Creating chat room: title={}, type={}, creatorId={}", title, type, creatorId);
         try {
             User creator = userRepository.findById(creatorId)
@@ -41,6 +41,7 @@ public class ChatServiceImpl implements ChatService {
                     .title(title)
                     .type(type)
                     .description(description)
+                    .imageUrl(imageUrl)
                     .creator(creator)
                     .build();
             ChatRoom savedRoom = chatRoomRepository.save(chatRoom);
@@ -88,18 +89,38 @@ public class ChatServiceImpl implements ChatService {
     public ChatMessageResponseDto saveMessage(ChatMessageRequestDto messageDto) {
         log.info("Saving message: senderId={}, roomId={}, type={}", messageDto.getSenderId(), messageDto.getRoomId(), messageDto.getType());
         try {
+            log.info("Processing message save: senderId={}, roomId={}, type={}, fileUrl={}", 
+                    messageDto.getSenderId(), messageDto.getRoomId(), messageDto.getType(), messageDto.getFileUrl());
+            
             User user = userRepository.findById(messageDto.getSenderId())
-                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다. ID: " + messageDto.getSenderId()));
+
+            // content가 null이면 제약 조건 위반이 발생하므로 기본값 설정
+            String content = messageDto.getMessage();
+            if (content == null || content.trim().isEmpty()) {
+                if (messageDto.getType() == ChatMessage.MessageType.IMAGE) content = "사진을 보냈습니다.";
+                else if (messageDto.getType() == ChatMessage.MessageType.FILE) content = "파일을 보냈습니다.";
+                else content = "(내용 없음)";
+            }
 
             ChatMessage chatMessage = ChatMessage.builder()
                     .roomId(messageDto.getRoomId())
                     .userId(messageDto.getSenderId())
                     .senderNickname(user.getNickname())
-                    .content(messageDto.getMessage())
-                    .type(ChatMessage.MessageType.valueOf(messageDto.getType().name()))
+                    .content(content)
+                    .type(messageDto.getType())
+                    .fileUrl(messageDto.getFileUrl())
+                    .fileName(messageDto.getFileName())
                     .build();
+            
             ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
-            log.info("Message saved successfully: msgId={}", savedMessage.getId());
+            log.info("Successfully saved message to DB. ID: {}", savedMessage.getId());
+
+            // 채팅방의 마지막 메시지 시각 업데이트
+            ChatRoom room = chatRoomRepository.findById(messageDto.getRoomId())
+                    .orElseThrow(() -> new IllegalArgumentException("채팅방을 찾을 수 없습니다."));
+            room.setLastMessageAt(LocalDateTime.now());
+            chatRoomRepository.save(room);
 
             return ChatMessageResponseDto.builder()
                     .roomId(savedMessage.getRoomId())
@@ -107,11 +128,14 @@ public class ChatServiceImpl implements ChatService {
                     .senderNickname(savedMessage.getSenderNickname())
                     .message(savedMessage.getContent())
                     .type(savedMessage.getType())
+                    .fileUrl(savedMessage.getFileUrl())
+                    .fileName(savedMessage.getFileName())
                     .createdAt(LocalDateTime.now())
                     .build();
         } catch (Exception e) {
-            log.error("Failed to save chat message: ", e);
-            throw e;
+            log.error("Failed to save chat message. RequestDto: {}", messageDto);
+            log.error("Error details: ", e);
+            throw new RuntimeException("메시지 저장 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
 
@@ -127,6 +151,8 @@ public class ChatServiceImpl implements ChatService {
                             .senderNickname(msg.getSenderNickname() != null ? msg.getSenderNickname() : "익명")
                             .message(msg.getContent())
                             .type(msg.getType())
+                            .fileUrl(msg.getFileUrl())
+                            .fileName(msg.getFileName())
                             .createdAt(msg.getCreatedAt() != null ? msg.getCreatedAt() : LocalDateTime.now())
                             .build())
                     .toList();
@@ -145,8 +171,20 @@ public class ChatServiceImpl implements ChatService {
                     }
                     return true;
                 })
+                .sorted((r1, r2) -> {
+                    LocalDateTime t1 = r1.getLastMessageAt() != null ? r1.getLastMessageAt() : r1.getCreatedAt();
+                    LocalDateTime t2 = r2.getLastMessageAt() != null ? r2.getLastMessageAt() : r2.getCreatedAt();
+                    return t2.compareTo(t1);
+                })
                 .map(this::convertToResponseDto)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public void leaveRoom(UUID roomId, UUID userId) {
+        log.info("Leaving chat room: roomId={}, userId={}", roomId, userId);
+        chatParticipantRepository.deleteByRoomIdAndUserId(roomId, userId);
     }
 
     @Override
@@ -156,19 +194,35 @@ public class ChatServiceImpl implements ChatService {
                 .map(ChatParticipant::getRoomId)
                 .toList();
         return chatRoomRepository.findAllById(roomIds).stream()
+                .sorted((r1, r2) -> {
+                    LocalDateTime t1 = r1.getLastMessageAt() != null ? r1.getLastMessageAt() : r1.getCreatedAt();
+                    LocalDateTime t2 = r2.getLastMessageAt() != null ? r2.getLastMessageAt() : r2.getCreatedAt();
+                    return t2.compareTo(t1);
+                })
                 .map(this::convertToResponseDto)
                 .toList();
     }
 
     private ChatRoomResponseDto convertToResponseDto(ChatRoom chatRoom) {
+        String lastMessage = chatMessageRepository.findFirstByRoomIdOrderByCreatedAtDesc(chatRoom.getId())
+                .map(msg -> msg.getType() == ChatMessage.MessageType.IMAGE ? "(사진)" : 
+                            msg.getType() == ChatMessage.MessageType.FILE ? "(파일)" : msg.getContent())
+                .orElse(null);
+
+        Long participantCount = chatParticipantRepository.countByRoomId(chatRoom.getId());
+
         return ChatRoomResponseDto.builder()
                 .id(chatRoom.getId())
                 .title(chatRoom.getTitle())
                 .description(chatRoom.getDescription())
+                .imageUrl(chatRoom.getImageUrl())
                 .type(chatRoom.getType())
                 .creatorId(chatRoom.getCreator() != null ? chatRoom.getCreator().getId() : null)
                 .creatorNickname(chatRoom.getCreator() != null ? chatRoom.getCreator().getNickname() : "익명")
+                .lastMessage(lastMessage)
+                .lastMessageAt(chatRoom.getLastMessageAt() != null ? chatRoom.getLastMessageAt() : chatRoom.getCreatedAt())
                 .createdAt(chatRoom.getCreatedAt())
+                .participantCount(participantCount)
                 .build();
     }
 }

@@ -17,5 +17,7 @@ public class ChatMessageResponseDto {
     private String senderNickname;
     private String message;
     private ChatMessage.MessageType type;
+    private String fileUrl;
+    private String fileName;
     private LocalDateTime createdAt;
 }
