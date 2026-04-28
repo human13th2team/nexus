@@ -34,14 +34,14 @@ public class ChatController {
         
         // 2. 해당 채팅방 구독자들에게 브로드캐스트
         // 클라이언트는 /topic/chat/room/{roomId} 를 구독하고 있어야 함
-        messagingTemplate.convertAndSend("/topic/chat/room/" + messageDto.getRoomId(), responseDto);
+        messagingTemplate.convertAndSend("/topic/chat/" + messageDto.getRoomId(), responseDto);
     }
 
     // --- REST Endpoints ---
 
     @Operation(summary = "채팅방 생성")
     @PostMapping("/rooms")
-    public ResponseEntity<ChatRoom> createRoom(@RequestBody com.team.nexus.domain.chat.dto.ChatRoomRequestDto requestDto) {
+    public ResponseEntity<com.team.nexus.domain.chat.dto.ChatRoomResponseDto> createRoom(@RequestBody com.team.nexus.domain.chat.dto.ChatRoomRequestDto requestDto) {
         return ResponseEntity.ok(chatService.createRoom(requestDto.getTitle(), requestDto.getType(), requestDto.getDescription(), requestDto.getCreatorId()));
     }
 
@@ -54,13 +54,13 @@ public class ChatController {
 
     @Operation(summary = "내 채팅방 목록 조회")
     @GetMapping("/rooms/mine")
-    public ResponseEntity<List<ChatRoom>> getMyRooms(@RequestParam UUID userId) {
+    public ResponseEntity<List<com.team.nexus.domain.chat.dto.ChatRoomResponseDto>> getMyRooms(@RequestParam UUID userId) {
         return ResponseEntity.ok(chatService.getJoinedRooms(userId));
     }
 
     @Operation(summary = "모든 채팅방 조회")
     @GetMapping("/rooms")
-    public ResponseEntity<List<ChatRoom>> getAllRooms() {
+    public ResponseEntity<List<com.team.nexus.domain.chat.dto.ChatRoomResponseDto>> getAllRooms() {
         return ResponseEntity.ok(chatService.getAllRooms());
     }
 

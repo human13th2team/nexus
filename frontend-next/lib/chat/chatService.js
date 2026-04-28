@@ -37,7 +37,7 @@ export class ChatService {
 
   subscribe(roomId) {
     if (this.client && this.client.connected) {
-      const destination = `/topic/chat/room/${roomId}`;
+      const destination = `/topic/chat/${roomId}`;
       this.client.subscribe(destination, (message) => {
         if (message.body && this.onMessageReceived) {
           const parsed = JSON.parse(message.body);

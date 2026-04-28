@@ -2,6 +2,7 @@ package com.team.nexus.domain.chat.service;
 
 import com.team.nexus.domain.chat.dto.ChatMessageRequestDto;
 import com.team.nexus.domain.chat.dto.ChatMessageResponseDto;
+import com.team.nexus.domain.chat.dto.ChatRoomResponseDto;
 import com.team.nexus.domain.chat.repository.ChatMessageRepository;
 import com.team.nexus.domain.chat.repository.ChatParticipantRepository;
 import com.team.nexus.domain.chat.repository.ChatRoomRepository;
@@ -30,7 +31,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     @Transactional
-    public ChatRoom createRoom(String title, ChatRoom.ChatRoomType type, String description, UUID creatorId) {
+    public ChatRoomResponseDto createRoom(String title, ChatRoom.ChatRoomType type, String description, UUID creatorId) {
         log.info("Creating chat room: title={}, type={}, creatorId={}", title, type, creatorId);
         try {
             User creator = userRepository.findById(creatorId)
@@ -49,10 +50,10 @@ public class ChatServiceImpl implements ChatService {
                 joinRoom(savedRoom.getId(), creatorId);
                 log.info("Creator joined the room as participant: userId={}", creatorId);
             } catch (Exception memberEx) {
-                log.warn("Failed to join creator to room automatically, but room was created: {}", memberEx.getMessage());
+                log.warn("Failed to join creator to room automatically: {}", memberEx.getMessage());
             }
             
-            return savedRoom;
+            return convertToResponseDto(savedRoom);
         } catch (Exception e) {
             log.error("Failed to create chat room: ", e);
             throw e;
@@ -136,7 +137,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public List<ChatRoom> getAllRooms() {
+    public List<ChatRoomResponseDto> getAllRooms() {
         return chatRoomRepository.findAll().stream()
                 .filter(room -> {
                     if (room.getType() == ChatRoom.ChatRoomType.PRIVATE) {
@@ -144,15 +145,30 @@ public class ChatServiceImpl implements ChatService {
                     }
                     return true;
                 })
+                .map(this::convertToResponseDto)
                 .toList();
     }
 
     @Override
-    public List<ChatRoom> getJoinedRooms(UUID userId) {
+    public List<ChatRoomResponseDto> getJoinedRooms(UUID userId) {
         List<UUID> roomIds = chatParticipantRepository.findByUserId(userId)
                 .stream()
                 .map(ChatParticipant::getRoomId)
                 .toList();
-        return chatRoomRepository.findAllById(roomIds);
+        return chatRoomRepository.findAllById(roomIds).stream()
+                .map(this::convertToResponseDto)
+                .toList();
+    }
+
+    private ChatRoomResponseDto convertToResponseDto(ChatRoom chatRoom) {
+        return ChatRoomResponseDto.builder()
+                .id(chatRoom.getId())
+                .title(chatRoom.getTitle())
+                .description(chatRoom.getDescription())
+                .type(chatRoom.getType())
+                .creatorId(chatRoom.getCreator() != null ? chatRoom.getCreator().getId() : null)
+                .creatorNickname(chatRoom.getCreator() != null ? chatRoom.getCreator().getNickname() : "익명")
+                .createdAt(chatRoom.getCreatedAt())
+                .build();
     }
 }

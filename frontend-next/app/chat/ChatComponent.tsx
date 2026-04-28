@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Send, 
   Hash, 
@@ -32,6 +33,7 @@ interface Message {
 interface ChatRoom {
   id: string;
   title: string;
+  description?: string;
   lastMessage?: string;
   unreadCount?: number;
   type: 'GROUP' | 'PRIVATE';
@@ -59,6 +61,8 @@ const ChatComponent = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // 1. 초기화: 로컬 스토리지에서 사용자 정보 로드
+  const router = useRouter();
+
   useEffect(() => {
     const initAuth = () => {
       const storedUserId = localStorage.getItem('userId');
@@ -68,6 +72,9 @@ const ChatComponent = () => {
         setCurrentUserId(storedUserId);
         setCurrentNickname(storedNickname || '익명');
         fetchMyRooms(storedUserId);
+      } else {
+        // 로그인이 안 되어 있으면 로그인 페이지로 리다이렉트
+        router.push('/auth/login');
       }
       setIsLoading(false);
     };
@@ -75,7 +82,7 @@ const ChatComponent = () => {
     initAuth();
     window.addEventListener('storage', initAuth);
     return () => window.removeEventListener('storage', initAuth);
-  }, []);
+  }, [router]);
 
   // 2. 초기 데이터 로드 (내 채팅방 목록)
   const fetchMyRooms = async (userId: string) => {
@@ -326,8 +333,8 @@ const ChatComponent = () => {
                     </div>
                   ) : null}
                 </div>
-                <p className="text-xs text-zinc-500 truncate max-w-[150px] mt-0.5">
-                  {showAllRooms ? '대화에 참여해보세요' : (room.lastMessage || '새로운 대화를 시작해보세요')}
+                <p className="text-[11px] text-zinc-400 truncate max-w-[180px] mt-0.5 font-medium">
+                  {room.description || (showAllRooms ? '대화에 참여해보세요' : (room.lastMessage || '새로운 대화를 시작해보세요'))}
                 </p>
               </div>
             </button>
