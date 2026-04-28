@@ -1,30 +1,28 @@
 "use client"
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 
-// 메뉴 데이터는 컴포넌트 외부로 분리하여 불필요한 재선언 방지
 const MENU_DATA = [
   { id: 'analysis', title: '창업 분석', hasSub: true,
     subMenu: [{ name: '창업 비용 시뮬레이션', href: '/simulation' },
               { name: '상권 분석 지도', href: '/store-map' }]
   },
   { id: 'subsidy', title: '지원금 찾기', hasSub: false, href: '/' },
-  { id: 'creative', title: 'AI 브랜딩', hasSub: false, href: '/branding' },
+  { id: 'creative', title: 'AI 브랜딩', hasSub: false, href: '/branding'},
   { id: 'experts', title: '전문가 매칭', hasSub: false, href: '/' },
   { id: 'compliance', title: '창업 가이드', hasSub: true,
-    subMenu: [{ name: '서류 가이드', href: '/license-guide' },
-              { name: '고용 가이드', href: '/worker-guide' }]
+    subMenu: [{ name: '서류 가이드', href: '/' },
+              { name: '고용 가이드', href: '/' }]
   },
   { id: 'community', title: '커뮤니티', hasSub: true,
-    subMenu: [{ name: '자유 게시판', href: '/freeboard' },
-              { name: '지역별 게시판', href: '/localboard' },
+    subMenu: [{ name: '자유 게시판', href: '/' },
+              { name: '지역별 게시판', href: '/' },
               { name: '업종별 게시판', href: '/'}]
   },
 ];
 
 export default function Header() {
-  // 1. 하이드레이션 오류 방지를 위한 마운트 상태 관리
   const [mounted, setMounted] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -34,163 +32,159 @@ export default function Header() {
 
   const profileRef = useRef<HTMLDivElement>(null);
 
-  // 2. 마운트 시점에 한 번만 실행 (localStorage 및 이벤트 리스너)
-  useEffect(() => {
-    setMounted(true); // 클라이언트 렌더링 준비 완료
-
+  // 1. 로그인 상태를 체크하는 함수를 별도로 분리합니다.
+  const checkLoginStatus = useCallback(() => {
     const token = localStorage.getItem('accessToken');
     const savedNickname = localStorage.getItem('nickname');
     if (token) {
       setIsLoggedIn(true);
-      if (savedNickname) setNickname(savedNickname);
+      setNickname(savedNickname || 'User');
+    } else {
+      setIsLoggedIn(false);
+      setNickname('');
     }
+  }, []);
 
-    function handleClickOutside(event: MouseEvent) {
+  useEffect(() => {
+    setMounted(true);
+
+    // 처음 로드될 때 체크
+    checkLoginStatus();
+
+    // 2. 다른 탭에서의 변화나 커스텀 이벤트를 감지합니다.
+    window.addEventListener('storage', checkLoginStatus); // 로컬스토리지 변경 감지
+    window.addEventListener('login-status-change', checkLoginStatus); // 커스텀 이벤트 감지
+
+    const handleClickOutside = (event: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
         setIsProfileOpen(false);
       }
-    }
+    };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
+    return () => {
+      window.removeEventListener('storage', checkLoginStatus);
+      window.removeEventListener('login-status-change', checkLoginStatus);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [checkLoginStatus]);
+
+  const handleMenuHover = (menuId: string | null, hasSub: boolean) => {
+    if (hasSub) {
+      setActiveMenu(menuId);
+      setIsProfileOpen(false);
+    } else {
+      setActiveMenu(null);
+    }
+  };
+
+  const toggleProfile = () => {
+    const nextState = !isProfileOpen;
+    setIsProfileOpen(nextState);
+    if (nextState) setActiveMenu(null);
+  };
+
+  // 로그아웃 시에도 이벤트를 발생시켜 UI를 즉시 갱신합니다.
   const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('nickname');
-    setIsLoggedIn(false);
-    setIsProfileOpen(false);
+    localStorage.clear();
+    checkLoginStatus(); // 현재 컴포넌트 상태 갱신
     window.location.href = '/';
   };
 
-  // 3. 서버 렌더링 시에는 공통적인 레이아웃만 보여주고,
-  // 로그인 상태에 따른 UI 변경은 클라이언트 마운트 후에 처리함
-  if (!mounted) {
-    return (
-      <header className="relative w-full bg-[var(--nexus-surface-lowest)] border-b border-[var(--nexus-outline-variant)] h-20" />
-    );
-  }
-
   return (
     <header className="relative w-full bg-[var(--nexus-surface-lowest)] border-b border-[var(--nexus-outline-variant)] z-[100]">
-      <div className="max-w-[1440px] mx-auto h-20 px-6 md:px-8 flex items-center justify-between gap-4 md:gap-12">
+      <div className="max-w-[1440px] mx-auto h-20 px-6 md:px-8 flex items-center justify-between">
 
-        {/* 로고 */}
-        <Link href="/" className="text-xl md:text-2xl font-black tracking-tighter text-[var(--nexus-primary)] w-auto lg:w-[120px] shrink-0">
-          NEXUS
-        </Link>
+        <div className="w-[100px] lg:w-[160px] shrink-0">
+          <Link href="/" className="text-xl md:text-2xl font-black tracking-tighter text-[var(--nexus-primary)]">
+            NEXUS
+          </Link>
+        </div>
 
-        {/* 내비게이션 */}
         <nav className="hidden lg:block flex-grow h-full">
-          <ul className="grid grid-cols-6 h-full">
-            {MENU_DATA.map((menu) => (
-              <li
-                key={menu.id}
-                className="relative flex items-center justify-center cursor-pointer"
-                onMouseEnter={() => menu.hasSub ? setActiveMenu(menu.id) : setActiveMenu(null)}
-              >
-                <Link
-                  href={menu.href || '#'}
-                  className={`text-[15px] xl:text-[16px] font-bold whitespace-nowrap transition-colors ${activeMenu === menu.id ? 'text-[var(--nexus-primary)]' : 'text-[var(--nexus-on-bg)]'}`}
+          {mounted ? (
+            <ul className="grid grid-cols-6 h-full items-center">
+              {MENU_DATA.map((menu) => (
+                <li
+                  key={menu.id}
+                  className="relative flex items-center justify-center h-full cursor-pointer"
+                  onMouseEnter={() => handleMenuHover(menu.id, menu.hasSub)}
                 >
-                  {menu.title}
-                </Link>
-                {activeMenu === menu.id && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-[3px] bg-[var(--nexus-primary)]" />}
-              </li>
-            ))}
-          </ul>
+                  <Link
+                    href={menu.href || '#'}
+                    className={`text-[15px] xl:text-[16px] font-bold whitespace-nowrap transition-colors ${activeMenu === menu.id ? 'text-[var(--nexus-primary)]' : 'text-[var(--nexus-on-bg)]'}`}
+                  >
+                    {menu.title}
+                  </Link>
+                  {activeMenu === menu.id && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-[3px] bg-[var(--nexus-primary)]" />}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="h-full w-full" />
+          )}
         </nav>
 
-        {/* 우측 버튼/프로필 영역 */}
-        <div className="flex items-center gap-4 shrink-0" ref={profileRef}>
-          {!isLoggedIn ? (
-            <Link href="/auth/login" className="text-sm font-bold text-[var(--nexus-primary)] px-3 py-1.5 md:px-4 md:py-2 border border-[var(--nexus-primary)] rounded hover:bg-[var(--nexus-primary)] hover:text-white transition-colors">
-              로그인
-            </Link>
-          ) : (
-            <div className="relative flex items-center">
-              <button
-                onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="w-9 h-9 md:w-10 md:h-10 rounded-full border border-[var(--nexus-outline-variant)] overflow-hidden bg-gray-100 flex items-center justify-center"
-              >
-                <span className="text-xs font-bold text-gray-500">{nickname[0] || 'P'}</span>
-              </button>
-              {isProfileOpen && (
-                <div className="absolute right-0 top-14 w-48 bg-white border border-[var(--nexus-outline-variant)] shadow-xl rounded-md overflow-hidden z-[110]">
-                  <div className="px-5 py-3 text-xs text-gray-400 border-b border-gray-100">
-                    <span className="font-bold text-[var(--nexus-primary)]">{nickname}</span>님 환영합니다
-                  </div>
-                  <Link href="/chat" className="block px-5 py-3 text-sm hover:bg-gray-50 border-b border-gray-100">💬 채팅하기</Link>
-                  <button onClick={handleLogout} className="w-full text-left px-5 py-3 text-sm text-red-500 hover:bg-red-50 font-medium">🚪 로그아웃</button>
+        <div className="w-[100px] lg:w-[160px] shrink-0 flex items-center justify-end gap-4" ref={profileRef}>
+          {mounted ? (
+            <>
+              {!isLoggedIn ? (
+                <Link href="/auth/login" className="text-sm font-bold text-[var(--nexus-primary)] px-3 py-1.5 md:px-4 md:py-2 border border-[var(--nexus-primary)] rounded hover:bg-[var(--nexus-primary)] hover:text-white transition-colors">
+                  로그인
+                </Link>
+              ) : (
+                <div className="relative flex items-center">
+                  <button onClick={toggleProfile} className="w-9 h-9 md:w-10 md:h-10 rounded-full border border-[var(--nexus-outline-variant)] overflow-hidden bg-gray-100 flex items-center justify-center">
+                    <span className="text-xs font-bold text-gray-500">{nickname[0] || 'P'}</span>
+                  </button>
+                  {isProfileOpen && (
+                    <div className="absolute right-0 top-14 w-52 bg-white border border-[var(--nexus-outline-variant)] shadow-xl rounded-md overflow-hidden z-[110]">
+                      <div className="px-5 py-3 text-sm text-gray-400 border-b border-gray-100 bg-gray-50/50">
+                        <span className="font-bold text-[var(--nexus-primary)]">{nickname}</span>님 환영합니다
+                      </div>
+                      <Link href="/" className="block px-5 py-4 text-base hover:bg-gray-50 border-b border-gray-100">ℹ️ 프로필</Link>
+                      <Link href="/chat" className="block px-5 py-4 text-base hover:bg-gray-50 border-b border-gray-100">💬 채팅하기</Link>
+                      <button onClick={handleLogout} className="w-full text-left px-5 py-4 text-base text-red-500 hover:bg-red-50 font-semibold">🚪 로그아웃</button>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
+              <button className="lg:hidden p-1 text-[var(--nexus-primary)]" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+                 <span className="text-2xl">☰</span>
+              </button>
+            </>
+          ) : (
+            <div className="h-10 w-10" />
           )}
-
-          {/* 모바일 메뉴 버튼 */}
-          <button
-            className="lg:hidden p-1 text-[var(--nexus-primary)]"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              {isMobileMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-              )}
-            </svg>
-          </button>
         </div>
       </div>
 
-      {/* 하위 메뉴 드롭다운 */}
-      <div
-        onMouseLeave={() => setActiveMenu(null)}
-        className={`hidden lg:block absolute top-20 left-0 w-full bg-[var(--nexus-surface-lowest)] border-b border-[var(--nexus-outline-variant)] shadow-lg transition-all duration-300 ease-in-out overflow-hidden ${activeMenu ? 'max-h-[200px] opacity-100 py-8' : 'max-h-0 opacity-0 py-0'}`}
-      >
-        <div className="max-w-[1440px] mx-auto px-8 flex gap-12">
-          <div className="w-[120px] shrink-0" />
-          <div className="flex-grow grid grid-cols-6">
-            {MENU_DATA.map((menu) => (
-              <div key={menu.id} className="flex flex-col items-center">
-                {activeMenu === menu.id && menu.hasSub && (
-                  <ul className="flex flex-col gap-4 text-center">
-                    {menu.subMenu?.map((sub, sIdx) => (
-                      <li key={sIdx}>
-                        <Link href={sub.href} className="text-[14px] text-gray-500 hover:text-[var(--nexus-primary)] hover:underline underline-offset-4 font-medium whitespace-nowrap">
-                          {sub.name}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))}
+      {mounted && (
+        <div
+          onMouseLeave={() => setActiveMenu(null)}
+          className={`hidden lg:block absolute top-20 left-0 w-full bg-[var(--nexus-surface-lowest)] border-b border-[var(--nexus-outline-variant)] shadow-lg transition-all duration-300 ease-in-out overflow-hidden ${activeMenu ? 'max-h-[250px] opacity-100 py-8' : 'max-h-0 opacity-0 py-0'}`}
+        >
+          <div className="max-w-[1440px] mx-auto px-6 md:px-8 flex items-start justify-between">
+            <div className="w-[160px] shrink-0" />
+            <div className="flex-grow grid grid-cols-6">
+              {MENU_DATA.map((menu) => (
+                <div key={menu.id} className="flex flex-col items-center">
+                  {activeMenu === menu.id && menu.hasSub && (
+                    <ul className="flex flex-col gap-4 text-center">
+                      {menu.subMenu?.map((sub, sIdx) => (
+                        <li key={sIdx}>
+                          <Link href={sub.href} className="text-[14px] text-gray-500 hover:text-[var(--nexus-primary)] hover:underline underline-offset-4 font-medium whitespace-nowrap">
+                            {sub.name}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="w-[160px] shrink-0" />
           </div>
-          <div className="w-[120px] shrink-0" />
-        </div>
-      </div>
-
-      {/* 모바일 메뉴 드롭다운 */}
-      {isMobileMenuOpen && (
-        <div className="lg:hidden bg-[var(--nexus-surface-lowest)] border-b border-[var(--nexus-outline-variant)] px-6 py-4">
-          <ul className="flex flex-col gap-4">
-            {MENU_DATA.map((menu) => (
-              <li key={menu.id} className="border-b border-gray-50 pb-2 last:border-0">
-                <div className="font-bold text-[var(--nexus-primary)] mb-2">{menu.title}</div>
-                {menu.hasSub && (
-                  <ul className="pl-4 flex flex-col gap-2">
-                    {menu.subMenu?.map((sub, sIdx) => (
-                      <li key={sIdx}>
-                        <Link href={sub.href} className="text-sm text-gray-600" onClick={() => setIsMobileMenuOpen(false)}>
-                          {sub.name}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            ))}
-          </ul>
         </div>
       )}
     </header>
