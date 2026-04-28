@@ -104,9 +104,9 @@ class BrandIdentity(Base):
     slogan: Mapped[Optional[str]] = mapped_column(String(255))
     brand_story: Mapped[Optional[str]] = mapped_column(Text)
     is_selected: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text("false"))
-    # embedding column (vector) is skipped or mapped to Text/JSON for now if pgvector is not available in the model
     
     # Relationships
+
     branding: Mapped["Branding"] = relationship(back_populates="identities")
     logo_assets: Mapped[list["LogoAsset"]] = relationship(back_populates="brand_identity", cascade="all, delete-orphan")
     marketing_assets: Mapped[list["MarketingAsset"]] = relationship(back_populates="brand_identity", cascade="all, delete-orphan")

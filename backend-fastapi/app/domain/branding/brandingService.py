@@ -223,38 +223,86 @@ NAMING_SYSTEM_PROMPT = """
 """
 
 async def generate_brand_names(db: AsyncSession, branding_id: uuid.UUID):
-    """AI를 호출하여 브랜드 명을 생성하고 DB에 저장합니다."""
+    """
+    AI를 호출하여 브랜드 명을 생성하고 KIPRIS API로 실시간 검증합니다.
+    중복된 상표(DANGER)가 발견되면 AI에게 재생성을 요청하는 'Self-Correction Loop'를 수행합니다.
+    """
     result = await db.execute(select(Branding).where(Branding.id == branding_id))
     branding = result.scalar_one_or_none()
     if not branding or not branding.keywords:
         return None
+
     ai_client = get_ai_client("gemini")
-    context = f"업종: {branding.title}\n키워드 및 인터뷰 데이터: {json.dumps(branding.keywords, ensure_ascii=False)}"
-    raw_response = await ai_client.generate_response(NAMING_SYSTEM_PROMPT, [{"role": "user", "content": context}])
-    try:
-        clean_json = raw_response.strip()
-        if "```json" in clean_json:
-            clean_json = clean_json.split("```json")[1].split("```")[0].strip()
-        elif "```" in clean_json:
-            clean_json = clean_json.split("```")[1].split("```")[0].strip()
-        naming_options = json.loads(clean_json)
-        identities = []
-        for opt in naming_options:
-            identity = BrandIdentity(
-                id=uuid.uuid4(),
-                branding_id=branding_id,
-                brand_name=opt["brand_name"],
-                slogan=opt.get("slogan"),
-                brand_story=opt.get("story"),
-                is_selected=False
-            )
-            db.add(identity)
-            identities.append(identity)
-        await db.commit()
-        return identities
-    except Exception as e:
-        print(f"Naming Parsing Error: {str(e)}")
-        raise e
+    from app.core.kipris_client import get_kipris_client
+    kipris_client = get_kipris_client()
+
+    final_results = []
+    avoid_names = []
+    max_retries = 3
+    retry_count = 0
+
+    # 인터뷰 데이터 기반 컨텍스트 구성
+    context_base = f"업종: {branding.title}\n키워드 및 인터뷰 데이터: {json.dumps(branding.keywords, ensure_ascii=False)}"
+
+    while len(final_results) < 3 and retry_count < max_retries:
+        retry_count += 1
+        print(f"🔄 [Naming Loop] {retry_count}회차 생성 및 검증 시도 중...")
+        
+        # 제외할 이름 목록 추가
+        avoid_msg = f"\n다음 이름들은 상표권 중복으로 인해 제외해야 합니다: {', '.join(avoid_names)}" if avoid_names else ""
+        context = context_base + avoid_msg
+        
+        raw_response = await ai_client.generate_response(NAMING_SYSTEM_PROMPT, [{"role": "user", "content": context}])
+        
+        try:
+            clean_json = raw_response.strip()
+            if "```json" in clean_json:
+                clean_json = clean_json.split("```json")[1].split("```")[0].strip()
+            elif "```" in clean_json:
+                clean_json = clean_json.split("```")[1].split("```")[0].strip()
+            
+            candidates = json.loads(clean_json)
+            
+            for opt in candidates:
+                if len(final_results) >= 3:
+                    break
+                    
+                brand_name = opt["brand_name"]
+                if brand_name in avoid_names:
+                    continue
+
+                # KIPRIS 실시간 검증
+                ip_result = await kipris_client.check_trademark(brand_name)
+                
+                if ip_result.get("status") == "DANGER":
+                    print(f"⚠️ [DANGER] '{brand_name}'은(는) 상표권 중복으로 제외됩니다.")
+                    avoid_names.append(brand_name)
+                    continue # DANGER는 사용자에게 보여주지 않고 버림
+                
+                # SAFE 또는 WARNING인 경우만 채택
+                identity = BrandIdentity(
+                    id=uuid.uuid4(),
+                    branding_id=branding_id,
+                    brand_name=brand_name,
+                    slogan=opt.get("slogan"),
+                    brand_story=opt.get("story"),
+                    is_selected=False
+                )
+                db.add(identity)
+                
+                final_results.append({
+                    "identity": identity,
+                    "ip_result": ip_result
+                })
+                
+        except Exception as e:
+            print(f"Naming Parsing Error at attempt {retry_count}: {str(e)}")
+            if retry_count >= max_retries:
+                raise e
+
+    await db.commit()
+    return final_results
+
 
 LOGO_PROMPT_MAKER = """
 당신은 로고 디자인 전문가입니다. 주어진 브랜드 정보를 바탕으로 시각적으로 독창적이고 아름다운 로고 디자인을 위한 상세 영어 프롬프트를 **반드시 3개** 생성하세요.

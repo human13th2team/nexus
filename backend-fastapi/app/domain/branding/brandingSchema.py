@@ -40,6 +40,9 @@ class NamingResult(BaseModel):
     brandName: str = Field(..., description="추천 브랜드 이름")
     slogan: str = Field(..., description="추천 슬로건")
     brandStory: str = Field(..., description="브랜드 스토리")
+    ipStatus: Optional[str] = Field(None, description="상표권 검증 상태 (SAFE, WARNING, DANGER)")
+    ipDetails: Optional[dict] = Field(None, description="상표권 검증 상세 정보")
+
 
 class NamingResponse(BaseModel):
     success: bool = Field(True)
