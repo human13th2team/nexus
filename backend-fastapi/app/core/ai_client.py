@@ -1,5 +1,6 @@
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from abc import ABC, abstractmethod
 from typing import List, Dict, Optional
 import httpx
@@ -7,6 +8,12 @@ import asyncio
 import functools
 from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
+
+# HuggingFace 로딩 경고 무시 설정
+os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
+os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="huggingface_hub")
 
 load_dotenv()
 
@@ -43,7 +50,7 @@ class GeminiClient(BaseAIClient):
 
     def __init__(self):
         api_key = os.getenv("GOOGLE_API_KEY")
-        genai.configure(api_key=api_key)
+        self.client = genai.Client(api_key=api_key)
         self.model_name = 'models/gemma-4-31b-it' 
         
         # 로컬 임베딩 모델 로드 (최초 1회)
@@ -54,30 +61,35 @@ class GeminiClient(BaseAIClient):
 
     @retry_async(max_retries=3, delay=2)
     async def generate_response(self, system_instruction: str, chat_history: List[Dict[str, str]]) -> str:
-        # Gemini는 별도의 system_instruction과 history를 받는 구조가 잘 잡혀있음
-        model_with_instruction = genai.GenerativeModel(
-            model_name=self.model_name,
-            system_instruction=system_instruction
-        )
-        
-        # History 변환 (Gemini 포맷: {"role": "user/model", "parts": [content]})
+        # History 변환 (새로운 SDK 포맷: types.Content 활용)
         gemini_history = []
         for msg in chat_history:
             role = "user" if msg["role"] == "user" else "model"
-            gemini_history.append({"role": role, "parts": [msg["content"]]})
+            gemini_history.append(
+                types.Content(role=role, parts=[types.Part.from_text(text=msg["content"])])
+            )
         
-        chat = model_with_instruction.start_chat(history=gemini_history[:-1]) # 마지막 메시지는 제외하고 시작
-        response = chat.send_message(chat_history[-1]["content"])
+        # 새로운 비동기(aio) 클라이언트 호출 방식 (stateless 방식)
+        response = await self.client.aio.models.generate_content(
+            model=self.model_name,
+            contents=gemini_history,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction
+            )
+        )
         
         return response.text
 
     async def generate_image(self, prompt: str, output_path: str) -> str:
         """Gemini 이미지 모델을 사용하여 이미지를 생성합니다."""
-        # 이미지 전용 모델 설정 (Pro 버전 쿼터 초과로 인해 Flash 버전으로 변경 시도)
-        image_model = genai.GenerativeModel('models/gemini-3.1-flash-image-preview')
-        
-        # 이미지 생성 요청
-        response = image_model.generate_content(prompt)
+        # 비동기 클라이언트를 사용하여 이미지 명시적 생성 (response_modalities=['IMAGE'])
+        response = await self.client.aio.models.generate_content(
+            model='models/gemini-3.1-flash-image-preview',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_modalities=["IMAGE"],
+            )
+        )
         
         # 응답에서 이미지 데이터 추출 및 저장
         try:

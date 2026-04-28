@@ -35,13 +35,25 @@ public class BrandingServiceImpl implements BrandingService {
     @Override
     public List<BrandingListDto> getBrandingList(UUID userId) {
         return brandingRepository.findByUserId(userId).stream()
-                .map(branding -> BrandingListDto.builder()
-                        .id(branding.getId())
-                        .title(branding.getTitle())
-                        .industryCategoryId(branding.getIndustryCategoryId())
-                        .currentStep(branding.getCurrentStep())
-                        .createdAt(branding.getCreatedAt() != null ? branding.getCreatedAt().format(DATE_FORMATTER) : null)
-                        .build())
+                .map(branding -> {
+                    String logoUrl = brandIdentityRepository.findByBranding(branding).stream()
+                            .filter(BrandIdentity::getIsSelected)
+                            .findFirst()
+                            .flatMap(identity -> logoAssetRepository.findByBrandIdentity(identity).stream()
+                                    .filter(logo -> Boolean.TRUE.equals(logo.getIsFinal()))
+                                    .findFirst()
+                                    .map(LogoAsset::getImageUrl))
+                            .orElse(null);
+
+                    return BrandingListDto.builder()
+                            .id(branding.getId())
+                            .title(branding.getTitle())
+                            .industryCategoryId(branding.getIndustryCategoryId())
+                            .currentStep(branding.getCurrentStep())
+                            .createdAt(branding.getCreatedAt() != null ? branding.getCreatedAt().format(DATE_FORMATTER) : null)
+                            .logoUrl(logoUrl)
+                            .build();
+                })
                 .collect(Collectors.toList());
     }
 
@@ -59,6 +71,7 @@ public class BrandingServiceImpl implements BrandingService {
                 .keywords(branding.getKeywords())
                 .currentStep(branding.getCurrentStep())
                 .createdAt(branding.getCreatedAt() != null ? branding.getCreatedAt().format(DATE_FORMATTER) : null)
+                .chatHistory(branding.getChatHistory())
                 .identities(identities.stream()
                         .map(identity -> BrandIdentityDto.builder()
                                 .id(identity.getId())

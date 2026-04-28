@@ -1,19 +1,62 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import InterviewSection from "../components/InterviewSection";
 import IdentitySelectionSection from "../components/IdentitySelectionSection";
 import LogoGenerationSection from "../components/LogoGenerationSection";
 import BrandingAssetsSection from "../components/BrandingAssetsSection";
 
 export default function BrandingPage() {
+  const searchParams = useSearchParams();
+  const resumeId = searchParams.get("resumeId");
+  
   const [step, setStep] = useState(1);
-  const [brandData, setBrandData] = useState({
+  const [isResuming, setIsResuming] = useState(!!resumeId);
+  const [brandData, setBrandData] = useState<any>({
     description: "",
     namingOptions: [],
     selectedIdentity: null,
     selectedLogo: null,
+    projectId: null,
+    chatHistory: []
   });
+
+  // 데이터 이어하기 로직
+  useEffect(() => {
+    if (resumeId) {
+      const fetchResumeData = async () => {
+        try {
+          const res = await fetch(`http://localhost:8080/api/v1/branding/${resumeId}`);
+          if (!res.ok) throw new Error("Failed to fetch resume data");
+          const data = await res.json();
+          
+          // 상태 및 데이터 복구
+          const recoveredData: any = {
+            projectId: data.id,
+            namingOptions: data.identities || [],
+            chatHistory: data.chatHistory || [],
+            selectedIdentity: data.identities?.find((i: any) => i.isSelected) || null,
+          };
+          
+          // 현재 단계 결정
+          let startStep = 1;
+          if (data.currentStep === "NAMING_READY") startStep = 2;
+          else if (data.currentStep === "LOGO_GENERATION") startStep = 3;
+          else if (data.currentStep === "COMPLETED") startStep = 4;
+          
+          setBrandData(recoveredData);
+          setStep(startStep);
+        } catch (error) {
+          console.error("Resume failed:", error);
+          alert("데이터를 불러오지 못했습니다. 새로운 프로젝트로 시작합니다.");
+        } finally {
+          setIsResuming(false);
+        }
+      };
+      fetchResumeData();
+    }
+  }, [resumeId]);
 
   const handleInterviewComplete = (namingOptions: any[]) => {
     setBrandData({ ...brandData, namingOptions });
@@ -22,6 +65,8 @@ export default function BrandingPage() {
 
   const nextStep = () => setStep((prev) => Math.min(prev + 1, 4));
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
+
+  if (isResuming) return <div className="min-h-screen flex items-center justify-center font-bold">브랜딩 정보를 불러오는 중입니다...</div>;
 
   return (
     <main className="flex-1 w-full max-w-5xl mx-auto px-4 py-12 flex flex-col">
@@ -57,6 +102,8 @@ export default function BrandingPage() {
         {step === 1 && (
           <InterviewSection 
             onComplete={handleInterviewComplete} 
+            initialProjectId={brandData.projectId}
+            initialMessages={brandData.chatHistory}
           />
         )}
         {step === 2 && (

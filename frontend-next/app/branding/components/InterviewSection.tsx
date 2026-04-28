@@ -11,12 +11,16 @@ interface Message {
 }
 
 export default function InterviewSection({ 
-  onComplete 
+  onComplete,
+  initialProjectId,
+  initialMessages
 }: { 
-  onComplete: (data: any) => void 
+  onComplete: (data: any) => void,
+  initialProjectId?: string | null,
+  initialMessages?: Message[]
 }) {
-  const [projectId, setProjectId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([
+  const [projectId, setProjectId] = useState<string | null>(initialProjectId || null);
+  const [messages, setMessages] = useState<Message[]>(initialMessages || [
     {
       id: 1,
       role: "assistant",
@@ -33,6 +37,8 @@ export default function InterviewSection({
 
   // 1. 컴포넌트 마운트 시 브랜딩 프로젝트 생성
   useEffect(() => {
+    if (initialProjectId) return; // 이미 프로젝트가 있으면 생성 건너뜀
+    
     const initProject = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/`, {

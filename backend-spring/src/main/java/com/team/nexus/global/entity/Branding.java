@@ -38,6 +38,10 @@ public class Branding {
     @Column(name = "keywords", columnDefinition = "jsonb")
     private Map<String, Object> keywords;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "chat_history", columnDefinition = "jsonb")
+    private Object chatHistory;
+
     @Column(name = "current_step", length = 20)
     private String currentStep;
 

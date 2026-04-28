@@ -87,6 +87,7 @@ class Branding(Base):
     industry_category_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("industry_categories.id"), nullable=False)
     title: Mapped[str] = mapped_column(String(100), nullable=False)
     keywords: Mapped[Optional[dict]] = mapped_column(JSON)
+    chat_history: Mapped[Optional[list]] = mapped_column(JSON)
     current_step: Mapped[Optional[str]] = mapped_column(String(20), server_default=text("'INTERVIEW'"))
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 

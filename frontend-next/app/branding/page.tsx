@@ -20,6 +20,7 @@ interface Brand {
   industryCategoryId: string;
   currentStep: string;
   createdAt: string;
+  logoUrl?: string;
 }
 
 const API_BASE_URL = "http://localhost:8080/api/v1";
@@ -137,17 +138,24 @@ export default function BrandListPage() {
                       : 'bg-white border-transparent hover:border-gray-200 hover:shadow-xl hover:-translate-y-1'
                     }`}
                   >
-                    <div className="mb-6 transform transition-transform group-hover:scale-110 duration-500">
-                      {getIndustryIcon(brand.industryCategoryId)}
+                    <div className="mb-6 transform transition-transform group-hover:scale-110 duration-500 w-32 h-32 flex items-center justify-center bg-gray-50 rounded-3xl p-4">
+                      {brand.logoUrl ? (
+                        <img 
+                          src={brand.logoUrl.startsWith('http') || brand.logoUrl.startsWith('data:') ? brand.logoUrl : `http://localhost:8000${brand.logoUrl}`} 
+                          alt={brand.title} 
+                          className="max-w-full max-h-full object-contain"
+                        />
+                      ) : (
+                        getIndustryIcon(brand.industryCategoryId)
+                      )}
                     </div>
-                    <h4 className="text-xl font-black mb-1">{brand.title}</h4>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">{brand.industryCategoryId}</p>
+                    <h4 className="text-2xl font-black mb-2 text-center">{brand.title}</h4>
                     <div className="text-center">
-                      <p className="text-2xl font-black leading-tight">Created on:<br />{brand.createdAt}</p>
+                      <p className="text-xs font-bold text-gray-400 tracking-widest uppercase">{brand.createdAt}</p>
                     </div>
                     {selectedBrandId === brand.id && (
                       <div className="absolute top-6 right-6">
-                        <ShieldCheck className="w-6 h-6 text-black" />
+                        <div className="w-3 h-3 bg-black rounded-full animate-pulse" />
                       </div>
                     )}
                   </div>
@@ -166,13 +174,20 @@ export default function BrandListPage() {
                 {selectedBrand ? (
                   <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="flex items-start gap-4">
-                      <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center">
-                        {getIndustryIcon(selectedBrand.industryCategoryId)}
+                      <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center p-2 overflow-hidden border border-gray-100">
+                        {selectedBrand.logoUrl ? (
+                          <img 
+                            src={selectedBrand.logoUrl.startsWith('http') || selectedBrand.logoUrl.startsWith('data:') ? selectedBrand.logoUrl : `http://localhost:8000${selectedBrand.logoUrl}`} 
+                            alt={selectedBrand.title} 
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        ) : (
+                          getIndustryIcon(selectedBrand.industryCategoryId)
+                        )}
                       </div>
                       <div>
                         <h4 className="text-xl font-bold">{selectedBrand.title}</h4>
-                        <p className="text-sm text-gray-500">{selectedBrand.industryCategoryId}</p>
-                        <span className="inline-block mt-2 px-2 py-0.5 bg-green-50 text-green-600 text-[10px] font-bold rounded uppercase tracking-wider">
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-green-50 text-green-600 text-[10px] font-bold rounded uppercase tracking-wider">
                           {selectedBrand.currentStep}
                         </span>
                       </div>
@@ -186,13 +201,24 @@ export default function BrandListPage() {
                         <Trash2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
                         <span className="text-xs font-bold">Delete Brand</span>
                       </button>
-                      <Link 
-                        href={`/branding/${selectedBrand.id}`}
-                        className="flex flex-col items-center justify-center gap-2 p-6 bg-black text-white rounded-2xl hover:bg-gray-800 transition-all transform hover:scale-[1.02]"
-                      >
-                        <ExternalLink className="w-6 h-6" />
-                        <span className="text-xs font-bold">View Details</span>
-                      </Link>
+                      
+                      {selectedBrand.currentStep === 'COMPLETED' ? (
+                        <Link 
+                          href={`/branding/${selectedBrand.id}`}
+                          className="flex flex-col items-center justify-center gap-2 p-6 bg-black text-white rounded-2xl hover:bg-gray-800 transition-all transform hover:scale-[1.02]"
+                        >
+                          <ExternalLink className="w-6 h-6" />
+                          <span className="text-xs font-bold">View Details</span>
+                        </Link>
+                      ) : (
+                        <Link 
+                          href={`/branding/create?resumeId=${selectedBrand.id}`}
+                          className="flex flex-col items-center justify-center gap-2 p-6 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-all transform hover:scale-[1.02] shadow-lg shadow-blue-200"
+                        >
+                          <Rocket className="w-6 h-6 animate-pulse" />
+                          <span className="text-xs font-bold">브랜딩 이어하기</span>
+                        </Link>
+                      )}
                     </div>
 
                     <div className="space-y-4">

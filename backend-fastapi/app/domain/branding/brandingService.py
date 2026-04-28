@@ -176,9 +176,16 @@ async def chat_with_ai(db: AsyncSession, branding_id: uuid.UUID, request: ChatRe
                         print(f"Invalid UUID received from AI: {industry_id}")
                         
                 branding.keywords = {
-                    "extracted_keywords": result.get("keywords", []),
-                    "last_msg": result.get("msg")
+                    "extracted_keywords": result.get("keywords", [])
                 }
+                
+                # 대화 내역(Chat History) 저장: 기존 history + 이번 대화
+                full_history = request.history + [
+                    {"role": "user", "content": request.message},
+                    {"role": "assistant", "content": result.get("msg", "")}
+                ]
+                branding.chat_history = full_history
+                
                 await db.commit()
             
             return {
@@ -417,9 +424,12 @@ Prompt: [영어 프롬프트]
 async def generate_marketing_assets(db: AsyncSession, identity_id: uuid.UUID):
     """최종 선정된 로고를 바탕으로 명함, 메뉴판 등의 마케팅 에셋 목업 이미지를 생성합니다."""
     try:
-        # 1. 브랜드 아이덴티티 및 로고 정보 조회
+        # 1. 브랜드 아이덴티티, 로고 정보, 그리고 부모 객체인 branding 정보까지 한 번에 Eager Loading 조회
         from sqlalchemy.orm import joinedload
-        stmt = select(BrandIdentity).options(joinedload(BrandIdentity.logo_assets)).where(BrandIdentity.id == identity_id)
+        stmt = select(BrandIdentity).options(
+            joinedload(BrandIdentity.logo_assets),
+            joinedload(BrandIdentity.branding)
+        ).where(BrandIdentity.id == identity_id)
         result = await db.execute(stmt)
         identity = result.unique().scalar_one_or_none()
         
