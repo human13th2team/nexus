@@ -14,12 +14,13 @@ import java.util.List;
 
 import org.springframework.web.reactive.function.client.WebClient;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import reactor.core.publisher.Flux;
 
 @Service
 @RequiredArgsConstructor
 public class RealEstateServiceImpl implements RealEstateService {
     private final APIProperties apiProperties;
-    private final WebClient realEstateWebClient;
+    private final WebClient dataPortalRealEstateWebClient;
     private static final XmlMapper XML_MAPPER = new XmlMapper();
 
     private static final int TARGET_COUNT = 5;
@@ -27,58 +28,64 @@ public class RealEstateServiceImpl implements RealEstateService {
     @Override
     @Transactional
     public List<ProcessedRealEstateDto> getProcessedRealEstateList(Integer regionCode) {
-        List<ProcessedRealEstateDto> under100M = new ArrayList<>();
-        List<ProcessedRealEstateDto> over100M = new ArrayList<>();
         LocalDate searchDate = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMM");
 
-        for (int i = 0; i < 12; i++) {
-            String dealYMD = searchDate.minusMonths(i).format(DateTimeFormatter.ofPattern("yyyyMM"));
+        return Flux.range(0, 12)
+                .flatMap(i -> {
+                    String dealYMD = searchDate.minusMonths(i).format(formatter);
+                    return fetchAllPagesForMonth(regionCode, dealYMD);
+                }, 12) // 12개월분 동시 요청
+                .collectList()
+                .map(allData -> {
+                    List<ProcessedRealEstateDto> under100M = new ArrayList<>();
+                    List<ProcessedRealEstateDto> over100M = new ArrayList<>();
+                    for (ProcessedRealEstateDto dto : allData) {
+                        if (Boolean.TRUE.equals(dto.getIsWithin100M())) {
+                            if (under100M.size() < TARGET_COUNT) under100M.add(dto);
+                        } else {
+                            if (over100M.size() < TARGET_COUNT) over100M.add(dto);
+                        }
+                        if (under100M.size() >= TARGET_COUNT && over100M.size() >= TARGET_COUNT) break;
+                    }
+                    return combine(under100M, over100M);
+                })
+                .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
+                .block();
+    }
+
+    private Flux<ProcessedRealEstateDto> fetchAllPagesForMonth(Integer regionCode, String dealYMD) {
+        return Flux.create(sink -> {
             int pageNo = 1;
             boolean hasNextPage = true;
-
             while (hasNextPage) {
                 RealEstateAPIResponseDto response = fetchApi(regionCode, dealYMD, pageNo);
-
                 if (response == null || response.getResponse() == null || response.getResponse().getBody() == null) {
                     break;
                 }
-
                 var body = response.getResponse().getBody();
                 var items = body.getItems() != null ? body.getItems().getItem() : null;
-
                 if (items != null) {
                     for (var item : items) {
-                        ProcessedRealEstateDto processed = mapAndCalculate(item);
-
-                        if (Boolean.TRUE.equals(processed.getIsWithin100M())) {
-                            if (under100M.size() < TARGET_COUNT)
-                                under100M.add(processed);
-                        } else {
-                            if (over100M.size() < TARGET_COUNT)
-                                over100M.add(processed);
-                        }
-
-                        if (under100M.size() >= TARGET_COUNT && over100M.size() >= TARGET_COUNT) {
-                            return combine(under100M, over100M);
-                        }
+                        sink.next(mapAndCalculate(item));
                     }
                 }
-
                 if (pageNo * body.getNumOfRows() < body.getTotalCount()) {
                     pageNo++;
                 } else {
                     hasNextPage = false;
                 }
             }
-        }
-        return combine(under100M, over100M);
+            sink.complete();
+        });
     }
+
 
     private RealEstateAPIResponseDto fetchApi(Integer regionCode, String dealYMD, int pageNo) {
         try {
-            String xmlResponse = realEstateWebClient.get()
+            String xmlResponse = dataPortalRealEstateWebClient.get()
                     .uri(uriBuilder -> uriBuilder
-                            .queryParam("serviceKey", apiProperties.getKey())
+                            .queryParam("serviceKey", apiProperties.getDataPortal().getKey())
                             .queryParam("LAWD_CD", regionCode)
                             .queryParam("DEAL_YMD", dealYMD)
                             .queryParam("pageNo", pageNo)
@@ -87,7 +94,7 @@ public class RealEstateServiceImpl implements RealEstateService {
                     .retrieve()
                     .bodyToMono(String.class)
                     .block();
-            
+
             return XML_MAPPER.readValue(xmlResponse, RealEstateAPIResponseDto.class);
         } catch (Exception e) {
             System.err.println("Error fetching real estate data: " + e.getMessage());

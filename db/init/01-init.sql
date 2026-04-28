@@ -310,3 +310,15 @@ CREATE TABLE chat_messages (
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+---------------------------------------
+-- 7. 업종-KSIC 매핑 (소상공인진흥공단 ksic)
+---------------------------------------
+CREATE TABLE semas_industry_mappings (
+    id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    semas_ksic_code      VARCHAR(20),
+    ksic_code            VARCHAR(20),
+    large_category_name  VARCHAR(100),
+    medium_category_name VARCHAR(100),
+    small_category_name  VARCHAR(100)
+);

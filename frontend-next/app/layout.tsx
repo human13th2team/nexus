@@ -31,7 +31,7 @@ export default function RootLayout({
       lang="ko"
       className={`${manrope.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-inter">
+      <body className="h-screen flex flex-col font-inter bg-[var(--nexus-bg)] text-[var(--nexus-on-bg)]">
         <Header />
         <main className="flex-1">
           {children}

@@ -14,6 +14,8 @@ class RegionCode(Base):
     region_code: Mapped[int] = mapped_column(Integer, nullable=False)
     city_name: Mapped[str] = mapped_column(String(10), nullable=False)
     county_name: Mapped[str] = mapped_column(String(10), nullable=False)
+    latitude: Mapped[float] = mapped_column(Numeric(13, 10), nullable=True)
+    longitude: Mapped[float] = mapped_column(Numeric(13, 10), nullable=True)
 
 class IndustryCategory(Base):
     __tablename__ = "industry_categories"
@@ -434,3 +436,12 @@ class ChatMessage(Base):
     chat_room: Mapped["ChatRoom"] = relationship(back_populates="messages")
     user: Mapped["User"] = relationship(back_populates="chat_messages")
 
+class SemasIndustryMapping(Base):
+    __tablename__ = "semas_industry_mappings"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    semas_ksic_code: Mapped[Optional[str]] = mapped_column(String(20))
+    ksic_code: Mapped[Optional[str]] = mapped_column(String(20))
+    large_category_name: Mapped[Optional[str]] = mapped_column(String(100))
+    medium_category_name: Mapped[Optional[str]] = mapped_column(String(100))
+    small_category_name: Mapped[Optional[str]] = mapped_column(String(100))

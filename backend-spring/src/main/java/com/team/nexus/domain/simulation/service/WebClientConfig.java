@@ -12,9 +12,24 @@ public class WebClientConfig {
     private final APIProperties apiProperties;
 
     @Bean
-    public WebClient realEstateWebClient(WebClient.Builder builder) {
+    public WebClient dataPortalRealEstateWebClient(WebClient.Builder builder) {
         return builder
-                .baseUrl(apiProperties.getUrl())
+                .baseUrl(apiProperties.getDataPortal().getRealEstateUrl())
+                .build();
+    }
+
+    @Bean
+    public WebClient dataPortalSemasWebClient(WebClient.Builder builder) {
+        return builder
+                .baseUrl(apiProperties.getDataPortal().getSemasUrl())
+                .build();
+    }
+
+    @Bean
+    public WebClient kakaoWebClient(WebClient.Builder builder) {
+        return builder
+                .baseUrl(apiProperties.getKakao().getUrl())
+                .defaultHeader("Authorization", "KakaoAK" + apiProperties.getKakao().getKey())
                 .build();
     }
 }

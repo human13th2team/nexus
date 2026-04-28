@@ -14,4 +14,6 @@ public class SimRegCodesDto {
     private Integer regionCode;
     private String cityName;
     private String countyName;
+    private Double latitude;
+    private Double longitude;
 }
