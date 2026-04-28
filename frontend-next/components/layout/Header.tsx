@@ -139,12 +139,13 @@ export default function Header() {
                   </button>
                   {isProfileOpen && (
                     <div className="absolute right-0 top-14 w-52 bg-white border border-[var(--nexus-outline-variant)] shadow-xl rounded-md overflow-hidden z-[110]">
-                      <div className="px-5 py-3 text-sm text-gray-400 border-b border-gray-100 bg-gray-50/50">
-                        <span className="font-bold text-[var(--nexus-primary)]">{nickname}</span>님 환영합니다
-                      </div>
-                      <Link href="/" className="block px-5 py-4 text-base hover:bg-gray-50 border-b border-gray-100">ℹ️ 프로필</Link>
-                      <Link href="/chat" className="block px-5 py-4 text-base hover:bg-gray-50 border-b border-gray-100">💬 채팅하기</Link>
-                      <button onClick={handleLogout} className="w-full text-left px-5 py-4 text-base text-red-500 hover:bg-red-50 font-semibold">🚪 로그아웃</button>
+                        <div className="px-5 py-3.5 text-sm text-gray-400 border-b border-gray-100 bg-gray-50/50">
+                            <span className="font-bold text-[var(--nexus-primary)]">{nickname}</span>님 환영합니다
+                          </div>
+
+                          <Link href="/" className="block px-5 py-3.5 text-sm hover:bg-gray-50 border-b border-gray-100">ℹ️ 프로필</Link>
+                          <Link href="/chat" className="block px-5 py-3.5 text-sm hover:bg-gray-50 border-b border-gray-100">💬 채팅하기</Link>
+                          <button onClick={handleLogout} className="w-full text-left px-5 py-3.5 text-sm text-red-500 hover:bg-red-50 font-semibold">🚪 로그아웃</button>
                     </div>
                   )}
                 </div>
