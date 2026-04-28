@@ -56,41 +56,46 @@ export default function IdentitySelectionSection({
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold text-gray-900">추천 브랜드 아이덴티티</h2>
-        <p className="text-gray-500 text-sm">대표님의 답변을 바탕으로 AI가 분석한 최적의 브랜드 후보입니다.</p>
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="text-center space-y-3">
+        <h2 className="text-3xl font-black text-[var(--nexus-on-bg)] tracking-tight">Identity Candidates</h2>
+        <p className="text-gray-500 font-medium max-w-lg mx-auto text-sm">대표님의 비즈니스 모델에 가장 부합하는 3가지 브랜드 정체성 후보입니다.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {namingOptions.map((item) => (
           <div
             key={item.identityId}
             onClick={() => setSelectedId(item.identityId)}
-            className={`cursor-pointer group relative p-6 border-2 rounded-2xl transition-all duration-300 hover:shadow-lg ${
+            className={`cursor-pointer group relative p-10 rounded-[2.5rem] transition-all duration-500 border-2 overflow-hidden ${
               selectedId === item.identityId
-                ? "border-black bg-white shadow-xl -translate-y-1"
-                : "border-gray-100 bg-gray-50 hover:border-gray-300"
+                ? "border-[var(--nexus-primary)] bg-white shadow-[0_30px_60px_-15px_rgba(11,26,125,0.12)] -translate-y-2"
+                : "border-[var(--nexus-outline-variant)]/30 bg-[var(--nexus-surface-low)]/50 hover:border-[var(--nexus-outline-variant)]"
             }`}
           >
             {selectedId === item.identityId && (
-              <div className="absolute -top-3 -right-3 w-8 h-8 bg-black text-white rounded-full flex items-center justify-center shadow-lg animate-in zoom-in">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="absolute top-6 right-6 w-10 h-10 bg-[var(--nexus-primary)] text-white rounded-full flex items-center justify-center shadow-lg animate-in zoom-in duration-300">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
             )}
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-bold text-lg text-gray-900">{item.brandName}</h3>
-                <p className="text-sm text-gray-500 font-medium">{item.slogan}</p>
+            
+            <div className="space-y-6 relative">
+              <div className="space-y-2">
+                <h3 className="font-black text-2xl text-[var(--nexus-on-bg)] group-hover:text-[var(--nexus-primary)] transition-colors">{item.brandName}</h3>
+                <p className="text-sm text-[var(--nexus-secondary)] font-bold italic opacity-70 leading-relaxed">"{item.slogan}"</p>
               </div>
-              <p className="text-sm text-gray-600 leading-relaxed line-clamp-4">
+              
+              <div className="h-px w-12 bg-[var(--nexus-outline-variant)]/30" />
+              
+              <p className="text-sm text-gray-500 font-medium leading-relaxed line-clamp-5">
                 {item.brandStory}
               </p>
-              <div className="flex flex-wrap gap-2">
+              
+              <div className="flex flex-wrap gap-2 pt-2">
                 {item.keywords?.map((kw) => (
-                  <span key={kw} className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 bg-gray-200 text-gray-700 rounded">
+                  <span key={kw} className="text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 bg-[var(--nexus-surface-container)] text-[var(--nexus-primary)] rounded-lg">
                     #{kw}
                   </span>
                 ))}
@@ -100,12 +105,12 @@ export default function IdentitySelectionSection({
         ))}
       </div>
 
-      <div className="flex justify-between items-center pt-8 border-t border-gray-100">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-12 border-t border-[var(--nexus-outline-variant)]/20">
         <button
           onClick={onBack}
-          className="text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors"
+          className="text-xs font-black text-gray-400 uppercase tracking-widest hover:text-[var(--nexus-on-bg)] transition-colors"
         >
-          ← 이전 단계로
+          ← Back to Strategy Analysis
         </button>
         <button
           disabled={!selectedId}
@@ -113,13 +118,13 @@ export default function IdentitySelectionSection({
             const selected = namingOptions.find(i => i.identityId === selectedId);
             if (selected) onComplete(selected);
           }}
-          className={`px-8 py-4 rounded-xl text-sm font-bold transition-all ${
+          className={`w-full md:w-auto px-12 py-5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-2xl active:scale-95 ${
             selectedId
-              ? "bg-black text-white hover:bg-gray-800 shadow-md transform hover:scale-[1.02]"
-              : "bg-gray-100 text-gray-400 cursor-not-allowed"
+              ? "bg-[var(--nexus-primary)] text-white hover:bg-[var(--nexus-primary-container)] shadow-[var(--nexus-primary)]/30"
+              : "bg-gray-100 text-gray-300 cursor-not-allowed shadow-none"
           }`}
         >
-          브랜드 확정 및 로고 제작하기
+          Confirm and Proceed to Logo Design
         </button>
       </div>
     </div>

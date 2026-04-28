@@ -82,35 +82,42 @@ export default function BrandListPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] text-black font-sans">
-      <main className="max-w-6xl mx-auto px-6 py-12">
+    <div className="min-h-screen bg-[var(--nexus-bg)] text-[var(--nexus-on-bg)] font-sans">
+      <main className="max-w-7xl mx-auto px-6 py-16">
         {/* Welcome Section */}
-        <section className="text-center mb-16 space-y-6">
-          <div className="space-y-2">
-            <h2 className="text-5xl font-black tracking-tighter">Welcome Back,<br />Entrepreneur!</h2>
-            <p className="text-gray-500 font-medium">Manage and revisit your created brands.</p>
+        <section className="text-left mb-20 flex flex-col md:flex-row md:items-end justify-between gap-8">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[var(--nexus-primary-container)] text-[var(--nexus-on-primary-container)] rounded-full text-[10px] font-black uppercase tracking-widest">
+              Branding Engine v3.0
+            </div>
+            <h2 className="text-6xl font-black tracking-tight leading-[0.9]">Nexus Brand<br /><span className="text-[var(--nexus-primary)]">Command Center</span></h2>
+            <p className="text-gray-500 font-medium text-lg">혁신적인 브랜딩 여정을 한곳에서 관리하세요.</p>
           </div>
           
-          <Link 
-            href="/branding/create"
-            className="inline-flex items-center gap-2 bg-black text-white px-8 py-4 rounded-full font-bold hover:bg-gray-800 transition-all transform hover:scale-105 active:scale-95 shadow-xl shadow-black/10"
-          >
-            Create New Brand <Plus className="w-5 h-5" />
-          </Link>
-
-          <div className="flex items-center justify-center gap-4 pt-4">
-            {['Overview', 'Analytics', 'Support'].map((tab) => (
-              <button 
-                key={tab}
-                className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${
-                  tab === 'Overview' ? 'bg-gray-100 text-black' : 'text-gray-400 hover:text-black'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+          <div className="flex flex-col items-end gap-4">
+            <Link 
+              href="/branding/create"
+              className="inline-flex items-center gap-3 bg-[var(--nexus-primary)] text-white px-10 py-5 rounded-2xl font-black hover:bg-[var(--nexus-primary-container)] transition-all transform hover:-translate-y-1 active:scale-95 shadow-2xl shadow-[var(--nexus-primary)]/20"
+            >
+              Start New Project <Plus className="w-5 h-5" />
+            </Link>
           </div>
         </section>
+
+        <div className="flex items-center gap-2 mb-12 p-1 bg-[var(--nexus-surface-container)] w-fit rounded-2xl border border-[var(--nexus-outline-variant)]">
+          {['Overview', 'Performance', 'Settings'].map((tab) => (
+            <button 
+              key={tab}
+              className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                tab === 'Overview' 
+                ? 'bg-white text-[var(--nexus-primary)] shadow-sm' 
+                : 'text-gray-500 hover:text-[var(--nexus-primary)]'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Brand History Grid */}
@@ -122,23 +129,23 @@ export default function BrandListPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
               {isLoading ? (
                 Array(4).fill(0).map((_, i) => (
-                  <div key={i} className="aspect-square bg-gray-50 animate-pulse rounded-3xl" />
+                  <div key={i} className="aspect-square bg-[var(--nexus-surface-container)] animate-pulse rounded-[2.5rem]" />
                 ))
               ) : (
                 brands.map((brand) => (
                   <div 
                     key={brand.id}
                     onClick={() => setSelectedBrandId(brand.id)}
-                    className={`group relative aspect-square flex flex-col items-center justify-center p-8 rounded-[2.5rem] transition-all cursor-pointer border-2 ${
+                    className={`group relative aspect-square flex flex-col items-center justify-center p-10 rounded-[3rem] transition-all cursor-pointer border-2 ${
                       selectedBrandId === brand.id 
-                      ? 'bg-white border-black shadow-2xl shadow-black/5 -translate-y-2' 
-                      : 'bg-white border-transparent hover:border-gray-200 hover:shadow-xl hover:-translate-y-1'
+                      ? 'bg-white border-[var(--nexus-primary)] shadow-[0_30px_60px_-15px_rgba(11,26,125,0.15)] -translate-y-3' 
+                      : 'bg-[var(--nexus-surface-lowest)] border-transparent hover:border-[var(--nexus-outline-variant)] hover:shadow-xl hover:-translate-y-1'
                     }`}
                   >
-                    <div className="mb-6 transform transition-transform group-hover:scale-110 duration-500 w-32 h-32 flex items-center justify-center bg-gray-50 rounded-3xl p-4">
+                    <div className="mb-8 transform transition-transform group-hover:scale-110 duration-700 w-36 h-36 flex items-center justify-center bg-[var(--nexus-surface-low)] rounded-[2.5rem] p-6 border border-[var(--nexus-outline-variant)]/30">
                       {brand.logoUrl ? (
                         <img 
                           src={brand.logoUrl.startsWith('http') || brand.logoUrl.startsWith('data:') ? brand.logoUrl : `http://localhost:8000${brand.logoUrl}`} 
@@ -149,13 +156,13 @@ export default function BrandListPage() {
                         getIndustryIcon(brand.industryCategoryId)
                       )}
                     </div>
-                    <h4 className="text-2xl font-black mb-2 text-center">{brand.title}</h4>
+                    <h4 className="text-2xl font-black mb-2 text-center text-[var(--nexus-on-bg)]">{brand.title}</h4>
                     <div className="text-center">
-                      <p className="text-xs font-bold text-gray-400 tracking-widest uppercase">{brand.createdAt}</p>
+                      <p className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase">{brand.createdAt}</p>
                     </div>
                     {selectedBrandId === brand.id && (
-                      <div className="absolute top-6 right-6">
-                        <div className="w-3 h-3 bg-black rounded-full animate-pulse" />
+                      <div className="absolute top-8 right-8">
+                        <div className="w-4 h-4 bg-[var(--nexus-primary)] rounded-full animate-pulse shadow-[0_0_15px_rgba(11,26,125,0.5)]" />
                       </div>
                     )}
                   </div>
@@ -167,14 +174,14 @@ export default function BrandListPage() {
           {/* Action Panel */}
           <aside className="lg:col-span-4 space-y-8">
             <div className="sticky top-32">
-              <h3 className="text-3xl font-black tracking-tight mb-2">Brand Overview and Actions</h3>
-              <p className="text-gray-400 font-medium mb-8">Manage your brand information and assets.</p>
+              <h3 className="text-4xl font-black tracking-tight mb-2 text-[var(--nexus-primary)]">Overview</h3>
+              <p className="text-gray-500 font-bold mb-10 text-sm">브랜드 정보 및 자산을 관리하세요.</p>
 
-              <div className="bg-white border border-gray-100 rounded-[2rem] p-8 shadow-sm">
+              <div className="bg-white border border-[var(--nexus-outline-variant)]/30 rounded-[3rem] p-10 shadow-[0_40px_80px_-20px_rgba(7,30,39,0.08)]">
                 {selectedBrand ? (
-                  <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="flex items-start gap-4">
-                      <div className="w-20 h-20 bg-gray-50 rounded-2xl flex items-center justify-center p-2 overflow-hidden border border-gray-100">
+                  <div className="space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
+                    <div className="flex items-center gap-6">
+                      <div className="w-24 h-24 bg-[var(--nexus-surface-low)] rounded-[2rem] flex items-center justify-center p-4 overflow-hidden border border-[var(--nexus-outline-variant)]/30">
                         {selectedBrand.logoUrl ? (
                           <img 
                             src={selectedBrand.logoUrl.startsWith('http') || selectedBrand.logoUrl.startsWith('data:') ? selectedBrand.logoUrl : `http://localhost:8000${selectedBrand.logoUrl}`} 
@@ -186,65 +193,64 @@ export default function BrandListPage() {
                         )}
                       </div>
                       <div>
-                        <h4 className="text-xl font-bold">{selectedBrand.title}</h4>
-                        <span className="inline-block mt-1 px-2 py-0.5 bg-green-50 text-green-600 text-[10px] font-bold rounded uppercase tracking-wider">
+                        <h4 className="text-2xl font-black text-[var(--nexus-on-bg)] mb-1">{selectedBrand.title}</h4>
+                        <span className="inline-block px-3 py-1 bg-[var(--nexus-tertiary-fixed)] text-[var(--nexus-tertiary)] text-[10px] font-black rounded-lg uppercase tracking-widest">
                           {selectedBrand.currentStep}
                         </span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <button 
-                        onClick={handleDelete}
-                        className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-gray-100 rounded-2xl hover:border-red-100 hover:bg-red-50 hover:text-red-600 transition-all group"
-                      >
-                        <Trash2 className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                        <span className="text-xs font-bold">Delete Brand</span>
-                      </button>
-                      
+                    <div className="grid grid-cols-1 gap-4">
                       {selectedBrand.currentStep === 'COMPLETED' ? (
                         <Link 
                           href={`/branding/${selectedBrand.id}`}
-                          className="flex flex-col items-center justify-center gap-2 p-6 bg-black text-white rounded-2xl hover:bg-gray-800 transition-all transform hover:scale-[1.02]"
+                          className="flex items-center justify-center gap-3 p-6 bg-[var(--nexus-primary)] text-white rounded-2xl hover:bg-[var(--nexus-primary-container)] transition-all font-black shadow-lg shadow-[var(--nexus-primary)]/20"
                         >
-                          <ExternalLink className="w-6 h-6" />
-                          <span className="text-xs font-bold">View Details</span>
+                          <ExternalLink className="w-5 h-5" />
+                          <span>View Detail Report</span>
                         </Link>
                       ) : (
                         <Link 
                           href={`/branding/create?resumeId=${selectedBrand.id}`}
-                          className="flex flex-col items-center justify-center gap-2 p-6 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 transition-all transform hover:scale-[1.02] shadow-lg shadow-blue-200"
+                          className="flex items-center justify-center gap-3 p-6 bg-[var(--nexus-secondary)] text-white rounded-2xl hover:bg-[var(--nexus-secondary-container)] transition-all font-black shadow-lg shadow-[var(--nexus-secondary)]/20"
                         >
-                          <Rocket className="w-6 h-6 animate-pulse" />
-                          <span className="text-xs font-bold">브랜딩 이어하기</span>
+                          <Rocket className="w-5 h-5 animate-bounce" />
+                          <span>이어하기 (Resume)</span>
                         </Link>
                       )}
+                      
+                      <button 
+                        onClick={handleDelete}
+                        className="flex items-center justify-center gap-3 p-6 border-2 border-[var(--nexus-outline-variant)] text-gray-400 rounded-2xl hover:border-red-200 hover:text-red-500 hover:bg-red-50 transition-all font-black"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                        <span>Remove Project</span>
+                      </button>
                     </div>
 
-                    <div className="space-y-4">
-                      <h5 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Recent Activity</h5>
-                      <div className="space-y-3">
+                    <div className="space-y-6">
+                      <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Project History</h5>
+                      <div className="space-y-4">
                         {[1, 2].map((i) => (
-                          <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                            <div className="flex items-center gap-3">
-                              <div className="w-2 h-2 bg-black rounded-full" />
-                              <span className="text-xs font-medium">Logo updated</span>
+                          <div key={i} className="flex items-center justify-between p-4 bg-[var(--nexus-surface-low)] rounded-2xl border border-[var(--nexus-outline-variant)]/20">
+                            <div className="flex items-center gap-4">
+                              <div className="w-2 h-2 bg-[var(--nexus-primary)] rounded-full" />
+                              <span className="text-xs font-bold text-[var(--nexus-on-bg)]">Metadata Synchronized</span>
                             </div>
-                            <span className="text-[10px] text-gray-400">2d ago</span>
+                            <span className="text-[10px] font-bold text-gray-400 uppercase">2d ago</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-                    <div className="w-20 h-20 bg-gray-50 rounded-[1.5rem] flex items-center justify-center text-gray-200">
-                      <LayoutGrid className="w-10 h-10" />
+                  <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
+                    <div className="w-24 h-24 bg-[var(--nexus-surface-low)] rounded-[2.5rem] flex items-center justify-center text-[var(--nexus-outline-variant)] border-2 border-dashed border-[var(--nexus-outline-variant)]/50">
+                      <LayoutGrid className="w-12 h-12" />
                     </div>
                     <div>
-                      <h4 className="text-lg font-bold">Select a Brand</h4>
-                      <p className="text-sm text-gray-400">Choose a brand to manage</p>
-                      <p className="text-xs text-gray-400 mt-2">Click on the brand card to view detailed options.</p>
+                      <h4 className="text-xl font-black text-[var(--nexus-on-bg)] mb-2">Ready to Launch</h4>
+                      <p className="text-sm text-gray-500 font-medium leading-relaxed px-4">왼쪽의 브랜드 카드를 선택하여 세부 관리 메뉴를 활성화하세요.</p>
                     </div>
                   </div>
                 )}

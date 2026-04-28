@@ -64,23 +64,32 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
   if (!brand) return <div className="min-h-screen flex items-center justify-center">Brand not found</div>;
 
   return (
-    <div className="min-h-screen bg-[#FDFDFD] text-black">
-      <main className="max-w-5xl mx-auto px-6 py-12 space-y-12">
+    <div className="min-h-screen bg-[var(--nexus-bg)] text-[var(--nexus-on-bg)] font-sans">
+      <main className="max-w-6xl mx-auto px-6 py-16 space-y-16">
         {/* Overview Header */}
-        <section className="bg-white p-12 rounded-[3rem] border border-gray-100 shadow-sm flex flex-col md:flex-row gap-12 items-center">
-          <div className="w-40 h-40 bg-gray-50 rounded-[2.5rem] flex items-center justify-center shrink-0">
-            {brand.industryCategoryId === 'Tech' ? <Rocket className="w-20 h-20 text-blue-500" /> : <Palette className="w-20 h-20 text-purple-500" />}
+        <section className="bg-white p-12 rounded-[3.5rem] border border-[var(--nexus-outline-variant)]/30 shadow-[0_30px_60px_-15px_rgba(7,30,39,0.05)] flex flex-col md:flex-row gap-12 items-center relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--nexus-primary-container)]/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+          
+          <div className="w-48 h-48 bg-[var(--nexus-surface-low)] rounded-[3rem] flex items-center justify-center shrink-0 border border-[var(--nexus-outline-variant)]/20 shadow-inner">
+            {brand.industryCategoryId === 'Tech' ? <Rocket className="w-24 h-24 text-[var(--nexus-primary)]" /> : <Palette className="w-24 h-24 text-[var(--nexus-secondary)]" />}
           </div>
-          <div className="space-y-6 text-center md:text-left flex-1">
-            <div className="space-y-2">
-              <span className="px-3 py-1 bg-green-50 text-green-600 text-[10px] font-bold rounded-full uppercase tracking-wider">
-                Project Status: {brand.currentStep}
-              </span>
-              <h2 className="text-4xl font-black tracking-tight">{brand.title} Identity</h2>
+          
+          <div className="space-y-8 text-center md:text-left flex-1 relative">
+            <div className="space-y-3">
+              <div className="flex items-center justify-center md:justify-start gap-3">
+                <span className="px-3 py-1 bg-[var(--nexus-tertiary-fixed)] text-[var(--nexus-tertiary)] text-[10px] font-black rounded-lg uppercase tracking-widest">
+                  {brand.currentStep}
+                </span>
+                <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                  <Calendar className="w-3 h-3" /> ARCHIVED MAY 2026
+                </span>
+              </div>
+              <h2 className="text-5xl font-black tracking-tight text-[var(--nexus-on-bg)]">{brand.title}</h2>
             </div>
+            
             <div className="flex flex-wrap gap-2 justify-center md:justify-start">
               {brand.keywords?.extracted_keywords && brand.keywords.extracted_keywords.map((kw: string, i: number) => (
-                <span key={i} className="px-4 py-2 bg-gray-50 text-gray-500 text-xs font-bold rounded-full">
+                <span key={i} className="px-5 py-2 bg-[var(--nexus-surface-low)] text-[var(--nexus-primary)] text-[10px] font-black rounded-full uppercase tracking-wider border border-[var(--nexus-outline-variant)]/20">
                   #{kw}
                 </span>
               ))}
@@ -88,47 +97,65 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
           </div>
         </section>
 
-        {/* Brand Identity - Only show selected one */}
-        <section className="space-y-8">
-          <div className="flex items-center justify-between">
-            <h3 className="text-2xl font-black tracking-tight">Confirmed Identity</h3>
-            <span className="text-sm font-bold text-gray-400">Final Selection</span>
+        {/* Brand Identity */}
+        <section className="space-y-10">
+          <div className="flex items-end justify-between px-2">
+            <div>
+              <h3 className="text-3xl font-black tracking-tight">Identity Definition</h3>
+              <p className="text-gray-400 font-bold text-sm mt-1">확정된 브랜드 아이덴티티와 핵심 가치입니다.</p>
+            </div>
+            <div className="flex gap-2">
+              <button className="w-10 h-10 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-[var(--nexus-primary)] transition-colors shadow-sm">
+                <Share2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-8">
             {brand.identities.filter(i => i.isSelected).map((identity) => (
               <div 
                 key={identity.id}
-                className="p-10 rounded-[3rem] border-2 bg-white border-black shadow-2xl ring-8 ring-black/5"
+                className="p-12 rounded-[4rem] border border-[var(--nexus-primary)] bg-white shadow-[0_40px_100px_-20px_rgba(11,26,125,0.1)] relative overflow-hidden"
               >
-                <div className="flex justify-between items-start mb-8">
-                  <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center">
-                    <CheckCircle2 className="w-8 h-8 text-black" />
+                <div className="absolute top-0 left-0 w-2 h-full bg-[var(--nexus-primary)]" />
+                
+                <div className="flex justify-between items-start mb-12">
+                  <div className="w-16 h-16 bg-[var(--nexus-surface-low)] rounded-2xl flex items-center justify-center border border-[var(--nexus-outline-variant)]/30">
+                    <CheckCircle2 className="w-10 h-10 text-[var(--nexus-primary)]" />
                   </div>
-                  <span className="px-3 py-1 bg-black text-white text-[10px] font-bold rounded-full uppercase tracking-widest">Selected Identity</span>
+                  <div className="text-right">
+                    <span className="px-4 py-1.5 bg-[var(--nexus-primary)] text-white text-[10px] font-black rounded-full uppercase tracking-[0.2em] shadow-lg shadow-[var(--nexus-primary)]/20">Final Selection</span>
+                  </div>
                 </div>
                 
-                <div className="flex flex-col md:flex-row gap-12">
-                  <div className="flex-1 space-y-6">
-                    <div>
-                      <h4 className="text-4xl font-black mb-2">{identity.brandName}</h4>
-                      <p className="text-xl font-bold italic text-gray-400">"{identity.slogan}"</p>
+                <div className="flex flex-col lg:flex-row gap-16">
+                  <div className="flex-1 space-y-10">
+                    <div className="space-y-2">
+                      <h4 className="text-5xl font-black text-[var(--nexus-on-bg)] leading-tight">{identity.brandName}</h4>
+                      <p className="text-2xl font-bold italic text-[var(--nexus-secondary)] opacity-60">"{identity.slogan}"</p>
                     </div>
-                    <div className="p-8 bg-gray-50 rounded-[2rem]">
-                      <h5 className="text-[10px] font-bold text-gray-400 uppercase mb-4 tracking-widest">Brand Story</h5>
-                      <p className="text-sm leading-relaxed text-gray-600">{identity.brandStory}</p>
+                    <div className="p-10 bg-[var(--nexus-surface-low)] rounded-[3rem] border border-[var(--nexus-outline-variant)]/20 relative">
+                      <div className="absolute top-6 left-10 text-[10px] font-black text-[var(--nexus-primary)] uppercase tracking-[0.2em] opacity-40 flex items-center gap-2">
+                        <Layers className="w-3 h-3" /> Core Story
+                      </div>
+                      <p className="text-lg leading-relaxed text-[var(--nexus-on-bg)] pt-8 font-medium">
+                        {identity.brandStory}
+                      </p>
                     </div>
                   </div>
 
                   {identity.logoUrl && (
-                    <div className="md:w-72 shrink-0 space-y-4">
-                      <div className="p-8 bg-white border border-gray-100 rounded-[2rem] shadow-inner flex flex-col items-center gap-4">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Official Logo</span>
-                        <img 
-                          src={identity.logoUrl.startsWith('http') || identity.logoUrl.startsWith('data:') ? identity.logoUrl : `${FASTAPI_BASE_URL}${identity.logoUrl}`} 
-                          alt="Brand Logo" 
-                          className="w-full max-h-48 object-contain"
-                        />
+                    <div className="lg:w-80 shrink-0">
+                      <div className="p-10 bg-white border border-[var(--nexus-outline-variant)]/30 rounded-[3.5rem] shadow-[inset_0_2px_10px_rgba(0,0,0,0.02)] flex flex-col items-center gap-6">
+                        <h5 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Master Logo</h5>
+                        <div className="w-full aspect-square flex items-center justify-center p-6 bg-[var(--nexus-bg)] rounded-[2.5rem] border border-[var(--nexus-outline-variant)]/10">
+                          <img 
+                            src={identity.logoUrl.startsWith('http') || identity.logoUrl.startsWith('data:') ? identity.logoUrl : `${FASTAPI_BASE_URL}${identity.logoUrl}`} 
+                            alt="Brand Logo" 
+                            className="max-w-full max-h-full object-contain filter drop-shadow-sm"
+                          />
+                        </div>
+                        <button className="text-[10px] font-black text-[var(--nexus-primary)] uppercase tracking-widest hover:underline pt-2">Download Vector</button>
                       </div>
                     </div>
                   )}
@@ -137,43 +164,50 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
             ))}
             
             {brand.identities.filter(i => i.isSelected).length === 0 && (
-              <div className="p-12 bg-gray-50 rounded-[2rem] border border-dashed border-gray-200 text-center text-gray-400">
-                선택된 브랜드 정체성이 없습니다.
+              <div className="p-20 bg-[var(--nexus-surface-low)] rounded-[3rem] border-2 border-dashed border-[var(--nexus-outline-variant)]/40 text-center flex flex-col items-center gap-4">
+                <Palette className="w-12 h-12 text-gray-300" />
+                <p className="font-bold text-gray-400">선택된 브랜드 정체성이 없습니다.</p>
               </div>
             )}
           </div>
         </section>
 
         {/* Assets Preview */}
-        <section className="space-y-8">
-          <h3 className="text-2xl font-black tracking-tight">Brand Assets</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <section className="space-y-10">
+          <div className="px-2">
+            <h3 className="text-3xl font-black tracking-tight">Marketing Assets</h3>
+            <p className="text-gray-400 font-bold text-sm mt-1">브랜드 가치를 극대화하는 마케팅 결과물입니다.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {brand.identities.find(i => i.isSelected)?.marketingAssets?.length ? (
               brand.identities.find(i => i.isSelected)?.marketingAssets?.map((asset) => (
-                <div key={asset.id} className="group flex flex-col gap-4">
-                  <div className="relative aspect-[4/3] bg-gray-50 rounded-[2rem] overflow-hidden border border-gray-100 transition-all hover:shadow-xl hover:-translate-y-1">
-                    <img 
-                      src={asset.fileUrl.startsWith('http') ? asset.fileUrl : `${FASTAPI_BASE_URL}${asset.fileUrl}`} 
-                      alt={asset.type} 
-                      className="w-full h-full object-cover transition-all group-hover:scale-105" 
-                    />
+                <div key={asset.id} className="group flex flex-col gap-6">
+                  <div className="relative aspect-[4/5] bg-white rounded-[3rem] overflow-hidden border border-[var(--nexus-outline-variant)]/30 transition-all duration-700 hover:shadow-[0_40px_80px_-20px_rgba(7,30,39,0.15)] hover:-translate-y-2 p-3">
+                    <div className="w-full h-full rounded-[2.5rem] overflow-hidden bg-[var(--nexus-surface-low)]">
+                      <img 
+                        src={asset.fileUrl.startsWith('http') ? asset.fileUrl : `${FASTAPI_BASE_URL}${asset.fileUrl}`} 
+                        alt={asset.type} 
+                        className="w-full h-full object-cover transition-transform duration-[2s] group-hover:scale-110" 
+                      />
+                    </div>
                   </div>
-                  <div className="px-2">
-                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  <div className="px-6">
+                    <h4 className="text-[10px] font-black text-[var(--nexus-secondary)] uppercase tracking-[0.3em]">
                       {asset.type.replace('_', ' ')}
                     </h4>
-                    <p className="text-sm font-bold text-gray-900 mt-1">
-                      {asset.type === 'BUSINESS_CARD' ? 'Business Card Mockup' : 
-                       asset.type === 'MENU' ? 'Restaurant Menu Design' : 
-                       asset.type === 'POSTER' ? 'Brand Promotion Poster' : 'Marketing Asset'}
+                    <p className="text-lg font-black text-[var(--nexus-on-bg)] mt-2">
+                      {asset.type === 'BUSINESS_CARD' ? 'Premium Business Card' : 
+                       asset.type === 'MENU' ? 'Strategic Menu Layout' : 
+                       asset.type === 'POSTER' ? 'Visual Communication Poster' : 'Marketing Material'}
                     </p>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="col-span-full py-20 bg-gray-50 rounded-[3rem] border border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400">
-                <Palette className="w-12 h-12 mb-4 opacity-20" />
-                <p className="text-sm font-medium">마케팅 에셋이 아직 생성되지 않았습니다.</p>
+              <div className="col-span-full py-24 bg-[var(--nexus-surface-low)] rounded-[4rem] border-2 border-dashed border-[var(--nexus-outline-variant)]/30 flex flex-col items-center justify-center text-gray-400 gap-6">
+                <Layers className="w-16 h-16 opacity-10" />
+                <p className="font-bold text-gray-300">생성된 마케팅 에셋이 없습니다.</p>
               </div>
             )}
           </div>

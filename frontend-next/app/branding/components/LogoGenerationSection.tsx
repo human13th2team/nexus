@@ -122,93 +122,99 @@ export default function LogoGenerationSection({
   };
 
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
+    <div className="space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
       {/* Header */}
-      <div className="text-center space-y-3">
-        <h2 className="text-3xl font-black text-gray-900 tracking-tight">AI Logo Recommendations</h2>
-        <p className="text-gray-500 text-sm max-w-lg mx-auto">
-          AI가 제안하는 3가지 컨셉입니다. 이 시점에는 아직 DB에 저장되지 않으며, 대표님이 하나를 **최종 선택(Confirm)** 하시는 순간 정식으로 등록됩니다.
+      <div className="text-center space-y-4">
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-[var(--nexus-tertiary-fixed)] text-[var(--nexus-tertiary)] rounded-full text-[10px] font-black uppercase tracking-widest">
+          AI Design Studio
+        </div>
+        <h2 className="text-4xl font-black text-[var(--nexus-on-bg)] tracking-tight">Logo Visualizations</h2>
+        <p className="text-gray-500 font-medium max-w-xl mx-auto text-sm leading-relaxed">
+          인공지능이 제안하는 브랜드 컨셉입니다. 마음에 드는 디자인을 **최종 선택(Confirm)** 하시면 브랜드 자산으로 공식 등록됩니다.
         </p>
         {!logos.length && (
-          <div className="pt-4">
+          <div className="pt-6">
             <button
               onClick={generateLogos}
               disabled={isGenerating}
-              className={`px-10 py-4 bg-black text-white rounded-2xl text-sm font-bold transition-all shadow-xl hover:scale-105 active:scale-95 ${
-                isGenerating ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-800"
+              className={`px-12 py-5 bg-[var(--nexus-primary)] text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-2xl shadow-[var(--nexus-primary)]/20 hover:-translate-y-1 active:scale-95 ${
+                isGenerating ? "opacity-50 cursor-not-allowed" : "hover:bg-[var(--nexus-primary-container)]"
               }`}
             >
-              {isGenerating ? "디자인 제안 중..." : "Generate 3 Logo Concepts"}
+              {isGenerating ? "Analyzing Visual Patterns..." : "Generate Logo Concepts"}
             </button>
           </div>
         )}
       </div>
 
-      <div className="flex flex-col gap-10">
+      <div className="flex flex-col gap-12">
         {/* Top Preview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-6 bg-white border border-gray-100 rounded-2xl shadow-sm flex items-center gap-5">
-            <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-300">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="p-8 bg-white border border-[var(--nexus-outline-variant)]/30 rounded-[2.5rem] shadow-sm flex items-center gap-6">
+            <div className="w-14 h-14 bg-[var(--nexus-surface-low)] rounded-2xl flex items-center justify-center text-[var(--nexus-primary)] border border-[var(--nexus-outline-variant)]/20">
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
               </svg>
             </div>
             <div>
-              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Brand Name</h4>
-              <p className="text-lg font-bold text-gray-900">{identity?.brandName}</p>
+              <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Brand Identity</h4>
+              <p className="text-xl font-black text-[var(--nexus-on-bg)]">{identity?.brandName}</p>
             </div>
           </div>
 
-          <div className="p-6 bg-white border border-gray-100 rounded-2xl shadow-sm flex items-center gap-5">
-            <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-300">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="p-8 bg-white border border-[var(--nexus-outline-variant)]/30 rounded-[2.5rem] shadow-sm flex items-center gap-6">
+            <div className="w-14 h-14 bg-[var(--nexus-surface-low)] rounded-2xl flex items-center justify-center text-[var(--nexus-secondary)] border border-[var(--nexus-outline-variant)]/20">
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
               </svg>
             </div>
             <div>
-              <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Slogan</h4>
-              <p className="text-sm font-medium text-gray-600 italic">"{identity?.slogan}"</p>
+              <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Slogan Strategy</h4>
+              <p className="text-sm font-bold text-[var(--nexus-on-bg)] italic opacity-70">"{identity?.slogan}"</p>
             </div>
           </div>
         </div>
 
         {/* Logos Grid */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold text-gray-900">Recommended Designs</h3>
+        <div className="space-y-8">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="text-2xl font-black text-[var(--nexus-on-bg)] tracking-tight">Curated Designs</h3>
+            {logos.length > 0 && <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">3 Options Generated</span>}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {isGenerating ? (
               [1, 2, 3].map((i) => (
-                <div key={i} className="aspect-square bg-gray-50 rounded-3xl border-2 border-gray-100 flex flex-col items-center justify-center gap-4 animate-pulse">
-                  <div className="w-10 h-10 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Designing Opt 0{i}...</p>
+                <div key={i} className="aspect-square bg-[var(--nexus-surface-low)] rounded-[3rem] border border-[var(--nexus-outline-variant)]/20 flex flex-col items-center justify-center gap-6 animate-pulse">
+                  <div className="w-12 h-12 border-4 border-[var(--nexus-primary-container)]/20 border-t-[var(--nexus-primary)] rounded-full animate-spin"></div>
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Drafting Concept 0{i}...</p>
                 </div>
               ))
             ) : logos.length > 0 ? (
               logos.map((logo, idx) => (
                 <div
                   key={logo.id}
-                  className={`group relative flex flex-col gap-3`}
+                  className={`group relative flex flex-col gap-4`}
                 >
                   <div 
                     onClick={() => setSelectedLogoId(logo.id)}
-                    className={`relative aspect-square cursor-pointer overflow-hidden rounded-3xl border-4 transition-all duration-500 ${
+                    className={`relative aspect-square cursor-pointer overflow-hidden rounded-[3.5rem] border-4 transition-all duration-700 p-2 ${
                       selectedLogoId === logo.id
-                        ? "border-black bg-white shadow-2xl -translate-y-2"
-                        : "border-transparent bg-gray-50 hover:border-gray-200"
+                        ? "border-[var(--nexus-primary)] bg-white shadow-[0_40px_80px_-20px_rgba(11,26,125,0.2)] -translate-y-3"
+                        : "border-transparent bg-[var(--nexus-surface-low)] hover:border-[var(--nexus-outline-variant)]"
                     }`}
                   >
-                    <img
-                      src={logo.url}
-                      alt={`Logo Option ${idx + 1}`}
-                      className="w-full h-full object-contain p-10 transition-transform duration-700 group-hover:scale-110"
-                    />
+                    <div className="w-full h-full rounded-[3rem] overflow-hidden bg-white flex items-center justify-center p-12">
+                      <img
+                        src={logo.url}
+                        alt={`Logo Option ${idx + 1}`}
+                        className="max-w-full max-h-full object-contain transition-transform duration-[2s] group-hover:scale-110 filter drop-shadow-sm"
+                      />
+                    </div>
                     {selectedLogoId === logo.id && (
-                      <div className="absolute top-4 right-4">
-                        <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center shadow-lg">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="absolute top-6 right-6">
+                        <div className="w-10 h-10 bg-[var(--nexus-primary)] text-white rounded-full flex items-center justify-center shadow-xl border-4 border-white animate-in zoom-in duration-300">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                           </svg>
                         </div>
@@ -216,24 +222,25 @@ export default function LogoGenerationSection({
                     )}
                   </div>
                   
-                  {/* Download Option */}
                   <button 
                     onClick={() => handleDownload(logo.url, `Logo_Option_${idx+1}.png`)}
-                    className="flex items-center justify-center gap-2 py-2 text-[10px] font-bold text-gray-400 hover:text-black transition-colors"
+                    className="flex items-center justify-center gap-2 py-3 text-[10px] font-black text-gray-400 hover:text-[var(--nexus-primary)] transition-all uppercase tracking-widest"
                   >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
-                    DOWNLOAD PNG
+                    Download Asset
                   </button>
                 </div>
               ))
             ) : (
-              <div className="col-span-full py-20 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-300 gap-4">
-                <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <p className="text-sm font-medium">상단의 버튼을 눌러 디자인 제안을 받아보세요</p>
+              <div className="col-span-full py-28 bg-[var(--nexus-surface-low)] rounded-[4rem] border-2 border-dashed border-[var(--nexus-outline-variant)]/30 flex flex-col items-center justify-center text-gray-400 gap-6 transition-all">
+                <div className="w-20 h-20 rounded-[2rem] border-2 border-dashed border-gray-300 flex items-center justify-center opacity-30">
+                  <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] opacity-40">Ready to Visualize</p>
               </div>
             )}
           </div>
@@ -241,12 +248,12 @@ export default function LogoGenerationSection({
       </div>
 
       {/* Action Buttons */}
-      <div className="pt-10 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-6">
+      <div className="pt-12 border-t border-[var(--nexus-outline-variant)]/20 flex flex-col md:flex-row justify-between items-center gap-8">
         <button
           onClick={onBack}
-          className="text-sm font-bold text-gray-400 hover:text-black transition-colors"
+          className="text-xs font-black text-gray-400 uppercase tracking-widest hover:text-[var(--nexus-on-bg)] transition-colors"
         >
-          ← Back to Identity Selection
+          ← Back to Identity Choice
         </button>
 
         <div className="flex gap-4 w-full md:w-auto">
@@ -254,31 +261,31 @@ export default function LogoGenerationSection({
             <button
               onClick={generateLogos}
               disabled={isGenerating || isFinalizing}
-              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-4 border-2 border-gray-100 rounded-2xl text-sm font-bold text-gray-600 hover:bg-gray-50 transition-all active:scale-95"
+              className="flex-1 md:flex-none flex items-center justify-center gap-3 px-10 py-5 border-2 border-[var(--nexus-outline-variant)]/30 rounded-2xl text-xs font-black text-gray-500 hover:bg-white hover:border-[var(--nexus-outline-variant)] transition-all active:scale-95 uppercase tracking-widest"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              Regenerate Logo
+              Regenerate
             </button>
           )}
           <button
             disabled={!selectedLogoId || isGenerating || isFinalizing}
             onClick={handleConfirmSelection}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-10 py-4 rounded-2xl text-sm font-bold transition-all shadow-lg active:scale-95 ${
+            className={`flex-1 md:flex-none flex items-center justify-center gap-3 px-12 py-5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-2xl active:scale-95 ${
               selectedLogoId && !isGenerating && !isFinalizing
-                ? "bg-black text-white hover:bg-gray-800"
+                ? "bg-[var(--nexus-primary)] text-white hover:bg-[var(--nexus-primary-container)] shadow-[var(--nexus-primary)]/30"
                 : "bg-gray-100 text-gray-300 cursor-not-allowed shadow-none"
             }`}
           >
             {isFinalizing ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
             ) : (
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
               </svg>
             )}
-            Confirm Final Selection
+            Confirm Selection
           </button>
         </div>
       </div>
