@@ -403,6 +403,7 @@ MOCKUP_PROMPT_MAKER = """
 2. 각 에셋 블록은 '---' (하이픈 3개)로 구분하세요.
 3. 각 블록 내에 Type, Title, Description, Prompt 필드를 반드시 포함하세요.
 4. Prompt는 반드시 10자 이상의 상세한 영어 문장이어야 합니다.
+5. [가장 중요] 이미지는 멀리서 찍은 풍경이 아니라, 해당 아이템(명함이면 딱 명함만, 메뉴판이면 딱 메뉴판만)이 화면에 꽉 차게(fill the frame), 클로즈업(close-up shot, macro shot)으로 선명하게 보이도록 프롬프트를 작성하세요. 배경은 단순하고 깔끔하게 처리하여 오직 아이템 자체에만 온전히 집중되도록 해야 합니다 (예: top-down view on a minimal solid color desk, studio lighting, strictly focused entirely on the single object).
 
 응답 형식:
 Type: Business Card

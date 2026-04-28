@@ -53,7 +53,7 @@ export default function BrandingAssetsSection({
       }
     } catch (err) {
       console.error("Asset generation error:", err);
-      alert("서버 통신 중 오류가 발생했습니다.");
+      alert("에셋을 생성하는 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setIsGenerating(false);
     }

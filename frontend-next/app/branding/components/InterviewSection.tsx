@@ -145,7 +145,7 @@ export default function InterviewSection({
             <h2 className="font-black text-[var(--nexus-on-bg)] text-xs uppercase tracking-widest">Nexus AI Agent</h2>
           </div>
           <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">
-            {projectId ? `SESSION ID: ${projectId.slice(0,8)}` : "BOOTING SYSTEM..."}
+            {projectId ? `REFERENCE: ${projectId.slice(0,8)}` : "ANALYZING CONTEXT..."}
           </span>
         </div>
 

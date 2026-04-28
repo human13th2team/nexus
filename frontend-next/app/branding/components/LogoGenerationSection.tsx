@@ -88,7 +88,7 @@ export default function LogoGenerationSection({
         throw new Error(result.message || "로고 확정에 실패했습니다.");
       }
     } catch (err: any) {
-      setError(err.message || "서버에 로고를 저장하는 중 오류가 발생했습니다.");
+      setError(err.message || "로고를 확정하는 중 오류가 발생했습니다.");
     } finally {
       setIsFinalizing(false);
     }
@@ -130,7 +130,7 @@ export default function LogoGenerationSection({
         </div>
         <h2 className="text-4xl font-black text-[var(--nexus-on-bg)] tracking-tight">Logo Visualizations</h2>
         <p className="text-gray-500 font-medium max-w-xl mx-auto text-sm leading-relaxed">
-          인공지능이 제안하는 브랜드 컨셉입니다. 마음에 드는 디자인을 **최종 선택(Confirm)** 하시면 브랜드 자산으로 공식 등록됩니다.
+          인공지능이 제안하는 브랜드 컨셉입니다. 마음에 드는 디자인을 선택하시면 브랜드의 핵심 아이덴티티가 완성됩니다.
         </p>
         {!logos.length && (
           <div className="pt-6">
