@@ -1,0 +1,72 @@
+package com.team.nexus.domain.chat.controller;
+
+import com.team.nexus.domain.chat.dto.ChatMessageRequestDto;
+import com.team.nexus.domain.chat.service.ChatService;
+import com.team.nexus.global.entity.ChatMessage;
+import com.team.nexus.global.entity.ChatRoom;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+@Tag(name = "Chat", description = "실시간 채팅 API")
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/v1/chat")
+@CrossOrigin(origins = "http://localhost:3000", allowedHeaders = "*", allowCredentials = "true")
+public class ChatController {
+
+    private final ChatService chatService;
+    private final SimpMessagingTemplate messagingTemplate;
+
+    // --- WebSocket Endpoints ---
+
+    @MessageMapping("/chat/send")
+    public void sendMessage(ChatMessageRequestDto messageDto) {
+        // 1. 메시지 저장 및 응답 DTO 생성
+        com.team.nexus.domain.chat.dto.ChatMessageResponseDto responseDto = chatService.saveMessage(messageDto);
+        
+        // 2. 해당 채팅방 구독자들에게 브로드캐스트
+        // 클라이언트는 /topic/chat/room/{roomId} 를 구독하고 있어야 함
+        messagingTemplate.convertAndSend("/topic/chat/room/" + messageDto.getRoomId(), responseDto);
+    }
+
+    // --- REST Endpoints ---
+
+    @Operation(summary = "채팅방 생성")
+    @PostMapping("/rooms")
+    public ResponseEntity<ChatRoom> createRoom(@RequestBody com.team.nexus.domain.chat.dto.ChatRoomRequestDto requestDto) {
+        return ResponseEntity.ok(chatService.createRoom(requestDto.getTitle(), requestDto.getType(), requestDto.getDescription(), requestDto.getCreatorId()));
+    }
+
+    @Operation(summary = "채팅방 참가")
+    @PostMapping("/rooms/{roomId}/join")
+    public ResponseEntity<Void> joinRoom(@PathVariable UUID roomId, @RequestParam UUID userId) {
+        chatService.joinRoom(roomId, userId);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "내 채팅방 목록 조회")
+    @GetMapping("/rooms/mine")
+    public ResponseEntity<List<ChatRoom>> getMyRooms(@RequestParam UUID userId) {
+        return ResponseEntity.ok(chatService.getJoinedRooms(userId));
+    }
+
+    @Operation(summary = "모든 채팅방 조회")
+    @GetMapping("/rooms")
+    public ResponseEntity<List<ChatRoom>> getAllRooms() {
+        return ResponseEntity.ok(chatService.getAllRooms());
+    }
+
+    @Operation(summary = "채팅방 메시지 내역 조회")
+    @GetMapping("/rooms/{roomId}/messages")
+    public ResponseEntity<List<com.team.nexus.domain.chat.dto.ChatMessageResponseDto>> getMessages(@PathVariable UUID roomId) {
+        return ResponseEntity.ok(chatService.getMessages(roomId));
+    }
+}

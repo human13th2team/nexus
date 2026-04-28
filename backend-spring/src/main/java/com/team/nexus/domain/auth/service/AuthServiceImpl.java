@@ -37,7 +37,7 @@ public class AuthServiceImpl implements AuthService {
                 .email(request.getEmail())
                 .passwd(passwordEncoder.encode(request.getPassword()))
                 .nickname(request.getNickname())
-                .address(request.getAddress())
+//                .address(request.getAddress())
                 .userType(request.getUserType())
                 .bizNo(request.getUserType() == 1 ? request.getBizNo() : null)
                 .loginType(0)
@@ -62,11 +62,12 @@ public class AuthServiceImpl implements AuthService {
         // 3. 토큰 생성
         String token = jwtTokenProvider.createToken(user.getEmail());
 
-        return LoginResponseDto.builder()
-                .accessToken(token)
-                .nickname(user.getNickname())
-                .userType(user.getUserType())
-                .build();
+        return new LoginResponseDto(
+                user.getId().toString(),
+                token,
+                user.getNickname(),
+                user.getUserType()
+        );
     }
 
     @Override

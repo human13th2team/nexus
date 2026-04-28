@@ -20,7 +20,7 @@ from contextlib import asynccontextmanager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 서버 시작 시 실행될 로직
-    print("🚀 Nexus API Server 시작 중...")
+    print("Nexus API Server Starting...")
     
     # 1. AI 임베딩 모델 프리로딩
     get_ai_client("gemini") 
@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
     async with AsyncSessionLocal() as db:
         await initialize_industry_cache(db)
         
-    print("✨ 모든 초기화가 완료되었습니다. 서비스를 시작합니다.")
+    print("All initialization completed. Starting services.")
     yield
     # 서버 종료 시 실행될 로직 (필요 시)
 
