@@ -1,12 +1,14 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, func
+from sqlalchemy import select, update, func, and_
 from sqlalchemy.orm import load_only
-from app.models import Branding, BrandIdentity, LogoAsset, IndustryCategory
+from app.models import Branding, BrandIdentity, LogoAsset, IndustryCategory, MarketingAsset
 from app.domain.branding.brandingSchema import BrandingCreateRequest, BrandingInterviewRequest, ChatRequest
 from app.core.ai_client import get_ai_client
+from app.core.storage import get_storage_client
 import json
 import os
 import uuid
+import base64
 
 # 테스트용 고정 유저 ID
 TEST_USER_ID = uuid.UUID("a248bb6e-7302-4b48-9375-c23ee477ea45")
@@ -282,11 +284,22 @@ async def generate_brand_logo(db: AsyncSession, identity_id: uuid.UUID):
     if not identity:
         return None
         
-    # [대표님 요청] 최종 브랜드 이름이 결정되었으므로 Branding 프로젝트의 제목을 업데이트합니다.
-    if identity.branding and identity.branding.title != identity.brand_name:
-        identity.branding.title = identity.brand_name
+    if identity.branding:
+        # [대표님 요청] 최종 브랜드 이름이 결정되었으므로 Branding 프로젝트의 제목을 업데이트합니다.
+        if identity.branding.title != identity.brand_name:
+            identity.branding.title = identity.brand_name
+        
         # current_step도 업데이트 (인터뷰 -> 로고 생성 단계로)
         identity.branding.current_step = "LOGO_GENERATION"
+        
+        # [상태 반영] 선택된 아이덴티티의 is_selected를 True로, 나머지는 False로 설정
+        await db.execute(
+            update(BrandIdentity)
+            .where(BrandIdentity.branding_id == identity.branding_id)
+            .values(is_selected=False)
+        )
+        identity.is_selected = True
+        
         await db.commit()
         
     # 2. 로고용 시각화 프롬프트 3종 생성
@@ -379,8 +392,11 @@ async def generate_marketing_assets(db: AsyncSession, identity_id: uuid.UUID):
         assets_data = []
         
         ai_image_client = get_ai_client("stability")
-        static_dir = "app/static/assets"
-        os.makedirs(static_dir, exist_ok=True)
+        storage_client = get_storage_client()
+        
+        # 임시 디렉토리 사용 (업로드 후 삭제 예정이거나 캐시용)
+        temp_dir = "app/static/temp"
+        os.makedirs(temp_dir, exist_ok=True)
         
         import asyncio
         async def create_asset_file(block, idx):
@@ -396,15 +412,26 @@ async def generate_marketing_assets(db: AsyncSession, identity_id: uuid.UUID):
                 prompt = f"A professional {asset_info.get('type', 'marketing asset')} mockup showing the brand logo"
 
             file_name = f"asset_{identity_id}_{uuid.uuid4().hex[:8]}_{idx}.png"
-            file_path = os.path.join(static_dir, file_name)
+            temp_file_path = os.path.join(temp_dir, file_name)
+            destination_path = f"assets/{file_name}"
+            
             try:
-                await ai_image_client.generate_image(prompt, file_path)
+                # 1. AI 이미지 생성 (로컬 임시 저장)
+                await ai_image_client.generate_image(prompt, temp_file_path)
+                
+                # 2. 저장소(Supabase 등)에 업로드
+                public_url = await storage_client.upload_file(temp_file_path, destination_path)
+                
+                # 3. 임시 파일 삭제 (클라우드 사용 시)
+                if os.path.exists(temp_file_path) and os.getenv("STORAGE_TYPE") == "SUPABASE":
+                    os.remove(temp_file_path)
+                    
                 return {
                     "id": str(uuid.uuid4()),
                     "type": asset_info.get("type", "Marketing Asset"),
                     "title": asset_info.get("title", "Marketing Asset"),
                     "description": asset_info.get("description", ""),
-                    "imageUrl": f"/static/assets/{file_name}"
+                    "imageUrl": public_url
                 }
             except Exception as e:
                 print(f"Asset generation error: {str(e)}")
@@ -412,7 +439,30 @@ async def generate_marketing_assets(db: AsyncSession, identity_id: uuid.UUID):
 
         tasks = [create_asset_file(b, i) for i, b in enumerate(asset_blocks[:3])]
         results = await asyncio.gather(*tasks)
-        return [r for r in results if r is not None]
+        
+        # [DB 저장] 생성된 에셋 정보를 marketing_assets 테이블에 저장
+        final_results = []
+        for r in results:
+            if r:
+                # Type 정규화 (Business Card -> BUSINESS_CARD 등)
+                raw_type = r.get("type", "Marketing Asset").upper().replace(" ", "_")
+                
+                new_asset = MarketingAsset(
+                    id=uuid.UUID(r["id"]),
+                    identity_id=identity_id,
+                    type=raw_type,
+                    file_url=r["imageUrl"]
+                )
+                db.add(new_asset)
+                final_results.append(r)
+        
+        # 브랜딩 단계 완료 업데이트
+        if identity.branding:
+            identity.branding.current_step = "COMPLETED"
+            identity.branding.title = identity.brand_name # 최종 브랜드 이름으로 제목 업데이트
+            
+        await db.commit()
+        return final_results
     except Exception as e:
         import traceback
         print(f"CRITICAL ERROR in generate_marketing_assets:\n{traceback.format_exc()}")
@@ -420,26 +470,22 @@ async def generate_marketing_assets(db: AsyncSession, identity_id: uuid.UUID):
 
 async def finalize_brand_logo(db: AsyncSession, identity_id: uuid.UUID, image_url: str):
     """선택된 로고(Base64)를 파일로 저장하고 DB에 등록합니다."""
-    # 1. Base64 데이터 파싱 및 파일 저장
-    import base64
-    static_dir = "app/static/logos"
-    os.makedirs(static_dir, exist_ok=True)
-    
+    # 1. Base64 데이터 파싱 및 업로드
+    storage_client = get_storage_client()
     file_name = f"final_logo_{identity_id}_{uuid.uuid4().hex[:6]}.png"
-    file_path = os.path.join(static_dir, file_name)
-    final_url = f"/static/logos/{file_name}"
+    destination_path = f"logos/{file_name}"
+    final_url = image_url
     
     try:
         if image_url.startswith("data:image"):
             # Base64 데이터 추출 (data:image/png;base64,...)
             header, encoded = image_url.split(",", 1)
-            with open(file_path, "wb") as f:
-                f.write(base64.b64decode(encoded))
-        else:
-            # 만약 이미 파일 URL이라면 (예외 케이스)
-            final_url = image_url
+            image_bytes = base64.b64decode(encoded)
+            
+            # 저장소 클라이언트를 사용하여 업로드
+            final_url = await storage_client.upload_bytes(image_bytes, destination_path)
     except Exception as e:
-        print(f"Final logo save error: {str(e)}")
+        print(f"Final logo upload error: {str(e)}")
         # 실패 시에도 에러를 던지지 않고 기존 URL 사용 시도 (또는 에러 처리)
 
     # 2. DB 저장
@@ -466,6 +512,8 @@ async def finalize_brand_logo(db: AsyncSession, identity_id: uuid.UUID, image_ur
             .where(Branding.id == identity.branding_id)
             .values(title=identity.brand_name, current_step="LOGO_GENERATION")
         )
+        # 아이덴티티 선택 상태 보장
+        identity.is_selected = True
         await db.commit()
         
     return new_logo

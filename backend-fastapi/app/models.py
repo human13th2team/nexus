@@ -14,6 +14,8 @@ class RegionCode(Base):
     region_code: Mapped[int] = mapped_column(Integer, nullable=False)
     city_name: Mapped[str] = mapped_column(String(10), nullable=False)
     county_name: Mapped[str] = mapped_column(String(10), nullable=False)
+    latitude: Mapped[float] = mapped_column(Numeric(13, 10), nullable=True)
+    longitude: Mapped[float] = mapped_column(Numeric(13, 10), nullable=True)
 
 class IndustryCategory(Base):
     __tablename__ = "industry_categories"
@@ -38,9 +40,14 @@ class EquipmentPrice(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     industry_category_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("industry_categories.id"))
-    equipment_kr: Mapped[str] = mapped_column(String(50), nullable=False)
-    equipment_eng: Mapped[str] = mapped_column(String(50), nullable=False)
-    price: Mapped[int] = mapped_column(Integer, server_default=text("0"))
+    equipment_kr: Mapped[Optional[str]] = mapped_column(String)
+    equipment_eng: Mapped[Optional[str]] = mapped_column(String)
+    product_name: Mapped[Optional[str]] = mapped_column(String)
+    price: Mapped[Optional[int]] = mapped_column(Integer)
+    detail: Mapped[Optional[str]] = mapped_column(String)
+    link: Mapped[Optional[str]] = mapped_column(String(500))
+    image_url: Mapped[Optional[str]] = mapped_column(String(500))
+    source: Mapped[Optional[str]] = mapped_column(String)
 
     # Relationships
     industry_category: Mapped[Optional["IndustryCategory"]] = relationship(back_populates="equipment_prices")
@@ -429,3 +436,12 @@ class ChatMessage(Base):
     chat_room: Mapped["ChatRoom"] = relationship(back_populates="messages")
     user: Mapped["User"] = relationship(back_populates="chat_messages")
 
+class SemasIndustryMapping(Base):
+    __tablename__ = "semas_industry_mappings"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    semas_ksic_code: Mapped[Optional[str]] = mapped_column(String(20))
+    ksic_code: Mapped[Optional[str]] = mapped_column(String(20))
+    large_category_name: Mapped[Optional[str]] = mapped_column(String(100))
+    medium_category_name: Mapped[Optional[str]] = mapped_column(String(100))
+    small_category_name: Mapped[Optional[str]] = mapped_column(String(100))

@@ -45,4 +45,7 @@ public class Board {
 
     @Column(name = "is_anonymous")
     private Boolean isAnonymous;
+
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private java.time.LocalDateTime createdAt;
 }

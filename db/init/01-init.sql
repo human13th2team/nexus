@@ -25,7 +25,7 @@ CREATE TABLE industry_categories (
     parent_id   UUID REFERENCES industry_categories(id) ON DELETE SET NULL,
     level       SMALLINT NOT NULL, 
     ksic_code   VARCHAR(20),
-    embedding VECTOR(768),
+    embedding VECTOR(768),       
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -33,7 +33,9 @@ CREATE TABLE region_codes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     region_code INT NOT NULL,
     city_name VARCHAR(10) NOT NULL,
-    county_name VARCHAR(10) NOT NULL
+    county_name VARCHAR(10),
+    latitude DECIMAL(13, 10),
+    longitude DECIMAL(13, 10)
 );
 
 ---------------------------------------
@@ -210,7 +212,12 @@ CREATE TABLE equipment_prices (
     industry_category_id UUID REFERENCES industry_categories(id),
     equipment_kr VARCHAR(50) NOT NULL,
     equipment_eng VARCHAR(50) NOT NULL,
-    price INT DEFAULT 0
+    product_name VARCHAR(100),
+    price INT DEFAULT 0,
+    detail VARCHAR(255),
+    link VARCHAR(500),
+    image_url VARCHAR(500),
+    source VARCHAR(20)
 );
 
 CREATE TABLE labor_contracts (
@@ -302,4 +309,16 @@ CREATE TABLE chat_messages (
     content TEXT NOT NULL,
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+---------------------------------------
+-- 7. 업종-KSIC 매핑 (소상공인진흥공단 ksic)
+---------------------------------------
+CREATE TABLE semas_industry_mappings (
+    id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    semas_ksic_code      VARCHAR(20),
+    ksic_code            VARCHAR(20),
+    large_category_name  VARCHAR(100),
+    medium_category_name VARCHAR(100),
+    small_category_name  VARCHAR(100)
 );
