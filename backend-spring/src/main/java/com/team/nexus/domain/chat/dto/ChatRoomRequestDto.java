@@ -14,4 +14,5 @@ public class ChatRoomRequestDto {
     private String description;
     private String imageUrl;
     private UUID creatorId;
+    private String password;
 }

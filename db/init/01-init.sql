@@ -292,6 +292,7 @@ CREATE TABLE group_orders (
 CREATE TABLE chat_rooms (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(100),
+    password VARCHAR(100),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

@@ -48,6 +48,9 @@ public class ChatRoom {
     @Column(name = "last_message_at")
     private LocalDateTime lastMessageAt;
 
+    @Column(name = "password", length = 100)
+    private String password;
+
     public enum ChatRoomType {
         GROUP, PRIVATE
     }

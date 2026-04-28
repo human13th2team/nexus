@@ -21,4 +21,5 @@ public class ChatRoomResponseDto {
     private LocalDateTime lastMessageAt;
     private LocalDateTime createdAt;
     private Long participantCount;
+    private boolean hasPassword;
 }

@@ -28,10 +28,11 @@ public class ChatServiceImpl implements ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final ChatParticipantRepository chatParticipantRepository;
     private final com.team.nexus.domain.auth.repository.UserRepository userRepository;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
-    public ChatRoomResponseDto createRoom(String title, ChatRoom.ChatRoomType type, String description, String imageUrl, UUID creatorId) {
+    public ChatRoomResponseDto createRoom(String title, ChatRoom.ChatRoomType type, String description, String imageUrl, UUID creatorId, String password) {
         log.info("Creating chat room: title={}, type={}, creatorId={}", title, type, creatorId);
         try {
             User creator = userRepository.findById(creatorId)
@@ -43,12 +44,13 @@ public class ChatServiceImpl implements ChatService {
                     .description(description)
                     .imageUrl(imageUrl)
                     .creator(creator)
+                    .password(password != null && !password.isEmpty() ? passwordEncoder.encode(password) : null)
                     .build();
             ChatRoom savedRoom = chatRoomRepository.save(chatRoom);
             log.info("Chat room saved successfully: id={}", savedRoom.getId());
 
             try {
-                joinRoom(savedRoom.getId(), creatorId);
+                joinRoom(savedRoom.getId(), creatorId, password);
                 log.info("Creator joined the room as participant: userId={}", creatorId);
             } catch (Exception memberEx) {
                 log.warn("Failed to join creator to room automatically: {}", memberEx.getMessage());
@@ -63,11 +65,18 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     @Transactional
-    public void joinRoom(UUID roomId, UUID userId) {
+    public void joinRoom(UUID roomId, UUID userId, String password) {
         if (!chatParticipantRepository.existsByRoomIdAndUserId(roomId, userId)) {
             ChatRoom chatRoom = chatRoomRepository.findById(roomId)
                     .orElseThrow(() -> new IllegalArgumentException("방을 찾을 수 없습니다."));
             
+            // 비밀번호 확인 로직 추가 (BCrypt 적용)
+            if (chatRoom.getPassword() != null && !chatRoom.getPassword().isEmpty()) {
+                if (password == null || !passwordEncoder.matches(password, chatRoom.getPassword())) {
+                    throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+                }
+            }
+
             if (chatRoom.getType() == ChatRoom.ChatRoomType.PRIVATE) {
                 long count = chatParticipantRepository.countByRoomId(roomId);
                 if (count >= 2) {
@@ -185,6 +194,13 @@ public class ChatServiceImpl implements ChatService {
     public void leaveRoom(UUID roomId, UUID userId) {
         log.info("Leaving chat room: roomId={}, userId={}", roomId, userId);
         chatParticipantRepository.deleteByRoomIdAndUserId(roomId, userId);
+        
+        // 참가자가 0명이면 방 삭제
+        long participantCount = chatParticipantRepository.countByRoomId(roomId);
+        if (participantCount == 0) {
+            log.info("Room is empty. Deleting room: id={}", roomId);
+            chatRoomRepository.deleteById(roomId);
+        }
     }
 
     @Override
@@ -223,6 +239,7 @@ public class ChatServiceImpl implements ChatService {
                 .lastMessageAt(chatRoom.getLastMessageAt() != null ? chatRoom.getLastMessageAt() : chatRoom.getCreatedAt())
                 .createdAt(chatRoom.getCreatedAt())
                 .participantCount(participantCount)
+                .hasPassword(chatRoom.getPassword() != null && !chatRoom.getPassword().isEmpty())
                 .build();
     }
 }

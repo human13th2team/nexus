@@ -46,7 +46,10 @@ interface ChatRoomResponseDto {
   unreadCount?: number;
   participantCount?: number;
   type: 'GROUP' | 'PRIVATE';
+  hasPassword?: boolean;
 }
+
+interface ChatRoom extends ChatRoomResponseDto {}
 
 const ChatComponent = () => {
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
@@ -71,6 +74,8 @@ const ChatComponent = () => {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
   const [joiningRoom, setJoiningRoom] = useState<ChatRoomResponseDto | null>(null);
+  const [newRoomPassword, setNewRoomPassword] = useState('');
+  const [joinPassword, setJoinPassword] = useState('');
   
   const chatServiceRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -137,7 +142,8 @@ const ChatComponent = () => {
     if (!currentUserId || !joiningRoom) return;
     
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/chat/rooms/${joiningRoom.id}/join?userId=${currentUserId}`, {
+      const passwordParam = joinPassword ? `&password=${joinPassword}` : '';
+      const response = await fetch(`http://localhost:8080/api/v1/chat/rooms/${joiningRoom.id}/join?userId=${currentUserId}${passwordParam}`, {
         method: 'POST'
       });
       if (response.ok) {
@@ -146,6 +152,10 @@ const ChatComponent = () => {
         setShowAllRooms(false);
         setConfirmModalOpen(false);
         setJoiningRoom(null);
+        setJoinPassword('');
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        alert(errorData.message || "비밀번호가 틀렸거나 입장에 실패했습니다.");
       }
     } catch (error) {
       console.error("Failed to join room:", error);
@@ -275,7 +285,8 @@ const ChatComponent = () => {
           type: newRoomType,
           description: newRoomDescription,
           imageUrl: newRoomImageUrl,
-          creatorId: currentUserId
+          creatorId: currentUserId,
+          password: newRoomPassword
         }),
       });
 
@@ -288,6 +299,7 @@ const ChatComponent = () => {
         setNewRoomDescription('');
         setNewRoomImageUrl('');
         setNewRoomType('GROUP');
+        setNewRoomPassword('');
       }
     } catch (error) {
       alert("방 생성에 실패했습니다.");
@@ -822,6 +834,17 @@ const ChatComponent = () => {
               </div>
 
               <div className="space-y-3">
+                <label className="text-xs font-black text-zinc-400 uppercase tracking-widest ml-1">비밀번호 (선택)</label>
+                <input 
+                  type="password"
+                  value={newRoomPassword}
+                  onChange={(e) => setNewRoomPassword(e.target.value)}
+                  placeholder="비밀번호 설정 시 입장 시 확인합니다."
+                  className="w-full px-6 py-4 bg-zinc-50 border-transparent focus:bg-white focus:border-zinc-200 rounded-2xl text-base font-bold transition-all placeholder:text-zinc-300"
+                />
+              </div>
+
+              <div className="space-y-3">
                 <label className="text-xs font-black text-zinc-400 uppercase tracking-widest ml-1">프로필 이미지</label>
                 <div className="flex items-center gap-6 p-6 bg-zinc-50 rounded-2xl border-2 border-dashed border-zinc-200 hover:border-zinc-300 transition-all group">
                   <div className="w-20 h-20 rounded-2xl bg-white shadow-sm flex items-center justify-center overflow-hidden border border-zinc-100 shrink-0">
@@ -921,6 +944,19 @@ const ChatComponent = () => {
                   <span className="text-sm font-bold text-zinc-900">{joiningRoom.type === 'GROUP' ? '그룹' : '1:1'}</span>
                 </div>
               </div>
+
+              {joiningRoom.hasPassword && (
+                <div className="space-y-3 mb-8 text-left">
+                  <label className="text-xs font-black text-zinc-400 uppercase tracking-widest ml-1">비밀번호 입력</label>
+                  <input 
+                    type="password"
+                    value={joinPassword}
+                    onChange={(e) => setJoinPassword(e.target.value)}
+                    placeholder="이 방의 비밀번호를 입력하세요"
+                    className="w-full px-6 py-4 bg-zinc-50 border-transparent focus:bg-white focus:border-zinc-200 rounded-2xl text-base font-bold transition-all placeholder:text-zinc-300"
+                  />
+                </div>
+              )}
 
               <div className="flex gap-3">
                 <button 
