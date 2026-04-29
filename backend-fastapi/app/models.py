@@ -3,6 +3,7 @@ from sqlalchemy import String, ForeignKey, Integer, SmallInteger, Boolean, Text,
 from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
+from sqlalchemy import String, Integer, SmallInteger, Text, TIMESTAMP, Boolean, text
 from typing import Optional, List
 import datetime
 import uuid
@@ -249,10 +250,16 @@ class Subsidy(Base):
     max_age: Mapped[Optional[int]] = mapped_column(SmallInteger)
     max_amount: Mapped[Optional[int]] = mapped_column(Integer)
     deadline: Mapped[Optional[datetime.date]] = mapped_column(Date)
+    start_date: Mapped[Optional[datetime.date]] = mapped_column(Date)
     description: Mapped[Optional[str]] = mapped_column(Text)
+    support_content: Mapped[Optional[str]] = mapped_column(Text)
+    target: Mapped[Optional[str]] = mapped_column(Text)
+    how_to_apply: Mapped[Optional[str]] = mapped_column(Text)
+    contact: Mapped[Optional[str]] = mapped_column(Text)
     apply_url: Mapped[Optional[str]] = mapped_column(String(500))
     source_url: Mapped[Optional[str]] = mapped_column(String(500), unique=True)
     embedding: Mapped[Optional[list]] = mapped_column(Vector(768))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("true"))
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
     updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
