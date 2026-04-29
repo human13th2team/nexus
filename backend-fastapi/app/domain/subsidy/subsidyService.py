@@ -1,12 +1,13 @@
+#ALTER TABLE subsidies ADD COLUMN life_cycle VARCHAR(20); 나중에 테이블 컬럼 추가
+
 import requests
 import os
 import re
-
+from datetime import date, timedelta, datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from app.core.ai_client import GeminiClient
 from dotenv import load_dotenv
-from datetime import date, timedelta, datetime
 
 load_dotenv()
 
@@ -16,83 +17,63 @@ SMES_TOKEN = os.getenv("SMES_API_TOKEN")
 def get_embedding(text_input: str):
     return GeminiClient._local_model.encode(text_input).tolist()
 
-async def get_subsidies(
-        db: AsyncSession,
-        region: str = None,
-        query: str = None,
-        page: int = 1,
-        size: int = 10
-):
-    conditions = ["is_active = true"]
-    params = {}
-
-    if region:
-        conditions.append("(region ILIKE :region OR region IS NULL)")
-        params["region"] = f"%{region}%"
-
-    where = "WHERE " + " AND ".join(conditions)
-
-    if query:
-        query_embedding = get_embedding(query)
-        embedding_str = "[" + ",".join(map(str, query_embedding)) + "]"
-        params["query_embedding"] = embedding_str
-        order = "ORDER BY embedding <=> :query_embedding::vector"
-    else:
-        order = "ORDER BY deadline ASC NULLS LAST"
-
-    count_sql = f"SELECT COUNT(*) FROM subsidies {where}"
-    result = await db.execute(text(count_sql), params)
-    total = result.scalar()
-
-    offset = (page - 1) * size
-    params["limit"] = size
-    params["offset"] = offset
-
-    data_sql = f"""
-        SELECT id, name, organization, region,
-               max_amount, deadline, description, apply_url
-        FROM subsidies {where}
-        {order}
-        LIMIT :limit OFFSET :offset
-    """
-    result = await db.execute(text(data_sql), params)
-    rows = result.fetchall()
-
-    return total, rows
-
-async def fetch_subsidies_from_api():
-    today = date.today()
-    yesterday = (date.today() - timedelta(days=1)).strftime("%Y%m%d")
-    params = {
-        "token": SMES_TOKEN,
-        "strDt": yesterday,
-        "endDt": "20261231",
-        "html": "no"
-    }
-    try:
-        response = requests.get(SMES_API_URL, params=params, timeout=30)
-        data = response.json()
-        if data.get("resultCd") != "0":
-            print(f"API 오류: {data.get('resultMsg')}")
-            return []
-        return data.get("data", [])
-    except Exception as e:
-        print(f"API 호출 오류: {e}")
-        return []
 
 def extract_region_from_name(name: str) -> str | None:
     match = re.match(r'^[\[\(]([^\]\)]+)[\]\)]', name)
     return match.group(1) if match else None
 
 
+def classify_life_cycle(item: dict) -> str:
+    keywords_map = {
+        "창업": ["창업", "스타트업", "예비창업", "창업자"],
+        "성장": ["성장", "도약", "확장", "경쟁력강화", "수출"],
+        "폐업재기": ["폐업", "재기", "재창업"],
+    }
+    code_map = {
+        "창업": ["PC60"],
+        "성장": ["PC20", "PC30", "PC40", "PC50", "PC70"],
+        "폐업재기": [],
+    }
+    life_cycle_code_map = {
+        "창업": ["LC01"],
+        "성장": ["LC02"],
+        "폐업재기": ["LC03"],
+    }
+    cmp_scale_map = {
+        "창업": ["CC60", "CC70"],
+        "성장": ["CC10", "CC50"],
+        "폐업재기": [],
+    }
+
+    biz_type_cd = item.get("bizTypeCd", "")
+    life_cycl_cd = item.get("lifeCyclDvsnCd", "")
+    cmp_scale_cd = item.get("cmpScaleCd", "")
+
+    check_fields = [
+        item.get("bizType", ""),
+        item.get("lifeCyclDvsn", ""),
+        item.get("cmpScale", ""),
+        item.get("pblancNm", ""),
+        item.get("policyCnts", ""),
+        item.get("sportTrget", ""),
+    ]
+
+    for category in ["창업", "성장", "폐업재기"]:
+        if any(cd in biz_type_cd for cd in code_map[category]):
+            return category
+        if any(cd in life_cycl_cd for cd in life_cycle_code_map[category]):
+            return category
+        if any(cd in cmp_scale_cd for cd in cmp_scale_map[category]):
+            return category
+        if any(kw in field for kw in keywords_map[category] for field in check_fields):
+            return category
+
+    return "기타"
+
+
 def parse_subsidy(item: dict) -> tuple:
     pblanc_seq = item.get("pblancSeq")
     source_url = f"https://www.smes.go.kr/pblanc/{pblanc_seq}"
-
-    biz_type = item.get("bizType", "")
-    life_cycl = item.get("lifeCyclDvsn", "")
-    if "창업" not in biz_type and "창업" not in life_cycl:
-        return None, None
 
     name = item.get("pblancNm", "")
     region = item.get("areaNm") or extract_region_from_name(name) or None
@@ -116,7 +97,90 @@ def parse_subsidy(item: dict) -> tuple:
         "how_to_apply": item.get("reqstRcept") or None,
         "contact": item.get("refrnc") or None,
         "apply_url": item.get("reqstLinkInfo") or item.get("pblancDtlUrl"),
+        "life_cycle": classify_life_cycle(item),
     }, source_url
+
+async def get_subsidy_by_id(db: AsyncSession, subsidy_id):
+    result = await db.execute(
+        text("""
+             SELECT id, name, organization, region, life_cycle,
+                    max_amount, deadline, start_date, description,
+                    support_content, target, how_to_apply, contact, apply_url
+             FROM subsidies
+             WHERE id = :id
+             """),
+        {"id": str(subsidy_id)}
+    )
+    return result.fetchone()
+
+async def get_subsidies(
+        db: AsyncSession,
+        region: str = None,
+        query: str = None,
+        life_cycle: str = None,
+        page: int = 1,
+        size: int = 10
+):
+    conditions = ["is_active = true"]
+    params = {}
+
+    if region:
+        conditions.append("(region ILIKE :region OR region IS NULL)")
+        params["region"] = f"%{region}%"
+
+    if life_cycle:
+        conditions.append("life_cycle = :life_cycle")
+        params["life_cycle"] = life_cycle
+
+    where = "WHERE " + " AND ".join(conditions)
+
+    if query:
+        query_embedding = get_embedding(query)
+        embedding_str = "[" + ",".join(map(str, query_embedding)) + "]"
+        order = f"ORDER BY embedding <=> '{embedding_str}'::vector"
+    else:
+        order = "ORDER BY deadline ASC NULLS LAST"
+
+    count_sql = f"SELECT COUNT(*) FROM subsidies {where}"
+    result = await db.execute(text(count_sql), params)
+    total = result.scalar()
+
+    offset = (page - 1) * size
+    params["limit"] = size
+    params["offset"] = offset
+
+    data_sql = f"""
+        SELECT id, name, organization, region, life_cycle,
+               max_amount, deadline, description, apply_url
+        FROM subsidies {where}
+        {order}
+        LIMIT :limit OFFSET :offset
+    """
+    result = await db.execute(text(data_sql), params)
+    rows = result.fetchall()
+
+    return total, rows
+
+
+async def fetch_subsidies_from_api():
+    params = {
+        "token": SMES_TOKEN,
+        "strDt": "20200101",
+        "endDt": "20261231",
+        "html": "no"
+    }
+    try:
+        response = requests.get(SMES_API_URL, params=params, timeout=120)
+        print(f"status code: {response.status_code}")
+        data = response.json()
+        if data.get("resultCd") != "0":
+            print(f"API 오류: {data.get('resultMsg')}")
+            return []
+        return data.get("data", [])
+    except Exception as e:
+        print(f"API 호출 오류: {e}")
+        return []
+
 
 async def save_subsidy(data: dict, source_url: str, db: AsyncSession):
     try:
@@ -125,11 +189,17 @@ async def save_subsidy(data: dict, source_url: str, db: AsyncSession):
 
         deadline = data.get("deadline")
         if deadline and isinstance(deadline, str):
-            deadline = datetime.strptime(deadline, "%Y-%m-%d").date()
+            try:
+                deadline = datetime.strptime(deadline, "%Y-%m-%d").date()
+            except ValueError:
+                deadline = None
 
         start_date = data.get("start_date")
         if start_date and isinstance(start_date, str):
-            start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+            try:
+                start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+            except ValueError:
+                start_date = None
 
         embedding_str = "[" + ",".join(map(str, embedding)) + "]"
 
@@ -138,11 +208,11 @@ async def save_subsidy(data: dict, source_url: str, db: AsyncSession):
                 INSERT INTO subsidies
                     (name, organization, region, industry, min_age, max_age,
                      max_amount, deadline, start_date, description, support_content,
-                     target, how_to_apply, contact, apply_url, source_url, embedding)
+                     target, how_to_apply, contact, apply_url, source_url, embedding, life_cycle)
                 VALUES
                     (:name, :organization, :region, :industry, :min_age, :max_age,
                      :max_amount, :deadline, :start_date, :description, :support_content,
-                     :target, :how_to_apply, :contact, :apply_url, :source_url, '{embedding_str}'::vector)
+                     :target, :how_to_apply, :contact, :apply_url, :source_url, '{embedding_str}'::vector, :life_cycle)
                 ON CONFLICT (source_url) DO UPDATE SET
                     deadline = EXCLUDED.deadline,
                     description = EXCLUDED.description,
@@ -150,6 +220,7 @@ async def save_subsidy(data: dict, source_url: str, db: AsyncSession):
                     target = EXCLUDED.target,
                     how_to_apply = EXCLUDED.how_to_apply,
                     contact = EXCLUDED.contact,
+                    life_cycle = EXCLUDED.life_cycle,
                     updated_at = NOW()
             """),
             {**data, "deadline": deadline, "start_date": start_date, "source_url": source_url}
@@ -159,10 +230,11 @@ async def save_subsidy(data: dict, source_url: str, db: AsyncSession):
         await db.rollback()
         raise e
 
+
 async def delete_expired_subsidies(db: AsyncSession):
     await db.execute(
         text("DELETE FROM subsidies WHERE deadline < :today"),
-        {"today": date.today()}
+        {"today": date.today().isoformat()}
     )
     await db.commit()
     print("만료된 지원금 삭제 완료")
@@ -179,12 +251,13 @@ async def collect_subsidies(db: AsyncSession):
     for item in items:
         try:
             data, source_url = parse_subsidy(item)
-            if data is None:
-                continue
             await save_subsidy(data, source_url, db)
             success += 1
         except Exception as e:
             fail += 1
+            if fail == 1:
+                import traceback
+                traceback.print_exc()
             print(f"저장 오류 ({item.get('pblancNm')}): {e}")
 
     print(f"총 {success}/{len(items)}건 저장 완료, 실패 {fail}건")
