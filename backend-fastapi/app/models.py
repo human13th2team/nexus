@@ -234,12 +234,17 @@ class Subsidy(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     organization: Mapped[str] = mapped_column(String(100), nullable=False)
-    max_amount: Mapped[Optional[str]] = mapped_column(String(50))
-    deadline: Mapped[Optional[str]] = mapped_column(String(50))
+    region: Mapped[Optional[str]] = mapped_column(String(100))
+    industry: Mapped[Optional[str]] = mapped_column(String(100))
+    min_age: Mapped[Optional[int]] = mapped_column(SmallInteger)
+    max_age: Mapped[Optional[int]] = mapped_column(SmallInteger)
+    max_amount: Mapped[Optional[int]] = mapped_column(Integer)
+    deadline: Mapped[Optional[date]] = mapped_column(Date)
     description: Mapped[Optional[str]] = mapped_column(Text)
-    eligibility: Mapped[Optional[str]] = mapped_column(Text)
     apply_url: Mapped[Optional[str]] = mapped_column(String(500))
-    # embedding column (vector) is skipped
+    source_url: Mapped[Optional[str]] = mapped_column(String(500), unique=True)
+    embedding: Mapped[Optional[list]] = mapped_column(Vector(768))
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
     updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
 class Sale(Base):

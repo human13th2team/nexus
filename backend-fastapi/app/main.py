@@ -16,6 +16,7 @@ from app.core.database import get_db, AsyncSessionLocal
 from app.domain.branding.brandingService import initialize_industry_cache
 from app.core.ai_client import get_ai_client
 from contextlib import asynccontextmanager
+from app.domain.subsidy import subsidyRouter as subsidy
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -72,6 +73,7 @@ app.include_router(simulation.router, prefix="/api/v1/ai/simulation", tags=["Sta
 app.include_router(compliance.router, prefix="/api/v1/ai/compliance", tags=["Compliance & Policy"])
 app.include_router(community.router, prefix="/api/v1/ai/community", tags=["Hyper-local Community"])
 app.include_router(dashboard.router, prefix="/api/v1/ai/dashboard", tags=["Ops & Dashboard"])
+app.include_router(subsidy.router, prefix="/api/v1/ai/subsidy", tags=["Subsidy Guide"])
 
 @app.get("/")
 async def root():
