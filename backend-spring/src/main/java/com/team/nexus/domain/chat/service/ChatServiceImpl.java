@@ -142,6 +142,7 @@ public class ChatServiceImpl implements ChatService {
                     .roomId(savedMessage.getRoomId())
                     .senderId(savedMessage.getUserId())
                     .senderNickname(savedMessage.getSenderNickname())
+                    .senderProfileImageUrl("")
                     .message(savedMessage.getContent())
                     .type(savedMessage.getType())
                     .fileUrl(savedMessage.getFileUrl())
@@ -156,15 +157,21 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public List<ChatMessageResponseDto> getMessages(UUID roomId) {
-        log.info("Fetching messages for room: {}", roomId);
+    public List<ChatMessageResponseDto> getMessages(UUID roomId, UUID userId) {
+        log.info("Fetching messages for room: roomId={}, userId={}", roomId, userId);
         try {
-            return chatMessageRepository.findByRoomIdOrderByCreatedAtAsc(roomId)
+            // 해당 유저의 방 참여 시점 조회 (그 이후 메시지만 보이도록)
+            LocalDateTime joinedAt = chatParticipantRepository.findByRoomIdAndUserId(roomId, userId)
+                    .map(ChatParticipant::getJoinedAt)
+                    .orElse(LocalDateTime.MIN);
+            
+            return chatMessageRepository.findByRoomIdAndCreatedAtAfterOrderByCreatedAtAsc(roomId, joinedAt)
                     .stream()
                     .map(msg -> ChatMessageResponseDto.builder()
                             .roomId(roomId)
                             .senderId(msg.getUserId())
                             .senderNickname(msg.getSenderNickname() != null ? msg.getSenderNickname() : "익명")
+                            .senderProfileImageUrl("") 
                             .message(msg.getContent())
                             .type(msg.getType())
                             .fileUrl(msg.getFileUrl())

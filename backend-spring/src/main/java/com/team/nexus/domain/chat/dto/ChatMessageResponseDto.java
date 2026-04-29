@@ -15,6 +15,7 @@ public class ChatMessageResponseDto {
     private UUID roomId;
     private UUID senderId;
     private String senderNickname;
+    private String senderProfileImageUrl;
     private String message;
     private ChatMessage.MessageType type;
     private String fileUrl;

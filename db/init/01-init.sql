@@ -292,7 +292,11 @@ CREATE TABLE group_orders (
 CREATE TABLE chat_rooms (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(100),
-    password VARCHAR(100),
+    description TEXT,
+    image_url VARCHAR(500),
+    type VARCHAR(20) DEFAULT 'GROUP',
+    password VARCHAR(255),
+    last_message_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -308,6 +312,8 @@ CREATE TABLE chat_messages (
     room_id UUID NOT NULL REFERENCES chat_rooms(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
-    is_read BOOLEAN DEFAULT FALSE,
+    type VARCHAR(20) DEFAULT 'TALK',
+    file_url TEXT,
+    file_name VARCHAR(255),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );

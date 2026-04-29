@@ -73,8 +73,10 @@ public class ChatController {
 
     @Operation(summary = "채팅방 메시지 내역 조회")
     @GetMapping("/rooms/{roomId}/messages")
-    public ResponseEntity<List<com.team.nexus.domain.chat.dto.ChatMessageResponseDto>> getMessages(@PathVariable UUID roomId) {
-        return ResponseEntity.ok(chatService.getMessages(roomId));
+    public ResponseEntity<List<com.team.nexus.domain.chat.dto.ChatMessageResponseDto>> getMessages(
+            @PathVariable UUID roomId,
+            @RequestParam UUID userId) {
+        return ResponseEntity.ok(chatService.getMessages(roomId, userId));
     }
 
     @Operation(summary = "초대 가능한 사용자 목록 조회")
