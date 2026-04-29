@@ -87,19 +87,23 @@ async def generate_brand_names_api(
     - 저장된 인터뷰 데이터를 바탕으로 AI가 브랜드 명 3안을 생성하고 저장합니다.
     """
     try:
-        identities = await brandingService.generate_brand_names(db, branding_id)
+        results_data = await brandingService.generate_brand_names(db, branding_id)
         
-        if not identities:
+        if not results_data:
             raise HTTPException(status_code=400, detail="인터뷰 데이터가 부족하거나 프로젝트를 찾을 수 없습니다.")
             
         results = [
             brandingSchema.NamingResult(
-                identityId=ident.id,
-                brandName=ident.brand_name,
-                slogan=ident.slogan,
-                brandStory=ident.brand_story
-            ) for ident in identities
+                identityId=item["identity"].id,
+                brandName=item["identity"].brand_name,
+                slogan=item["identity"].slogan,
+                brandStory=item["identity"].brand_story,
+                ipStatus=item["ip_result"].get("status"),
+                ipDetails=item["ip_result"]
+            ) for item in results_data
         ]
+
+
         
         return brandingSchema.NamingResponse(
             success=True,

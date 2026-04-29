@@ -16,5 +16,6 @@ public class BrandingDetailDto {
     private Map<String, Object> keywords;
     private String currentStep;
     private String createdAt;
+    private Object chatHistory;
     private List<BrandIdentityDto> identities;
 }

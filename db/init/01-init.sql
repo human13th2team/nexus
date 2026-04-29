@@ -48,6 +48,7 @@ CREATE TABLE brandings (
     industry_category_id UUID NOT NULL REFERENCES industry_categories(id),
     title VARCHAR(100) NOT NULL,
     keywords JSONB,
+    chat_history JSONB,
     current_step VARCHAR(20) DEFAULT 'INTERVIEW',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
