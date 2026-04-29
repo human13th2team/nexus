@@ -1,9 +1,9 @@
 "use server";
 
-export async function fetchStoresData(ksicCode: string) {
-  console.log(`[Server Action] Fetching stores for KSIC: ${ksicCode}`);
+export async function fetchStoresData(regionCode: string, ksicCode: string) {
+  console.log(`[Server Action] Fetching stores for Region: ${regionCode}, KSIC: ${ksicCode}`);
   try {
-    const res = await fetch(`http://127.0.0.1:8080/api/v1/sim/stores?semasKsicCode=${ksicCode}`, {
+    const res = await fetch(`http://127.0.0.1:8080/api/v1/sim/stores?signguCd=${regionCode}&semasKsicCode=${ksicCode}`, {
       cache: "no-store",
     });
     if (!res.ok) {

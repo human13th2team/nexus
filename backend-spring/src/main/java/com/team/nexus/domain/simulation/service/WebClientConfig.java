@@ -22,6 +22,7 @@ public class WebClientConfig {
     public WebClient dataPortalSemasWebClient(WebClient.Builder builder) {
         return builder
                 .baseUrl(apiProperties.getDataPortal().getSemasUrl())
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 10MB
                 .build();
     }
 

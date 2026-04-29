@@ -137,17 +137,17 @@ export default function SimResultStep({
 
       <div className="max-w-6xl mx-auto px-6 py-12 space-y-16">
         <div className="space-y-4">
-          <h1 className="font-manrope text-4xl font-extrabold text-[var(--nexus-primary)] tracking-tight">창업 비용 시뮬레이션 결과</h1>
-          <p className="text-lg opacity-60 font-light">AI가 분석한 {regionLabel} {industName} 창업 가이드입니다.</p>
+          <h1 className="font-manrope text-4xl font-black text-[var(--nexus-primary)] tracking-tight">창업 비용 시뮬레이션 결과</h1>
+          <p className="text-lg text-[var(--nexus-on-bg)] font-semibold opacity-90">AI가 분석한 {regionLabel} {industName} 창업 가이드입니다.</p>
         </div>
 
         {/* ── Section 1: 부동산 ── */}
         <section className="space-y-8">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-[var(--nexus-primary)] text-white rounded-xl flex items-center justify-center font-bold">01</div>
+            <div className="w-10 h-10 bg-[var(--nexus-primary)] text-white rounded-xl flex items-center justify-center font-black">01</div>
             <div>
-              <h2 className="text-2xl font-bold font-manrope">상업용 부동산 실거래가 분석</h2>
-              <p className="text-sm opacity-50">최근 {reStats.totalCount}건의 실제 거래 데이터를 분석했습니다.</p>
+              <h2 className="text-2xl font-black font-manrope text-[var(--nexus-primary)]">상업용 부동산 실거래가 분석</h2>
+              <p className="text-sm text-[var(--nexus-on-bg)] font-bold opacity-70">최근 {reStats.totalCount}건의 실제 거래 데이터를 분석했습니다.</p>
             </div>
           </div>
 
@@ -163,8 +163,8 @@ export default function SimResultStep({
                   <s.icon size={16} />
                 </div>
                 <div>
-                  <div className="text-[10px] font-black opacity-40 uppercase tracking-widest mb-1">{s.label}</div>
-                  <div className="text-xl font-bold text-[var(--nexus-primary)]">{s.val}</div>
+                  <div className="text-[10px] font-black text-[var(--nexus-primary)] opacity-70 uppercase tracking-widest mb-1">{s.label}</div>
+                  <div className="text-2xl font-black text-[var(--nexus-primary)]">{s.val}</div>
                 </div>
               </div>
             ))}
@@ -175,21 +175,21 @@ export default function SimResultStep({
             <div className="flex border-b border-[var(--nexus-outline-variant)]/20">
               <button 
                 onClick={() => setPriceTab("under")}
-                className={`flex-1 py-4 text-sm font-bold transition-colors flex items-center justify-center gap-2 ${priceTab === 'under' ? 'bg-[var(--nexus-surface-low)] text-[var(--nexus-primary)]' : 'opacity-40 hover:opacity-60'}`}
+                className={`flex-1 py-4 text-sm font-black transition-colors flex items-center justify-center gap-2 ${priceTab === 'under' ? 'bg-[var(--nexus-surface-low)] text-[var(--nexus-primary)]' : 'text-[var(--nexus-primary)] opacity-40 hover:opacity-100'}`}
               >
-                1억 이하 <span className="text-[10px] opacity-50">{under100M.length}건</span>
+                1억 이하 <span className={`text-[10px] ${priceTab === 'under' ? 'text-[var(--nexus-primary)] opacity-70' : 'opacity-50'}`}>{under100M.length}건</span>
               </button>
               <button 
                 onClick={() => setPriceTab("over")}
-                className={`flex-1 py-4 text-sm font-bold transition-colors flex items-center justify-center gap-2 ${priceTab === 'over' ? 'bg-[var(--nexus-surface-low)] text-[var(--nexus-primary)]' : 'opacity-40 hover:opacity-60'}`}
+                className={`flex-1 py-4 text-sm font-black transition-colors flex items-center justify-center gap-2 ${priceTab === 'over' ? 'bg-[var(--nexus-surface-low)] text-[var(--nexus-primary)]' : 'text-[var(--nexus-primary)] opacity-40 hover:opacity-100'}`}
               >
-                1억 초과 <span className="text-[10px] opacity-50">{over100M.length}건</span>
+                1억 초과 <span className={`text-[10px] ${priceTab === 'over' ? 'text-[var(--nexus-primary)] opacity-70' : 'opacity-50'}`}>{over100M.length}건</span>
               </button>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="bg-[var(--nexus-surface-low)]/50 text-[10px] font-black uppercase text-[var(--nexus-primary)]/40 tracking-widest">
+                <thead className="bg-[var(--nexus-surface-low)] text-[10px] font-black uppercase text-[var(--nexus-primary)]/70 tracking-widest">
                   <tr>
                     <th className="px-6 py-4">주소</th>
                     <th className="px-6 py-4 text-center">건물 용도</th>
@@ -205,12 +205,12 @@ export default function SimResultStep({
                       className={`hover:bg-[var(--nexus-surface-low)]/30 cursor-pointer transition-colors ${selectedRE === r ? 'bg-[var(--nexus-surface-container)]/50' : ''}`}
                       onClick={() => setSelectedRE(selectedRE === r ? null : r)}
                     >
-                      <td className="px-6 py-5 font-medium">{r.address}</td>
+                      <td className="px-6 py-5 font-bold text-[var(--nexus-on-bg)]">{r.address}</td>
                       <td className="px-6 py-5 text-center">
-                        <span className="px-2 py-0.5 bg-gray-100 rounded-md text-[10px] font-bold opacity-60">{r.buildingUse}</span>
+                        <span className="px-2 py-0.5 bg-indigo-50 border border-indigo-100 rounded-md text-[10px] font-black text-[var(--nexus-primary)]">{r.buildingUse}</span>
                       </td>
-                      <td className="px-6 py-5 text-right opacity-60">{r.buildingAr}</td>
-                      <td className="px-6 py-5 text-right font-bold text-[var(--nexus-primary)]">{formatWon(r.dealAmount ?? 0)}</td>
+                      <td className="px-6 py-5 text-right font-bold text-[var(--nexus-on-bg)] opacity-80">{r.buildingAr}</td>
+                      <td className="px-6 py-5 text-right font-black text-[var(--nexus-primary)]">{formatWon(r.dealAmount ?? 0)}</td>
                       <td className="px-6 py-5 text-center">
                         <div className={`w-5 h-5 rounded-full border-2 mx-auto flex items-center justify-center transition-colors ${selectedRE === r ? 'border-[var(--nexus-primary)] bg-[var(--nexus-primary)]' : 'border-[var(--nexus-outline-variant)]'}`}>
                           {selectedRE === r && <Plus size={12} className="text-white" />}
@@ -232,10 +232,10 @@ export default function SimResultStep({
         {/* ── Section 2: 설비 ── */}
         <section className="space-y-8">
           <div className="flex items-center gap-4">
-            <div className="w-10 h-10 bg-[var(--nexus-secondary)] text-white rounded-xl flex items-center justify-center font-bold">02</div>
+            <div className="w-10 h-10 bg-[var(--nexus-secondary)] text-white rounded-xl flex items-center justify-center font-black">02</div>
             <div>
-              <h2 className="text-2xl font-bold font-manrope">필수 설비 비용 분석</h2>
-              <p className="text-sm opacity-50">{industName} 창업에 필요한 핵심 설비 데이터입니다.</p>
+              <h2 className="text-2xl font-black font-manrope text-[var(--nexus-secondary)]">필수 설비 비용 분석</h2>
+              <p className="text-sm text-[var(--nexus-on-bg)] font-bold opacity-70">{industName} 창업에 필요한 핵심 설비 데이터입니다.</p>
             </div>
           </div>
 
@@ -252,12 +252,12 @@ export default function SimResultStep({
                 <div className="flex-1 flex flex-col justify-between">
                   <div>
                     <div className="flex justify-between items-start mb-1">
-                      <h3 className="font-bold text-[var(--nexus-primary)]">{eq.equip_name_kr}</h3>
+                      <h3 className="font-black text-[var(--nexus-primary)]">{eq.equip_name_kr}</h3>
                       <button onClick={() => removeEquip(idx)} className="opacity-0 group-hover:opacity-30 hover:!opacity-100 transition-opacity">
                         <Trash2 size={16} />
                       </button>
                     </div>
-                    <p className="text-[10px] opacity-40 line-clamp-1 mb-3">{eq.product_name}</p>
+                    <p className="text-[10px] text-[var(--nexus-on-bg)] font-bold opacity-60 line-clamp-1 mb-3">{eq.product_name}</p>
                     <div className="flex items-center gap-2">
                       <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${getSourceStyle(eq.source)}`}>{eq.source}</span>
                       {eq.link && <a href={eq.link} target="_blank" rel="noopener noreferrer" className="text-[8px] font-bold text-[var(--nexus-secondary)] flex items-center gap-1">LINK <ExternalLink size={8} /></a>}

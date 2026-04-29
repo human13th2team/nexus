@@ -1,9 +1,9 @@
 package com.team.nexus.domain.simulation.controller;
 
+import com.team.nexus.domain.simulation.dto.StoreMapResponseDto;
 import com.team.nexus.domain.simulation.dto.EquipPriceResponseDto;
 import com.team.nexus.domain.simulation.dto.ProcessedRealEstateDto;
 import com.team.nexus.domain.simulation.dto.SimSearchListDto;
-import com.team.nexus.domain.simulation.dto.StoresResponseDto;
 import com.team.nexus.domain.simulation.service.EquipPriceService;
 import com.team.nexus.domain.simulation.service.RealEstateService;
 import com.team.nexus.domain.simulation.service.SimSearchListService;
@@ -54,10 +54,11 @@ public class SimController {
         return ResponseEntity.ok(equipPriceService.getEquipPriceList(ksicCode));
     }
 
-    // 업종기반 지역별 업소수 요청
+    // 업종기반 지역 내 업소수 요청
     @GetMapping("/stores")
-    public ResponseEntity<StoresResponseDto> getStore(
+    public ResponseEntity<StoreMapResponseDto> getStore(
+            @RequestParam String signguCd,
             @RequestParam(defaultValue = "G20405") String semasKsicCode) {
-        return ResponseEntity.ok(storesService.getStoreList(semasKsicCode));
+        return ResponseEntity.ok(storesService.getStoreList(signguCd, semasKsicCode));
     }
 }

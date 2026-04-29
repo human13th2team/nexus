@@ -1,7 +1,7 @@
 package com.team.nexus.domain.simulation.service;
 
-import com.team.nexus.domain.simulation.dto.StoresResponseDto;
+import com.team.nexus.domain.simulation.dto.StoreMapResponseDto;
 
 public interface StoresService {
-    StoresResponseDto getStoreList(String semasKsicCode);
+    StoreMapResponseDto getStoreList(String signguCd, String semasKsicCode);
 }
