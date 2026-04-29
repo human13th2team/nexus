@@ -125,11 +125,14 @@ export default function Header() {
           )}
         </nav>
 
-        <div className="w-[100px] lg:w-[160px] shrink-0 flex items-center justify-end gap-4" ref={profileRef}>
+        <div className="w-[100px] lg:w-[160px] shrink-0 flex items-center justify-end gap-3" ref={profileRef}>
           {mounted ? (
             <>
               {!isLoggedIn ? (
-                <Link href="/auth/login" className="text-sm font-bold text-[var(--nexus-primary)] px-3 py-1.5 md:px-4 md:py-2 border border-[var(--nexus-primary)] rounded hover:bg-[var(--nexus-primary)] hover:text-white transition-colors">
+                <Link
+                  href="/auth/login"
+                  className="whitespace-nowrap text-sm font-bold text-[var(--nexus-primary)] px-4 py-2 border border-[var(--nexus-primary)] rounded hover:bg-[var(--nexus-primary)] hover:text-white transition-colors"
+                >
                   로그인
                 </Link>
               ) : (
@@ -142,16 +145,19 @@ export default function Header() {
                         <div className="px-5 py-3.5 text-sm text-gray-400 border-b border-gray-100 bg-gray-50/50">
                             <span className="font-bold text-[var(--nexus-primary)]">{nickname}</span>님 환영합니다
                           </div>
-
                           <Link href="/" className="block px-5 py-3.5 text-sm hover:bg-gray-50 border-b border-gray-100">ℹ️ 프로필</Link>
                           <Link href="/chat" className="block px-5 py-3.5 text-sm hover:bg-gray-50 border-b border-gray-100">💬 채팅하기</Link>
-                          <button onClick={handleLogout} className="w-full text-left px-5 py-3.5 text-sm text-red-500 hover:bg-red-50 font-semibold">🚪 로그아웃</button>
+                          <button onClick={handleLogout} className="w-full text-left px-5 py-3.5 text-sm text-red-500 hover:bg-red-50 font-semibold">🚣 로그아웃</button>
                     </div>
                   )}
                 </div>
               )}
-              <button className="lg:hidden p-1 text-[var(--nexus-primary)]" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-                 <span className="text-2xl">☰</span>
+              <button
+                className="lg:hidden p-2 text-[var(--nexus-primary)]"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="메뉴 열기"
+              >
+                <span className="text-2xl leading-none">{isMobileMenuOpen ? '✕' : '☰'}</span>
               </button>
             </>
           ) : (
@@ -185,6 +191,72 @@ export default function Header() {
               ))}
             </div>
             <div className="w-[160px] shrink-0" />
+          </div>
+        </div>
+      )}
+      {/* ── 모바일 사이드바 드로어 ── */}
+      {mounted && isMobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-[200]" onClick={() => setIsMobileMenuOpen(false)}>
+          {/* 오버레이 */}
+          <div className="absolute inset-0 bg-black/40" />
+          {/* 드로어 패널 */}
+          <div
+            className="absolute right-0 top-0 h-full w-72 bg-[var(--nexus-surface-lowest)] shadow-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 h-20 border-b border-[var(--nexus-outline-variant)]">
+              <span className="text-xl font-black tracking-tighter text-[var(--nexus-primary)]">NEXUS</span>
+              <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-[var(--nexus-on-bg)]">
+                <span className="text-2xl leading-none">✕</span>
+              </button>
+            </div>
+            <nav className="flex-1 overflow-y-auto py-4">
+              {MENU_DATA.map((menu) => (
+                <div key={menu.id} className="border-b border-[var(--nexus-outline-variant)]/30">
+                  {menu.hasSub ? (
+                    <>
+                      <div className="px-6 py-4 text-[15px] font-bold text-[var(--nexus-on-bg)]">{menu.title}</div>
+                      {menu.subMenu?.map((sub, sIdx) => (
+                        <Link
+                          key={sIdx}
+                          href={sub.href}
+                          className="block px-10 py-3 text-sm text-gray-500 hover:text-[var(--nexus-primary)] hover:bg-[var(--nexus-surface-low)]"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          {sub.name}
+                        </Link>
+                      ))}
+                    </>
+                  ) : (
+                    <Link
+                      href={menu.href || '#'}
+                      className="block px-6 py-4 text-[15px] font-bold text-[var(--nexus-on-bg)] hover:text-[var(--nexus-primary)] hover:bg-[var(--nexus-surface-low)]"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {menu.title}
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </nav>
+            <div className="px-6 py-6 border-t border-[var(--nexus-outline-variant)]">
+              {!isLoggedIn ? (
+                <Link
+                  href="/auth/login"
+                  className="block w-full text-center py-3 text-sm font-bold text-[var(--nexus-primary)] border border-[var(--nexus-primary)] rounded-lg hover:bg-[var(--nexus-primary)] hover:text-white transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  로그인
+                </Link>
+              ) : (
+                <button
+                  onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                  className="w-full py-3 text-sm font-bold text-red-500 border border-red-200 rounded-lg hover:bg-red-50"
+                >
+                  🚣 로그아웃
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

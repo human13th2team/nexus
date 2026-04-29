@@ -195,7 +195,7 @@ export default function SimSearchStep({
                       setRegionQuery(e.target.value);
                       setRegionFilter(e.target.value); 
                       regionOriginalQuery.current = e.target.value;
-                      setIsRegionOpen(true);
+                      setShowRegionDropdown(true);
                       setRegionActiveIndex(-1);
                     }}
                     onFocus={() => {
@@ -245,7 +245,7 @@ export default function SimSearchStep({
                       setIndustQuery(e.target.value);
                       setIndustFilter(e.target.value); 
                       industOriginalQuery.current = e.target.value;
-                      setIsIndustOpen(true);
+                      setShowIndustDropdown(true);
                       setIndustActiveIndex(-1);
                     }}
                     onFocus={() => {

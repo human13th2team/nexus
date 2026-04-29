@@ -222,9 +222,15 @@ export default function StoreMapClient({ kakaoApiKey, initialIndustries, initial
   return (
     <div className="h-[600px] flex flex-col bg-white overflow-hidden font-inter border-b border-slate-200" suppressHydrationWarning>
       <header className="shrink-0 bg-white border-b border-slate-100 px-8 h-[60px] flex items-center justify-between gap-12 z-40">
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="w-9 h-9 bg-[#0b1a7d] rounded-xl flex items-center justify-center shadow-lg"><Sparkles size={18} className="text-white" /></div>
-          <span className="text-base font-black text-slate-950">Nexus Intelligence</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl">
+            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">소상공인시장진흥공단</span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl">
+            <div className="w-2 h-2 rounded-full bg-blue-400" />
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">상권정보</span>
+          </div>
         </div>
         <div className="flex-1 flex items-center gap-2 max-w-2xl px-12">
           <div className="relative flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 flex items-center gap-3">
@@ -384,16 +390,16 @@ export default function StoreMapClient({ kakaoApiKey, initialIndustries, initial
                   <div className="pt-4 border-t border-slate-100 space-y-3">
                     {storesData.mostRegion && (
                       <div className="flex items-center justify-between p-3 bg-red-50 rounded-xl border border-red-100">
-                        <div className="flex items-center gap-2 text-red-700 font-black text-[11px]">밀집 최고</div>
-                        <span className="text-[11px] font-black text-slate-950">
+                        <div className="flex items-center gap-2 text-red-700 font-black text-sm">밀집 최고</div>
+                        <span className="text-sm font-black text-slate-950">
                           {(storesData.mostRegion.adongNm || storesData.mostRegion.region_name) || "상권"} ({storesData.mostRegion.count}개)
                         </span>
                       </div>
                     )}
                     {storesData.leastRegion && (
                       <div className="flex items-center justify-between p-3 bg-blue-50 rounded-xl border border-blue-100">
-                        <div className="flex items-center gap-2 text-blue-700 font-black text-[11px]">밀집 최저</div>
-                        <span className="text-[11px] font-black text-slate-950">
+                        <div className="flex items-center gap-2 text-blue-700 font-black text-sm">밀집 최저</div>
+                        <span className="text-sm font-black text-slate-950">
                           {(storesData.leastRegion.adongNm || storesData.leastRegion.region_name) || "상권"} ({storesData.leastRegion.count}개)
                         </span>
                       </div>

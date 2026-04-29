@@ -14,7 +14,6 @@ import java.util.List;
 
 import org.springframework.web.reactive.function.client.WebClient;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import reactor.core.publisher.Flux;
 
 @Service
 @RequiredArgsConstructor
@@ -31,53 +30,59 @@ public class RealEstateServiceImpl implements RealEstateService {
         LocalDate searchDate = LocalDate.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMM");
 
-        return Flux.range(0, 12)
-                .flatMap(i -> {
-                    String dealYMD = searchDate.minusMonths(i).format(formatter);
-                    return fetchAllPagesForMonth(regionCode, dealYMD);
-                }, 12) // 12개월분 동시 요청
-                .collectList()
-                .map(allData -> {
-                    List<ProcessedRealEstateDto> under100M = new ArrayList<>();
-                    List<ProcessedRealEstateDto> over100M = new ArrayList<>();
-                    for (ProcessedRealEstateDto dto : allData) {
-                        if (Boolean.TRUE.equals(dto.getIsWithin100M())) {
-                            if (under100M.size() < TARGET_COUNT) under100M.add(dto);
-                        } else {
-                            if (over100M.size() < TARGET_COUNT) over100M.add(dto);
-                        }
-                        if (under100M.size() >= TARGET_COUNT && over100M.size() >= TARGET_COUNT) break;
-                    }
-                    return combine(under100M, over100M);
-                })
-                .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
-                .block();
+        List<ProcessedRealEstateDto> under100M = new ArrayList<>();
+        List<ProcessedRealEstateDto> over100M = new ArrayList<>();
+
+        // 최신 달부터 순서대로 조회, 5+5 채워지면 즉시 중단
+        for (int i = 0; i < 12; i++) {
+            String dealYMD = searchDate.minusMonths(i).format(formatter);
+            boolean filled = fetchMonthUntilFull(regionCode, dealYMD, under100M, over100M);
+            if (filled) break;
+        }
+
+        return combine(under100M, over100M);
     }
 
-    private Flux<ProcessedRealEstateDto> fetchAllPagesForMonth(Integer regionCode, String dealYMD) {
-        return Flux.create(sink -> {
-            int pageNo = 1;
-            boolean hasNextPage = true;
-            while (hasNextPage) {
-                RealEstateAPIResponseDto response = fetchApi(regionCode, dealYMD, pageNo);
-                if (response == null || response.getResponse() == null || response.getResponse().getBody() == null) {
-                    break;
-                }
-                var body = response.getResponse().getBody();
-                var items = body.getItems() != null ? body.getItems().getItem() : null;
-                if (items != null) {
-                    for (var item : items) {
-                        sink.next(mapAndCalculate(item));
+    /**
+     * 해당 월의 API를 페이지 순서대로 호출하며 under/over 리스트를 채운다.
+     * 두 리스트가 모두 TARGET_COUNT에 도달하면 즉시 true를 반환(조기 종료).
+     */
+    private boolean fetchMonthUntilFull(Integer regionCode, String dealYMD,
+                                        List<ProcessedRealEstateDto> under100M,
+                                        List<ProcessedRealEstateDto> over100M) {
+        int pageNo = 1;
+        while (true) {
+            RealEstateAPIResponseDto response = fetchApi(regionCode, dealYMD, pageNo);
+            if (response == null || response.getResponse() == null || response.getResponse().getBody() == null) {
+                break;
+            }
+            var body = response.getResponse().getBody();
+            var items = body.getItems() != null ? body.getItems().getItem() : null;
+
+            if (items != null) {
+                for (var item : items) {
+                    ProcessedRealEstateDto dto = mapAndCalculate(item);
+                    if (Boolean.TRUE.equals(dto.getIsWithin100M())) {
+                        if (under100M.size() < TARGET_COUNT) under100M.add(dto);
+                    } else {
+                        if (over100M.size() < TARGET_COUNT) over100M.add(dto);
+                    }
+                    // 두 버킷 모두 채워지면 즉시 종료
+                    if (under100M.size() >= TARGET_COUNT && over100M.size() >= TARGET_COUNT) {
+                        return true;
                     }
                 }
-                if (pageNo * body.getNumOfRows() < body.getTotalCount()) {
-                    pageNo++;
-                } else {
-                    hasNextPage = false;
-                }
             }
-            sink.complete();
-        });
+
+            // 다음 페이지 존재 여부 확인
+            if (body.getNumOfRows() != null && body.getTotalCount() != null
+                    && pageNo * body.getNumOfRows() < body.getTotalCount()) {
+                pageNo++;
+            } else {
+                break;
+            }
+        }
+        return under100M.size() >= TARGET_COUNT && over100M.size() >= TARGET_COUNT;
     }
 
 
@@ -127,8 +132,7 @@ public class RealEstateServiceImpl implements RealEstateService {
             dto.setBuildAge(LocalDate.now().getYear() - Integer.parseInt(raw.buildYear.trim()));
         }
 
-        dto.setIsWithin100M(dto.getIsWithin100M());
-        dto.setPricePerPyeong(dto.getPricePerPyeong());
+        // isWithin100M, pricePerPyeong 은 getter에서 동적으로 계산되므로 별도 setter 불필요
 
         return dto;
     }
