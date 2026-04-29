@@ -247,6 +247,21 @@ export default function LogoGenerationSection({
         </div>
       </div>
 
+      {/* Disclaimer / Notice */}
+      <div className="bg-[var(--nexus-surface-low)] border border-[var(--nexus-outline-variant)]/40 rounded-2xl p-5 flex items-start gap-4">
+        <div className="text-gray-400 mt-0.5">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div className="space-y-1">
+          <h4 className="text-xs font-bold text-[var(--nexus-on-bg)]">Notice: 저작권 및 상표권 안내</h4>
+          <p className="text-xs text-gray-500 leading-relaxed">
+            AI가 제안하는 본 로고 디자인은 창업 준비를 위한 <strong>초안(Draft) 용도</strong>입니다. 실제 상표(Trademark) 등록 및 상업적 사용을 위해서는 KIPRIS 등을 통한 <strong>유사성 검토와 전문가의 리터칭</strong>을 권장합니다.
+          </p>
+        </div>
+      </div>
+
       {/* Action Buttons */}
       <div className="pt-12 border-t border-[var(--nexus-outline-variant)]/20 flex flex-col md:flex-row justify-between items-center gap-8">
         <button
