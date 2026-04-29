@@ -249,7 +249,8 @@ class Subsidy(Base):
     contact: Mapped[Optional[str]] = mapped_column(Text)
     apply_url: Mapped[Optional[str]] = mapped_column(String(500))
     source_url: Mapped[Optional[str]] = mapped_column(String(500), unique=True)
-    embedding: Mapped[Optional[list]] = mapped_column(Vector(768))
+    embedding: Mapped[Optional[list]] = mapped_column(Vector(768)),
+    life_cycle: Mapped[Optional[str]] = mapped_column(String(20)) # 추가됨
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("true"))
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
     updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
