@@ -21,7 +21,12 @@ export default function OAuthCallbackPage() {
       
       const providerName = provider === "google" ? "구글" : provider === "kakao" ? "카카오" : "소셜";
       alert(`${providerName} 로그인에 성공했습니다!`);
-      window.location.href = "/";
+      
+      // 헤더에 로그인 상태 변경 이벤트 알림 (수정된 Header.tsx 반영)
+      window.dispatchEvent(new Event('login-status-change'));
+      
+      router.push("/");
+      router.refresh();
     } else {
       alert("로그인 정보를 가져오지 못했습니다.");
       window.location.href = "/auth/login";

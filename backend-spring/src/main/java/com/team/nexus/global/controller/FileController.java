@@ -23,22 +23,29 @@ public class FileController {
     private final FileService fileService;
 
     @PostMapping("/upload")
-    public ResponseEntity<Map<String, String>> uploadFile(@RequestParam("file") MultipartFile file) {
-        String fileUrl = fileService.uploadFile(file);
+    public ResponseEntity<Map<String, String>> uploadFile(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "category", required = false) String category) {
+        String fileUrl = fileService.uploadFile(file, category);
         return ResponseEntity.ok(Map.of("url", "http://localhost:8080" + fileUrl));
     }
 
-    @GetMapping("/display/{fileName:.+}")
+    @GetMapping("/display/{*fileName}")
     public ResponseEntity<Resource> displayFile(@PathVariable String fileName) {
         try {
-            Path path = Paths.get("uploads/" + fileName);
+            // {*fileName} captures leading slash, remove it
+            String cleanPath = fileName.startsWith("/") ? fileName.substring(1) : fileName;
+            Path path = Paths.get("uploads/" + cleanPath);
             Resource resource = new UrlResource(path.toUri());
 
             if (resource.exists() || resource.isReadable()) {
-                String contentType = "image/jpeg"; // 기본값
-                if (fileName.endsWith(".png")) contentType = "image/png";
-                else if (fileName.endsWith(".gif")) contentType = "image/gif";
-                else if (fileName.endsWith(".webp")) contentType = "image/webp";
+                String contentType = "application/octet-stream";
+                String name = path.getFileName().toString().toLowerCase();
+                
+                if (name.endsWith(".png")) contentType = "image/png";
+                else if (name.endsWith(".jpg") || name.endsWith(".jpeg")) contentType = "image/jpeg";
+                else if (name.endsWith(".gif")) contentType = "image/gif";
+                else if (name.endsWith(".webp")) contentType = "image/webp";
 
                 return ResponseEntity.ok()
                         .header(HttpHeaders.CONTENT_TYPE, contentType)
@@ -51,15 +58,17 @@ public class FileController {
         }
     }
 
-    @GetMapping("/download/{fileName:.+}")
+    @GetMapping("/download/{*fileName}")
     public ResponseEntity<Resource> downloadFile(@PathVariable String fileName) {
         try {
-            Path path = Paths.get("uploads/" + fileName);
+            String cleanPath = fileName.startsWith("/") ? fileName.substring(1) : fileName;
+            Path path = Paths.get("uploads/" + cleanPath);
             Resource resource = new UrlResource(path.toUri());
 
             if (resource.exists() || resource.isReadable()) {
+                String originalName = path.getFileName().toString();
                 return ResponseEntity.ok()
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + originalName + "\"")
                         .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
                         .body(resource);
             } else {

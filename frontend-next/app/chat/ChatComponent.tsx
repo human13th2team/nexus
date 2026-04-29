@@ -78,6 +78,7 @@ const ChatComponent = () => {
   const [newRoomImageUrl, setNewRoomImageUrl] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
@@ -295,6 +296,19 @@ const ChatComponent = () => {
     if (!currentUserId || !newRoomTitle.trim()) return;
 
     try {
+      let finalImageUrl = newRoomImageUrl;
+
+      // 만약 선택된 파일이 있다면 지금 업로드
+      if (selectedFile) {
+        const uploadedUrl = await uploadRoomImage(selectedFile);
+        if (uploadedUrl) {
+          finalImageUrl = uploadedUrl;
+        } else {
+          alert("이미지 업로드에 실패했습니다. 다시 시도해 주세요.");
+          return;
+        }
+      }
+
       const response = await fetch('http://localhost:8080/api/v1/chat/rooms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -302,7 +316,7 @@ const ChatComponent = () => {
           title: newRoomTitle,
           type: newRoomType,
           description: newRoomDescription,
-          imageUrl: newRoomImageUrl,
+          imageUrl: finalImageUrl,
           creatorId: currentUserId,
           password: newRoomPassword
         }),
@@ -312,16 +326,22 @@ const ChatComponent = () => {
         const newRoom = await response.json();
         setRooms(prev => [newRoom, ...prev]);
         setActiveRoomId(newRoom.id);
-        setIsCreateModalOpen(false);
-        setNewRoomTitle('');
-        setNewRoomDescription('');
-        setNewRoomImageUrl('');
-        setNewRoomType('GROUP');
-        setNewRoomPassword('');
+        closeCreateModal();
       }
     } catch (error) {
       alert("방 생성에 실패했습니다.");
     }
+  };
+
+  const closeCreateModal = () => {
+    setIsCreateModalOpen(false);
+    setNewRoomTitle('');
+    setNewRoomDescription('');
+    setNewRoomImageUrl('');
+    setImagePreview(null);
+    setSelectedFile(null);
+    setNewRoomType('GROUP');
+    setNewRoomPassword('');
   };
 
   const fetchInviteCandidates = async () => {
@@ -373,39 +393,41 @@ const ChatComponent = () => {
     );
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 미리보기 생성
+    setSelectedFile(file);
+
+    // 브라우저 미리보기 생성 (서버 업로드 X)
     const reader = new FileReader();
     reader.onloadend = () => {
       setImagePreview(reader.result as string);
     };
     reader.readAsDataURL(file);
+  };
 
-    // 서버 업로드
+  const uploadRoomImage = async (file: File): Promise<string | null> => {
     setIsUploading(true);
     const formData = new FormData();
     formData.append('file', file);
 
     try {
-      const response = await fetch('http://localhost:8080/api/v1/files/upload', {
+      const response = await fetch('http://localhost:8080/api/v1/files/upload?category=chat-rooms', {
         method: 'POST',
         body: formData,
       });
 
       if (response.ok) {
         const data = await response.json();
-        setNewRoomImageUrl(data.url);
-      } else {
-        alert("이미지 업로드에 실패했습니다.");
+        return data.url;
       }
     } catch (error) {
       console.error("Upload error:", error);
     } finally {
       setIsUploading(false);
     }
+    return null;
   };
 
   const handleFileMessageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -421,7 +443,7 @@ const ChatComponent = () => {
 
     try {
       console.log("Uploading file...");
-      const response = await fetch('http://localhost:8080/api/v1/files/upload', {
+      const response = await fetch('http://localhost:8080/api/v1/files/upload?category=chat-messages', {
         method: 'POST',
         body: formData,
       });
@@ -911,13 +933,13 @@ const ChatComponent = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div 
             className="absolute inset-0 bg-[var(--nexus-on-bg)]/60 backdrop-blur-sm"
-            onClick={() => setIsCreateModalOpen(false)}
+            onClick={closeCreateModal}
           />
           <div className="relative bg-[var(--nexus-surface-lowest)] w-full max-w-lg rounded-[40px] shadow-2xl overflow-hidden border border-[var(--nexus-surface-container)] animate-in fade-in zoom-in duration-300">
             <div className="p-8 pb-4 flex items-center justify-between">
               <h2 className="text-2xl font-black tracking-tighter text-[var(--nexus-primary)]">새 채팅방 개설</h2>
               <button 
-                onClick={() => setIsCreateModalOpen(false)}
+                onClick={closeCreateModal}
                 className="w-10 h-10 rounded-full hover:bg-[var(--nexus-surface-low)] flex items-center justify-center transition-colors"
               >
                 <Plus className="rotate-45 text-[var(--nexus-outline)]" size={24} />
@@ -1006,7 +1028,7 @@ const ChatComponent = () => {
                     <input 
                       type="file"
                       accept="image/*"
-                      onChange={handleImageUpload}
+                      onChange={handleImageSelect}
                       className="hidden"
                       id="room-image-upload"
                     />
@@ -1023,16 +1045,17 @@ const ChatComponent = () => {
               <div className="pt-4 flex gap-4">
                 <button 
                   type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
+                  onClick={closeCreateModal}
                   className="flex-1 py-4 bg-[var(--nexus-surface-container)] text-[var(--nexus-outline)] rounded-2xl font-black text-sm hover:bg-[var(--nexus-surface-container-high)] transition-all active:scale-95"
                 >
                   취소
                 </button>
                 <button 
                   type="submit"
-                  className="flex-2 py-4 bg-[var(--nexus-primary)] text-[var(--nexus-on-primary)] rounded-2xl font-black text-sm hover:opacity-90 transition-all active:scale-95 shadow-xl shadow-[var(--nexus-primary)]/20 px-12"
+                  disabled={isUploading}
+                  className="flex-2 py-4 bg-[var(--nexus-primary)] text-[var(--nexus-on-primary)] rounded-2xl font-black text-sm hover:opacity-90 transition-all active:scale-95 shadow-xl shadow-[var(--nexus-primary)]/20 px-12 disabled:opacity-50"
                 >
-                  채팅방 생성하기
+                  {isUploading ? '업로드 중...' : '채팅방 생성하기'}
                 </button>
               </div>
             </form>

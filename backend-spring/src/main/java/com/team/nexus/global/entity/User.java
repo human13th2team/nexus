@@ -37,8 +37,8 @@ public class User {
     @Column(name = "biz_no", length = 12)
     private String bizNo;
 
-//    @Column(name = "address")
-//    private String address;
+    @Column(name = "address")
+    private String address;
 
     @Column(name = "login_type")
     private Integer loginType;

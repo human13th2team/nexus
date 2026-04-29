@@ -38,11 +38,11 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                 email = (String) kakaoAccount.get("email");
             }
 
-            String token = jwtTokenProvider.createToken(email);
-            
             // 실제 유저 정보 조회
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> new ServletException("사용자를 찾을 수 없습니다."));
+
+            String token = jwtTokenProvider.createToken(email, user.getId(), user.getUserType());
 
             String provider = ((org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken) authentication)
                     .getAuthorizedClientRegistrationId();
