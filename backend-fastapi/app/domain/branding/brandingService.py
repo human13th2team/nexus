@@ -24,7 +24,7 @@ async def initialize_industry_cache(db: AsyncSession):
     if INDUSTRY_CACHE["initialized"]:
         return
 
-    print("[Cache] 업종 카테고리 데이터를 메모리에 로딩 중...")
+    print("🧠 [Cache] 업종 카테고리 데이터를 메모리에 로딩 중...")
     # 임베딩 제외, 경로 계산에 필요한 필드만 가볍게 조회
     stmt = select(IndustryCategory).options(load_only(
         IndustryCategory.id, 
@@ -36,7 +36,7 @@ async def initialize_industry_cache(db: AsyncSession):
     
     INDUSTRY_CACHE["map"] = {ind.id: ind for ind in industries}
     INDUSTRY_CACHE["initialized"] = True
-    print(f"[Success] [Cache] {len(INDUSTRY_CACHE['map'])}개의 업종 데이터 로딩 완료!")
+    print(f"✅ [Cache] {len(INDUSTRY_CACHE['map'])}개의 업종 데이터 로딩 완료!")
 
 def get_full_path(ind):
     """캐시된 데이터를 사용하여 업종의 전체 경로를 즉시 반환합니다."""

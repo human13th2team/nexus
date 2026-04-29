@@ -21,10 +21,10 @@ export default function OAuthCallbackPage() {
       
       const providerName = provider === "google" ? "구글" : provider === "kakao" ? "카카오" : "소셜";
       alert(`${providerName} 로그인에 성공했습니다!`);
-      router.push("/");
+      window.location.href = "/";
     } else {
       alert("로그인 정보를 가져오지 못했습니다.");
-      router.push("/auth/login");
+      window.location.href = "/auth/login";
     }
   }, [router, searchParams]);
 

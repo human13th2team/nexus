@@ -29,6 +29,7 @@ public class ChatServiceImpl implements ChatService {
     private final ChatParticipantRepository chatParticipantRepository;
     private final com.team.nexus.domain.auth.repository.UserRepository userRepository;
     private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+    private final org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
 
     @Override
     @Transactional
@@ -90,6 +91,12 @@ public class ChatServiceImpl implements ChatService {
                     .joinedAt(LocalDateTime.now())
                     .build();
             chatParticipantRepository.save(participant);
+
+            // 시스템 메시지 발송 (입장)
+            User user = userRepository.findById(userId).orElse(null);
+            if (user != null) {
+                sendSystemMessage(roomId, userId, user.getNickname(), user.getNickname() + "님이 입장하셨습니다.", ChatMessage.MessageType.ENTER);
+            }
         }
     }
 
@@ -193,6 +200,13 @@ public class ChatServiceImpl implements ChatService {
     @Transactional
     public void leaveRoom(UUID roomId, UUID userId) {
         log.info("Leaving chat room: roomId={}, userId={}", roomId, userId);
+        
+        // 시스템 메시지 발송 (퇴장)
+        User user = userRepository.findById(userId).orElse(null);
+        if (user != null) {
+            sendSystemMessage(roomId, userId, user.getNickname(), user.getNickname() + "님이 퇴장하셨습니다.", ChatMessage.MessageType.LEAVE);
+        }
+
         chatParticipantRepository.deleteByRoomIdAndUserId(roomId, userId);
         
         // 참가자가 0명이면 방 삭제
@@ -217,6 +231,81 @@ public class ChatServiceImpl implements ChatService {
                 })
                 .map(this::convertToResponseDto)
                 .toList();
+    }
+
+    @Override
+    public List<com.team.nexus.domain.auth.dto.UserSummaryDto> getInviteCandidates(UUID roomId) {
+        // 현재 방에 참여 중인 유저 ID 목록 조회
+        List<UUID> participantIds = chatParticipantRepository.findByRoomId(roomId)
+                .stream()
+                .map(ChatParticipant::getUserId)
+                .toList();
+        
+        // 참여 중이지 않은 유저들 조회
+        if (participantIds.isEmpty()) {
+            return userRepository.findAll().stream()
+                    .map(user -> com.team.nexus.domain.auth.dto.UserSummaryDto.builder()
+                            .id(user.getId())
+                            .nickname(user.getNickname())
+                            .email(user.getEmail())
+                            .build())
+                    .toList();
+        }
+
+        return userRepository.findAll().stream()
+                .filter(user -> !participantIds.contains(user.getId()))
+                .map(user -> com.team.nexus.domain.auth.dto.UserSummaryDto.builder()
+                        .id(user.getId())
+                        .nickname(user.getNickname())
+                        .email(user.getEmail())
+                        .build())
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void inviteUsers(UUID roomId, List<UUID> userIds) {
+        log.info("Inviting users to room: roomId={}, userCount={}", roomId, userIds.size());
+        
+        for (UUID userId : userIds) {
+            if (!chatParticipantRepository.existsByRoomIdAndUserId(roomId, userId)) {
+                ChatParticipant participant = ChatParticipant.builder()
+                        .roomId(roomId)
+                        .userId(userId)
+                        .joinedAt(LocalDateTime.now())
+                        .build();
+                chatParticipantRepository.save(participant);
+
+                // 시스템 메시지 발송 (초대)
+                User user = userRepository.findById(userId).orElse(null);
+                if (user != null) {
+                    sendSystemMessage(roomId, userId, user.getNickname(), user.getNickname() + "님이 초대되었습니다.", ChatMessage.MessageType.ENTER);
+                }
+            }
+        }
+    }
+
+    private void sendSystemMessage(UUID roomId, UUID userId, String nickname, String content, ChatMessage.MessageType type) {
+        ChatMessage chatMessage = ChatMessage.builder()
+                .roomId(roomId)
+                .userId(userId)
+                .senderNickname(nickname)
+                .content(content)
+                .type(type)
+                .build();
+        
+        chatMessageRepository.save(chatMessage);
+        
+        ChatMessageResponseDto responseDto = ChatMessageResponseDto.builder()
+                .roomId(roomId)
+                .senderId(userId)
+                .senderNickname("시스템")
+                .message(content)
+                .type(type)
+                .createdAt(LocalDateTime.now())
+                .build();
+        
+        messagingTemplate.convertAndSend("/topic/chat/" + roomId, responseDto);
     }
 
     private ChatRoomResponseDto convertToResponseDto(ChatRoom chatRoom) {

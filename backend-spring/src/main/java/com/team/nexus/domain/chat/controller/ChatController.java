@@ -76,4 +76,17 @@ public class ChatController {
     public ResponseEntity<List<com.team.nexus.domain.chat.dto.ChatMessageResponseDto>> getMessages(@PathVariable UUID roomId) {
         return ResponseEntity.ok(chatService.getMessages(roomId));
     }
+
+    @Operation(summary = "초대 가능한 사용자 목록 조회")
+    @GetMapping("/rooms/{roomId}/invite-candidates")
+    public ResponseEntity<List<com.team.nexus.domain.auth.dto.UserSummaryDto>> getInviteCandidates(@PathVariable UUID roomId) {
+        return ResponseEntity.ok(chatService.getInviteCandidates(roomId));
+    }
+
+    @Operation(summary = "사용자 초대")
+    @PostMapping("/rooms/{roomId}/invite")
+    public ResponseEntity<Void> inviteUsers(@PathVariable UUID roomId, @RequestBody List<UUID> userIds) {
+        chatService.inviteUsers(roomId, userIds);
+        return ResponseEntity.ok().build();
+    }
 }

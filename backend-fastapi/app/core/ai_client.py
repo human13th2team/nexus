@@ -31,7 +31,7 @@ def retry_async(max_retries=3, delay=2):
                 except Exception as e:
                     last_exc = e
                     # 500 에러나 네트워크 에러 등 재시도가 필요한 경우만 로깅
-                    print(f"[AI Retry {i+1}/{max_retries}] 일시적 오류 발생: {str(e)[:100]}...")
+                    print(f"⚠️ [AI Retry {i+1}/{max_retries}] 일시적 오류 발생: {str(e)[:100]}...")
                     if i < max_retries - 1:
                         await asyncio.sleep(delay * (i + 1)) # 지수 백오프 적용
             raise last_exc
@@ -48,9 +48,9 @@ class GeminiClient(BaseAIClient):
         
         # 로컬 임베딩 모델 로드 (최초 1회)
         if GeminiClient._local_model is None:
-            print("[Cache] 로컬 임베딩 모델(768차원) 로딩 중... 잠시만 기다려주세요.")
+            print("🧠 로컬 임베딩 모델(768차원) 로딩 중... 잠시만 기다려주세요.")
             GeminiClient._local_model = SentenceTransformer('paraphrase-multilingual-mpnet-base-v2')
-            print("[Success] 로컬 모델 로딩 완료!")
+            print("✅ 로컬 모델 로딩 완료!")
 
     @retry_async(max_retries=3, delay=2)
     async def generate_response(self, system_instruction: str, chat_history: List[Dict[str, str]]) -> str:

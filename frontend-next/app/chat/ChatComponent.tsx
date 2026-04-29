@@ -19,7 +19,8 @@ import {
   MessageSquare,
   File,
   Download,
-  LogOut
+  LogOut,
+  UserPlus
 } from 'lucide-react';
 import ChatService from '@/lib/chat/chatService';
 import { cn } from '@/lib/utils';
@@ -51,6 +52,12 @@ interface ChatRoomResponseDto {
 
 interface ChatRoom extends ChatRoomResponseDto {}
 
+interface UserSummary {
+  id: string;
+  nickname: string;
+  email: string;
+}
+
 const ChatComponent = () => {
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [allRooms, setAllRooms] = useState<ChatRoom[]>([]);
@@ -76,6 +83,12 @@ const ChatComponent = () => {
   const [joiningRoom, setJoiningRoom] = useState<ChatRoomResponseDto | null>(null);
   const [newRoomPassword, setNewRoomPassword] = useState('');
   const [joinPassword, setJoinPassword] = useState('');
+  
+  // 초대 관련 상태
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [inviteCandidates, setInviteCandidates] = useState<UserSummary[]>([]);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [isInviting, setIsInviting] = useState(false);
   
   const chatServiceRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -304,6 +317,55 @@ const ChatComponent = () => {
     } catch (error) {
       alert("방 생성에 실패했습니다.");
     }
+  };
+
+  const fetchInviteCandidates = async () => {
+    if (!activeRoomId) return;
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/chat/rooms/${activeRoomId}/invite-candidates`);
+      if (response.ok) {
+        const data = await response.json();
+        setInviteCandidates(data);
+        setIsInviteModalOpen(true);
+      }
+    } catch (error) {
+      console.error("Failed to fetch invite candidates:", error);
+    }
+  };
+
+  const handleInviteUsers = async () => {
+    if (!activeRoomId || selectedUserIds.length === 0) return;
+    
+    setIsInviting(true);
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/chat/rooms/${activeRoomId}/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(selectedUserIds),
+      });
+
+      if (response.ok) {
+        alert("성공적으로 초대되었습니다.");
+        setIsInviteModalOpen(false);
+        setSelectedUserIds([]);
+        // 참가자 수 업데이트를 위해 내 방 목록 다시 불러오기
+        if (currentUserId) fetchMyRooms(currentUserId);
+      } else {
+        alert("초대에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("Failed to invite users:", error);
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+  const toggleUserSelection = (userId: string) => {
+    setSelectedUserIds(prev => 
+      prev.includes(userId) 
+        ? prev.filter(id => id !== userId) 
+        : [...prev, userId]
+    );
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -574,14 +636,24 @@ const ChatComponent = () => {
               
               <div className="flex items-center gap-2">
                 {rooms.find(r => r.id === activeRoomId)?.type === 'GROUP' && (
-                  <button 
-                    onClick={handleLeaveRoom}
-                    className="p-2.5 rounded-xl text-red-500 hover:bg-red-50 transition-all flex items-center gap-2 group"
-                    title="방 나가기"
-                  >
-                    <LogOut size={20} className="group-hover:translate-x-1 transition-transform" />
-                    <span className="text-xs font-bold hidden sm:inline">나가기</span>
-                  </button>
+                  <>
+                    <button 
+                      onClick={fetchInviteCandidates}
+                      className="p-2.5 rounded-xl text-[var(--nexus-primary)] hover:bg-zinc-50 transition-all flex items-center gap-2 group"
+                      title="멤버 초대하기"
+                    >
+                      <UserPlus size={20} className="group-hover:scale-110 transition-transform" />
+                      <span className="text-xs font-bold hidden sm:inline">초대</span>
+                    </button>
+                    <button 
+                      onClick={handleLeaveRoom}
+                      className="p-2.5 rounded-xl text-red-500 hover:bg-red-50 transition-all flex items-center gap-2 group"
+                      title="방 나가기"
+                    >
+                      <LogOut size={20} className="group-hover:translate-x-1 transition-transform" />
+                      <span className="text-xs font-bold hidden sm:inline">나가기</span>
+                    </button>
+                  </>
                 )}
                 <button className="p-2.5 rounded-xl text-zinc-400 hover:bg-zinc-100 transition-all">
                   <Info size={20} />
@@ -602,7 +674,18 @@ const ChatComponent = () => {
               )}
               {messages.map((msg, idx) => {
                 const isMe = msg.senderId === currentUserId;
-                const showAvatar = idx === 0 || messages[idx-1].senderId !== msg.senderId;
+                const isSystem = msg.type === 'ENTER' || msg.type === 'LEAVE';
+                const showAvatar = idx === 0 || (messages[idx-1].senderId !== msg.senderId && messages[idx-1].type !== 'ENTER' && messages[idx-1].type !== 'LEAVE');
+
+                if (isSystem) {
+                  return (
+                    <div key={msg.id || idx} className="flex justify-center my-4">
+                      <div className="bg-zinc-100/50 text-zinc-400 text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest border border-zinc-100">
+                        {msg.message}
+                      </div>
+                    </div>
+                  );
+                }
 
                 return (
                   <div 
@@ -1007,6 +1090,104 @@ const ChatComponent = () => {
                   방 나가기
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* 7. 사용자 초대 모달 */}
+      {isInviteModalOpen && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+            <div className="p-8 pb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-black tracking-tighter text-zinc-900">멤버 초대하기</h2>
+                <p className="text-xs font-bold text-zinc-400 mt-1 uppercase tracking-widest">
+                  {selectedUserIds.length}명 선택됨
+                </p>
+              </div>
+              <button 
+                onClick={() => {
+                  setIsInviteModalOpen(false);
+                  setSelectedUserIds([]);
+                }}
+                className="w-10 h-10 rounded-full hover:bg-zinc-50 flex items-center justify-center transition-colors"
+              >
+                <Plus className="rotate-45 text-zinc-400" size={24} />
+              </button>
+            </div>
+
+            <div className="p-4">
+              <div className="relative mb-4">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-300" size={16} />
+                <input 
+                  type="text" 
+                  placeholder="닉네임 또는 이메일 검색..."
+                  className="w-full pl-12 pr-4 py-3 bg-zinc-50 border-transparent focus:bg-white focus:border-zinc-200 rounded-2xl text-sm transition-all"
+                />
+              </div>
+
+              <div className="max-h-[350px] overflow-y-auto px-2 custom-scrollbar">
+                {inviteCandidates.length > 0 ? (
+                  inviteCandidates.map(user => (
+                    <div 
+                      key={user.id}
+                      onClick={() => toggleUserSelection(user.id)}
+                      className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all mb-1 ${
+                        selectedUserIds.includes(user.id) 
+                          ? 'bg-black text-white shadow-lg shadow-black/10' 
+                          : 'hover:bg-zinc-50 text-zinc-900'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
+                        selectedUserIds.includes(user.id) ? 'bg-zinc-800' : 'bg-zinc-100 text-zinc-400'
+                      }`}>
+                        {user.nickname[0]}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-bold text-sm">{user.nickname}</div>
+                        <div className={`text-[10px] font-medium ${selectedUserIds.includes(user.id) ? 'text-zinc-400' : 'text-zinc-400'}`}>
+                          {user.email}
+                        </div>
+                      </div>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                        selectedUserIds.includes(user.id) 
+                          ? 'border-white bg-white' 
+                          : 'border-zinc-200'
+                      }`}>
+                        {selectedUserIds.includes(user.id) && <div className="w-2.5 h-2.5 bg-black rounded-full animate-in zoom-in duration-200" />}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12 text-zinc-400">
+                    <Users size={32} className="mx-auto mb-3 opacity-20" />
+                    <p className="text-xs font-bold">초대 가능한 사용자가 없습니다.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-8 pt-4 flex gap-3">
+              <button 
+                onClick={() => {
+                  setIsInviteModalOpen(false);
+                  setSelectedUserIds([]);
+                }}
+                className="flex-1 py-4 bg-zinc-100 hover:bg-zinc-200 text-zinc-500 font-bold rounded-2xl transition-all"
+              >
+                취소
+              </button>
+              <button 
+                disabled={selectedUserIds.length === 0 || isInviting}
+                onClick={handleInviteUsers}
+                className={`flex-2 px-8 py-4 rounded-2xl font-black text-sm shadow-xl transition-all active:scale-95 ${
+                  selectedUserIds.length > 0 
+                    ? 'bg-black text-white shadow-black/20 hover:bg-zinc-800' 
+                    : 'bg-zinc-100 text-zinc-300 shadow-none cursor-not-allowed'
+                }`}
+              >
+                {isInviting ? '초대 중...' : `${selectedUserIds.length}명 초대하기`}
+              </button>
             </div>
           </div>
         </div>

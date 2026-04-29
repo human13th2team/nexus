@@ -14,6 +14,8 @@ export default function Header() {
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     const savedNickname = localStorage.getItem('nickname');
+    console.log('Header Check:', { token, savedNickname });
+    
     if (token) {
       setIsLoggedIn(true);
       if (savedNickname) setNickname(savedNickname);

@@ -10,6 +10,7 @@ import java.util.UUID;
 @Repository
 public interface ChatParticipantRepository extends JpaRepository<ChatParticipant, UUID> {
     List<ChatParticipant> findByUserId(UUID userId);
+    List<ChatParticipant> findByRoomId(UUID roomId);
     boolean existsByRoomIdAndUserId(UUID roomId, UUID userId);
     long countByRoomId(UUID roomId);
     void deleteByRoomIdAndUserId(UUID roomId, UUID userId);

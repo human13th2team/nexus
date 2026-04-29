@@ -16,4 +16,6 @@ public interface ChatService {
     List<ChatRoomResponseDto> getAllRooms();
     void leaveRoom(UUID roomId, UUID userId);
     List<ChatRoomResponseDto> getJoinedRooms(UUID userId);
+    List<com.team.nexus.domain.auth.dto.UserSummaryDto> getInviteCandidates(UUID roomId);
+    void inviteUsers(UUID roomId, List<UUID> userIds);
 }
