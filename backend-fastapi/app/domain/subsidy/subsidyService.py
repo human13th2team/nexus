@@ -1,22 +1,20 @@
-import anthropic
 import requests
 import os
-from bs4 import BeautifulSoup
-from dotenv import load_dotenv
+import json
 from datetime import date
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from app.core.ai_client import GeminiClient
-import json
+from dotenv import load_dotenv
 
 load_dotenv()
 
-CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY")
-CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-haiku-4-5-20251001")
-client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
+SMES_API_URL = "https://www.smes.go.kr/fnct/apiReqst/extPblancInfo"
+SMES_TOKEN = os.getenv("SMES_API_TOKEN")
 
-def get_embedding(text: str):
-    return GeminiClient._local_model.encode(text).tolist()
+def get_embedding(text_input: str):
+    return GeminiClient._local_model.encode(text_input).tolist()
+
 
 async def get_subsidies(
         db: AsyncSession,
@@ -74,69 +72,43 @@ async def get_subsidies(
     return total, rows
 
 
-CRAWL_SOURCES = [
-    {
-        "name": "K-스타트업",
-        "url": "https://www.k-startup.go.kr/web/contents/bizpbanc-ongoing.do",
-    },
-    {
-        "name": "중소벤처기업부",
-        "url": "https://www.mss.go.kr/site/smba/ex/bbs/List.do?cbIdx=310",
-    },
-    {
-        "name": "기업마당",
-        "url": "https://www.bizinfo.go.kr/",
-    },
-]
-
-async def crawl_page(url: str):
+async def fetch_subsidies_from_api():
+    today = date.today()
+    params = {
+        "token": SMES_TOKEN,
+        "strDt": today.strftime("%Y%m%d"),
+        "endDt": "20261231",
+        "html": "no"
+    }
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        }
-        response = requests.get(url, headers=headers, timeout=30)
-        soup = BeautifulSoup(response.text, "html.parser")
-        return soup.get_text(separator="\n", strip=True)
+        response = requests.get(SMES_API_URL, params=params, timeout=30)
+        data = response.json()
+        if data.get("resultCd") != "0":
+            print(f"API 오류: {data.get('resultMsg')}")
+            return []
+        return data.get("data", [])
     except Exception as e:
-        print(f"크롤링 오류 {url}: {e}")
-        return None
+        print(f"API 호출 오류: {e}")
+        return []
 
-async def extract_subsidy_data(raw_text: str, source_name: str):
-    message = client.messages.create(
-        model=CLAUDE_MODEL,
-        max_tokens=2048,
-        messages=[
-            {
-                "role": "user",
-                "content": f"""
-다음은 "{source_name}" 사이트의 창업 지원금 공고야.
-아래 JSON 형식으로만 응답해줘. 없는 정보는 null로.
 
-{{
-  "name": "지원금명",
-  "organization": "주관기관",
-  "region": "지역 (전국이면 null)",
-  "industry": "업종 (제한없으면 null)",
-  "min_age": 최소나이(숫자),
-  "max_age": 최대나이(숫자),
-  "max_amount": 최대지원금액(숫자, 원단위),
-  "deadline": "마감일 (YYYY-MM-DD)",
-  "description": "상세설명 (3줄 이내)",
-  "apply_url": "신청URL"
-}}
+def parse_subsidy(item: dict) -> dict:
+    return {
+        "name": item.get("pblancNm"),
+        "organization": item.get("sportInsttNm"),
+        "region": item.get("areaNm") or None,
+        "industry": item.get("induty") or None,
+        "min_age": item.get("minRpsntAge") or None,
+        "max_age": item.get("maxRpsntAge") or None,
+        "max_amount": item.get("maxSportAmt") or None,
+        "deadline": item.get("pblancEndDt") or None,
+        "description": item.get("sportCnts") or item.get("policyCnts"),
+        "apply_url": item.get("reqstLinkInfo") or item.get("pblancDtlUrl"),
+    }
 
-공고내용:
-{raw_text[:3000]}
-"""
-            }
-        ]
-    )
-    text = message.content[0].text
-    clean = text.replace("```json", "").replace("```", "").strip()
-    return json.loads(clean)
 
 async def save_subsidy(data: dict, source_url: str, db: AsyncSession):
-    embed_text = f"{data['name']} {data.get('description', '')} {data.get('industry', '')}"
+    embed_text = f"{data['name']} {data.get('description', '') or ''} {data.get('industry', '') or ''}"
     embedding = get_embedding(embed_text)
 
     await db.execute(
@@ -156,6 +128,7 @@ async def save_subsidy(data: dict, source_url: str, db: AsyncSession):
     )
     await db.commit()
 
+
 async def delete_expired_subsidies(db: AsyncSession):
     await db.execute(
         text("DELETE FROM subsidies WHERE deadline < :today"),
@@ -164,17 +137,23 @@ async def delete_expired_subsidies(db: AsyncSession):
     await db.commit()
     print("만료된 지원금 삭제 완료")
 
+
 async def collect_subsidies(db: AsyncSession):
     await delete_expired_subsidies(db)
 
-    for source in CRAWL_SOURCES:
-        print(f"{source['name']} 크롤링 중...")
-        raw_text = await crawl_page(source["url"])
-        if not raw_text:
-            continue
+    print("중소벤처24 API 호출 중...")
+    items = await fetch_subsidies_from_api()
+
+    success = 0
+    for item in items:
         try:
-            data = await extract_subsidy_data(raw_text, source["name"])
-            await save_subsidy(data, source["url"], db)
-            print(f"{source['name']} 저장 완료")
+            source_url = item.get("pblancDtlUrl")
+            if not source_url:
+                continue
+            data = parse_subsidy(item)
+            await save_subsidy(data, source_url, db)
+            success += 1
         except Exception as e:
-            print(f"{source['name']} 오류: {e}")
+            print(f"저장 오류 ({item.get('pblancNm')}): {e}")
+
+    print(f"총 {success}/{len(items)}건 저장 완료")
