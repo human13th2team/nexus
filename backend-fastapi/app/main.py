@@ -53,14 +53,16 @@ app.add_middleware(
 static_candidates_path = "app/static/candidates"
 static_final_logos_path = "app/static/final_logos"
 static_assets_path = "app/static/assets"
+static_community_path = "app/static/community"
 
-for path in [static_candidates_path, static_final_logos_path, static_assets_path]:
+for path in [static_candidates_path, static_final_logos_path, static_assets_path, static_community_path]:
     if not os.path.exists(path):
         os.makedirs(path)
 
 app.mount("/static/candidates", StaticFiles(directory=static_candidates_path), name="candidates")
 app.mount("/static/final_logos", StaticFiles(directory=static_final_logos_path), name="final_logos")
 app.mount("/static/assets", StaticFiles(directory=static_assets_path), name="assets")
+app.mount("/static/community", StaticFiles(directory=static_community_path), name="community")
 
 # Spring Boot 서버 주소 (8080)
 SPRING_BOOT_URL = "http://localhost:8080"

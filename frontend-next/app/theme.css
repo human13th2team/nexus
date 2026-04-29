@@ -1,0 +1,40 @@
+:root {
+  /* Core Colors */
+  --nexus-primary: #3b4890;
+  --nexus-primary-variant: #2a3470;
+  --nexus-on-primary: #ffffff;
+  
+  --nexus-secondary: #6366f1;
+  --nexus-on-secondary: #ffffff;
+  
+  /* Background & Surface */
+  --nexus-bg: #ffffff;
+  --nexus-on-bg: #111827;
+  
+  --nexus-surface-lowest: #ffffff;
+  --nexus-surface-low: #f9fafb;
+  --nexus-surface: #f3f4f6;
+  
+  /* Outline & Borders */
+  --nexus-outline: #d1d5db;
+  --nexus-outline-variant: #e5e7eb;
+  
+  /* Status Colors */
+  --nexus-success: #10b981;
+  --nexus-error: #ef4444;
+  --nexus-warning: #f59e0b;
+  --nexus-info: #3b82f6;
+}
+
+/* Dark Mode Overrides (Optional but recommended for premium feel) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --nexus-bg: #030712;
+    --nexus-on-bg: #f9fafb;
+    --nexus-surface-lowest: #030712;
+    --nexus-surface-low: #111827;
+    --nexus-surface: #1f2937;
+    --nexus-outline: #374151;
+    --nexus-outline-variant: #1f2937;
+  }
+}

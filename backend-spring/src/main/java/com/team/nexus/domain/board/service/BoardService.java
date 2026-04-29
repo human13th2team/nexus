@@ -26,4 +26,8 @@ public interface BoardService {
     void createPost(BoardCreateRequestDto requestDto, User user);
     void deletePost(UUID id, String email);
     BoardResponseDto updatePost(UUID id, BoardUpdateRequestDto request, String email);
+    
+    // --- 좋아요 기능 ---
+    boolean toggleLike(UUID boardId, String email);
+    boolean isLiked(UUID boardId, String email);
 }

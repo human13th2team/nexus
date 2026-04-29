@@ -27,6 +27,7 @@ public class BoardServiceImpl implements BoardService {
     private final BoardRepository boardRepository;
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
+    private final com.team.nexus.domain.board.repository.BoardLikeRepository boardLikeRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -204,6 +205,43 @@ public class BoardServiceImpl implements BoardService {
 
         Board updatedBoard = boardRepository.save(board);
         return convertToDto(updatedBoard);
+    }
+
+    @Override
+    @Transactional
+    public boolean toggleLike(UUID boardId, String email) {
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
+        
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        java.util.Optional<com.team.nexus.global.entity.BoardLike> likeOptional = boardLikeRepository.findByBoardIdAndUserId(boardId, user.getId());
+        
+        if (likeOptional.isPresent()) {
+            boardLikeRepository.delete(likeOptional.get());
+            board.setLikeCount(Math.max(0, (board.getLikeCount() == null ? 0 : board.getLikeCount()) - 1));
+            return false;
+        } else {
+            com.team.nexus.global.entity.BoardLike like = com.team.nexus.global.entity.BoardLike.builder()
+                    .board(board)
+                    .user(user)
+                    .build();
+            boardLikeRepository.save(like);
+            board.setLikeCount((board.getLikeCount() == null ? 0 : board.getLikeCount()) + 1);
+            return true;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isLiked(UUID boardId, String email) {
+        if (email == null) return false;
+        
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) return false;
+        
+        return boardLikeRepository.existsByBoardIdAndUserId(boardId, user.getId());
     }
 
     private BoardResponseDto convertToDto(Board board) {
