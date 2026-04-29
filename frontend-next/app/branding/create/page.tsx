@@ -19,7 +19,9 @@ export default function BrandingPage() {
     selectedIdentity: null,
     selectedLogo: null,
     projectId: null,
-    chatHistory: []
+    chatHistory: [],
+    keywords: [],
+    isFinished: false
   });
 
   // 데이터 이어하기 로직
@@ -36,7 +38,9 @@ export default function BrandingPage() {
             projectId: data.id,
             namingOptions: data.identities || [],
             chatHistory: data.chatHistory || [],
+            keywords: data.keywords?.extracted_keywords || [],
             selectedIdentity: data.identities?.find((i: any) => i.isSelected) || null,
+            isFinished: data.industryCategoryId !== "550e8400-e29b-41d4-a716-446655440000" && (data.keywords?.extracted_keywords?.length > 0)
           };
           
           // 현재 단계 결정
@@ -120,6 +124,8 @@ export default function BrandingPage() {
             onComplete={handleInterviewComplete} 
             initialProjectId={brandData.projectId}
             initialMessages={brandData.chatHistory}
+            initialKeywords={brandData.keywords}
+            initialIsFinished={brandData.isFinished}
           />
         )}
         {step === 2 && (

@@ -10,27 +10,35 @@ interface Message {
   content: string;
 }
 
-export default function InterviewSection({ 
+export default function InterviewSection({
   onComplete,
   initialProjectId,
-  initialMessages
-}: { 
+  initialMessages,
+  initialKeywords,
+  initialIsFinished
+}: {
   onComplete: (data: any) => void,
   initialProjectId?: string | null,
-  initialMessages?: Message[]
+  initialMessages?: Message[],
+  initialKeywords?: string[],
+  initialIsFinished?: boolean
 }) {
   const [projectId, setProjectId] = useState<string | null>(initialProjectId || null);
-  const [messages, setMessages] = useState<Message[]>(initialMessages || [
-    {
-      id: 1,
-      role: "assistant",
-      content: "안녕하세요 대표님! 어떤 비즈니스를 준비 중이신가요? 생각하고 계신 산업군이나 핵심 서비스를 간단히 설명해 주세요.",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>(
+    initialMessages && initialMessages.length > 0
+      ? initialMessages
+      : [
+        {
+          id: 1,
+          role: "assistant",
+          content: "안녕하세요 대표님! 어떤 비즈니스를 준비 중이신가요? 생각하고 계신 산업군이나 핵심 서비스를 간단히 설명해 주세요.",
+        },
+      ]
+  );
   const [inputValue, setInputValue] = useState("");
-  const [keywords, setKeywords] = useState<string[]>([]);
+  const [keywords, setKeywords] = useState<string[]>(initialKeywords || []);
   const [isLoading, setIsLoading] = useState(false);
-  const [isFinished, setIsFinished] = useState(false); // 인터뷰 완료 상태
+  const [isFinished, setIsFinished] = useState(initialIsFinished || false); // 인터뷰 완료 상태
   const [isGeneratingBranding, setIsGeneratingBranding] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -38,7 +46,7 @@ export default function InterviewSection({
   // 1. 컴포넌트 마운트 시 브랜딩 프로젝트 생성
   useEffect(() => {
     if (initialProjectId) return; // 이미 프로젝트가 있으면 생성 건너뜀
-    
+
     const initProject = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/`, {
@@ -114,14 +122,14 @@ export default function InterviewSection({
   // 인터뷰 완료 시 브랜드 추천 목록 생성
   const handleCompleteInterview = async () => {
     if (!projectId || isGeneratingBranding) return;
-    
+
     setIsGeneratingBranding(true);
     try {
       const response = await fetch(`${API_BASE_URL}/${projectId}/naming`, {
         method: "POST",
       });
       const result = await response.json();
-      
+
       if (result.success) {
         // 성공적으로 생성된 3가지 브랜딩 목록을 상위로 전달
         onComplete(result.data);
@@ -145,11 +153,11 @@ export default function InterviewSection({
             <h2 className="font-black text-[var(--nexus-on-bg)] text-xs uppercase tracking-widest">Nexus AI Agent</h2>
           </div>
           <span className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">
-            {projectId ? `REFERENCE: ${projectId.slice(0,8)}` : "ANALYZING CONTEXT..."}
+            {projectId ? `REFERENCE: ${projectId.slice(0, 8)}` : "ANALYZING CONTEXT..."}
           </span>
         </div>
 
-        <div 
+        <div
           ref={scrollRef}
           className="flex-1 overflow-y-auto p-8 space-y-6 bg-[var(--nexus-bg)]/30"
         >
@@ -159,11 +167,10 @@ export default function InterviewSection({
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[80%] px-6 py-4 rounded-[2rem] text-sm leading-relaxed font-medium shadow-sm transition-all hover:shadow-md ${
-                  msg.role === "user"
-                    ? "bg-[var(--nexus-primary)] text-white rounded-tr-none"
-                    : "bg-white text-[var(--nexus-on-bg)] rounded-tl-none border border-[var(--nexus-outline-variant)]/20"
-                }`}
+                className={`max-w-[80%] px-6 py-4 rounded-[2rem] text-sm leading-relaxed font-medium shadow-sm transition-all hover:shadow-md ${msg.role === "user"
+                  ? "bg-[var(--nexus-primary)] text-white rounded-tr-none"
+                  : "bg-white text-[var(--nexus-on-bg)] rounded-tl-none border border-[var(--nexus-outline-variant)]/20"
+                  }`}
               >
                 {msg.content}
               </div>
@@ -216,7 +223,7 @@ export default function InterviewSection({
       <div className="w-full md:w-80 flex flex-col gap-6">
         <div className="flex-1 border border-[var(--nexus-outline-variant)]/30 rounded-[2.5rem] p-8 bg-white shadow-[0_20px_50px_-12px_rgba(7,30,39,0.05)] flex flex-col relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--nexus-tertiary-fixed)]/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl" />
-          
+
           <div className="mb-10 relative">
             <h3 className="text-xs font-black text-[var(--nexus-on-bg)] uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
               <div className="w-1.5 h-1.5 bg-[var(--nexus-primary)] rounded-full" />
@@ -228,8 +235,8 @@ export default function InterviewSection({
           <div className="flex-1 overflow-y-auto relative">
             <div className="flex flex-wrap gap-2.5">
               {keywords.map((kw, i) => (
-                <span 
-                  key={i} 
+                <span
+                  key={i}
                   className="px-4 py-2 bg-[var(--nexus-surface-low)] border border-[var(--nexus-outline-variant)]/20 text-[var(--nexus-primary)] rounded-xl text-[10px] font-black uppercase tracking-wider animate-in zoom-in duration-500 hover:bg-[var(--nexus-primary-container)] hover:text-white transition-all cursor-default"
                 >
                   #{kw}
@@ -249,10 +256,10 @@ export default function InterviewSection({
               <div className="absolute top-0 left-0 w-1 h-full bg-[var(--nexus-tertiary-fixed)]" />
               <h4 className="text-[9px] font-black text-gray-400 uppercase mb-3 tracking-[0.2em]">Strategy Summary</h4>
               <p className="text-xs text-[var(--nexus-on-bg)] leading-relaxed font-bold">
-                {isFinished 
+                {isFinished
                   ? "비즈니스 모델 분석이 완료되었습니다. 최적화된 브랜드 정체성을 확인하세요."
-                  : keywords.length > 0 
-                    ? `대표님의 아이디어는 '${keywords[keywords.length-1]}' 가치를 중심으로 강력한 차별점을 확보하고 있습니다.`
+                  : keywords.length > 0
+                    ? `대표님의 아이디어는 '${keywords[keywords.length - 1]}' 가치를 중심으로 강력한 차별점을 확보하고 있습니다.`
                     : "인터뷰를 진행하면서 브랜딩 전략이 구체화됩니다."
                 }
               </p>
@@ -263,11 +270,10 @@ export default function InterviewSection({
         <button
           onClick={handleCompleteInterview}
           disabled={!isFinished || isGeneratingBranding}
-          className={`w-full py-6 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all shadow-2xl flex items-center justify-center gap-4 group ${
-            isFinished 
-              ? "bg-[var(--nexus-secondary)] text-white hover:bg-[var(--nexus-secondary-container)] shadow-[var(--nexus-secondary)]/30 hover:-translate-y-1 active:scale-95" 
-              : "bg-gray-100 text-gray-300 border border-gray-200 cursor-not-allowed shadow-none"
-          }`}
+          className={`w-full py-6 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all shadow-2xl flex items-center justify-center gap-4 group ${isFinished
+            ? "bg-[var(--nexus-secondary)] text-white hover:bg-[var(--nexus-secondary-container)] shadow-[var(--nexus-secondary)]/30 hover:-translate-y-1 active:scale-95"
+            : "bg-gray-100 text-gray-300 border border-gray-200 cursor-not-allowed shadow-none"
+            }`}
         >
           {isGeneratingBranding ? (
             <>

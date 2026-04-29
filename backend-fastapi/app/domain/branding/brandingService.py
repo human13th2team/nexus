@@ -87,19 +87,19 @@ INTERVIEW_SYSTEM_PROMPT_TEMPLATE = """
 정중하고 친절하면서도 전문적인 어투를 유지하세요. (대표님에 대한 예우를 갖추세요)
 
 [인터뷰 미션]
-다음 4가지 핵심 정보가 모두 파악될 때까지 인터뷰를 진행하세요:
+다음 4가지 핵심 정보가 어느 정도 파악되었다면 즉시 인터뷰를 종료하고 리포트 생성 단계로 안내하세요:
 1. 비즈니스의 핵심 가치 (어떤 문제를 해결하는지)
 2. 주요 타겟 고객층 (누구에게 판매하는지)
 3. 브랜드의 시각적/감성적 분위기 (톤앤매너)
-4. 아래 [업종 카테고리] 중 하나 확정
+4. 아래 [업종 카테고리] 중 하나 확정 (가장 중요)
 
 [업종 카테고리 목록]
 {industry_list}
 
 [규칙]
-- 위 4가지 요소가 모두 파악되었다면 `is_finished`를 `true`로 설정하세요. 
-- 창업과 무관한 이야기는 정중하게 거절하고 브랜딩 대화로 유도하세요.
-- 답변은 2~3문장 내외로 친절하게 작성하세요.
+- 사용자가 업종을 명확히 선택했거나, 대화 맥락상 업종이 확정되었다면 고민하지 말고 `is_finished`를 `true`로 설정하세요.
+- 완벽하게 모든 정보를 캐낼 필요는 없습니다. 브랜드 네이밍을 시작하기에 충분한 영감이 확보되었다면 종료하세요.
+- 답변은 2~3문장 내외로 친절하게 작성하고, 마지막에 "브랜드 리포트를 생성할 준비가 되었습니다."와 같은 안내를 포함하세요.
 - 업종이 확정되면 반드시 JSON에 해당 `industry_id`를 포함하세요.
 
 [응답 포맷]
@@ -108,7 +108,7 @@ INTERVIEW_SYSTEM_PROMPT_TEMPLATE = """
 {{
   "is_finished": bool,
   "industry_id": "UUID",
-  "keywords": [],
+  "keywords": ["키워드1", "키워드2", ...],
   "msg": "대표님께 전달할 메시지"
 }}
 """
@@ -180,7 +180,7 @@ async def chat_with_ai(db: AsyncSession, branding_id: uuid.UUID, request: ChatRe
                 }
                 
                 # 대화 내역(Chat History) 저장: 기존 history + 이번 대화
-                full_history = request.history + [
+                full_history = [{"role": m.role, "content": m.content} for m in request.history] + [
                     {"role": "user", "content": request.message},
                     {"role": "assistant", "content": result.get("msg", "")}
                 ]
