@@ -239,7 +239,7 @@ class Subsidy(Base):
     min_age: Mapped[Optional[int]] = mapped_column(SmallInteger)
     max_age: Mapped[Optional[int]] = mapped_column(SmallInteger)
     max_amount: Mapped[Optional[int]] = mapped_column(Integer)
-    deadline: Mapped[Optional[date]] = mapped_column(Date)
+    deadline: Mapped[Optional[datetime.date]] = mapped_column(Date)
     description: Mapped[Optional[str]] = mapped_column(Text)
     apply_url: Mapped[Optional[str]] = mapped_column(String(500))
     source_url: Mapped[Optional[str]] = mapped_column(String(500), unique=True)
