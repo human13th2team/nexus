@@ -3,6 +3,7 @@ from sqlalchemy import String, ForeignKey, Integer, SmallInteger, Boolean, Text,
 from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
+from sqlalchemy import String, Integer, SmallInteger, Text, TIMESTAMP, Boolean, text
 from typing import Optional, List
 import datetime
 import uuid
@@ -89,6 +90,7 @@ class Branding(Base):
     industry_category_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("industry_categories.id"), nullable=False)
     title: Mapped[str] = mapped_column(String(100), nullable=False)
     keywords: Mapped[Optional[dict]] = mapped_column(JSON)
+    chat_history: Mapped[Optional[list]] = mapped_column(JSON)
     current_step: Mapped[Optional[str]] = mapped_column(String(20), server_default=text("'INTERVIEW'"))
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
@@ -106,9 +108,10 @@ class BrandIdentity(Base):
     slogan: Mapped[Optional[str]] = mapped_column(String(255))
     brand_story: Mapped[Optional[str]] = mapped_column(Text)
     is_selected: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text("false"))
-    # embedding column (vector) is skipped or mapped to Text/JSON for now if pgvector is not available in the model
+    embedding: Mapped[Optional[Vector]] = mapped_column(Vector(768)) # 브랜드 정체성 의미 벡터
     
     # Relationships
+
     branding: Mapped["Branding"] = relationship(back_populates="identities")
     logo_assets: Mapped[list["LogoAsset"]] = relationship(back_populates="brand_identity", cascade="all, delete-orphan")
     marketing_assets: Mapped[list["MarketingAsset"]] = relationship(back_populates="brand_identity", cascade="all, delete-orphan")
@@ -241,12 +244,24 @@ class Subsidy(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     organization: Mapped[str] = mapped_column(String(100), nullable=False)
-    max_amount: Mapped[Optional[str]] = mapped_column(String(50))
-    deadline: Mapped[Optional[str]] = mapped_column(String(50))
+    region: Mapped[Optional[str]] = mapped_column(String(100))
+    industry: Mapped[Optional[str]] = mapped_column(String(100))
+    min_age: Mapped[Optional[int]] = mapped_column(SmallInteger)
+    max_age: Mapped[Optional[int]] = mapped_column(SmallInteger)
+    max_amount: Mapped[Optional[int]] = mapped_column(Integer)
+    deadline: Mapped[Optional[datetime.date]] = mapped_column(Date)
+    start_date: Mapped[Optional[datetime.date]] = mapped_column(Date)
     description: Mapped[Optional[str]] = mapped_column(Text)
-    eligibility: Mapped[Optional[str]] = mapped_column(Text)
-    apply_url: Mapped[Optional[str]] = mapped_column(String(500))
-    # embedding column (vector) is skipped
+    support_content: Mapped[Optional[str]] = mapped_column(Text)
+    target: Mapped[Optional[str]] = mapped_column(Text)
+    how_to_apply: Mapped[Optional[str]] = mapped_column(Text)
+    contact: Mapped[Optional[str]] = mapped_column(Text)
+    apply_url: Mapped[Optional[str]] = mapped_column(Text)
+    source_url: Mapped[Optional[str]] = mapped_column(String(500), unique=True)
+    embedding: Mapped[Optional[list]] = mapped_column(Vector(768))
+    life_cycle: Mapped[Optional[str]] = mapped_column(String(20))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("true"))
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
     updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
 class Sale(Base):
@@ -410,6 +425,11 @@ class ChatRoom(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     title: Mapped[Optional[str]] = mapped_column(String(100))
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    image_url: Mapped[Optional[str]] = mapped_column(String(500))
+    type: Mapped[Optional[str]] = mapped_column(String(20), server_default=text("'GROUP'"))
+    password: Mapped[Optional[str]] = mapped_column(String(255))
+    last_message_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP)
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
@@ -435,7 +455,9 @@ class ChatMessage(Base):
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("chat_rooms.id", ondelete="CASCADE"), nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    is_read: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text("false"))
+    type: Mapped[Optional[str]] = mapped_column(String(20), server_default=text("'TALK'"))
+    file_url: Mapped[Optional[str]] = mapped_column(Text)
+    file_name: Mapped[Optional[str]] = mapped_column(String(255))
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships

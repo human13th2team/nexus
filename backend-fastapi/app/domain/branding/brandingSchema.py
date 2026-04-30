@@ -5,6 +5,7 @@ from typing import Optional, List
 class BrandingCreateRequest(BaseModel):
     industryId: UUID = Field(..., description="선택한 업종의 고유 ID")
     title: Optional[str] = Field(None, description="브랜딩 프로젝트의 초기 제목 (없을 경우 AI와 협의)")
+    userId: Optional[UUID] = Field(None, description="사용자의 고유 ID")
 
 class BrandingResponseData(BaseModel):
     projectId: UUID = Field(..., description="생성된 브랜딩 프로젝트의 고유 ID")
@@ -40,6 +41,9 @@ class NamingResult(BaseModel):
     brandName: str = Field(..., description="추천 브랜드 이름")
     slogan: str = Field(..., description="추천 슬로건")
     brandStory: str = Field(..., description="브랜드 스토리")
+    ipStatus: Optional[str] = Field(None, description="상표권 검증 상태 (SAFE, WARNING, DANGER)")
+    ipDetails: Optional[dict] = Field(None, description="상표권 검증 상세 정보")
+
 
 class NamingResponse(BaseModel):
     success: bool = Field(True)

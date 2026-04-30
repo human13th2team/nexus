@@ -48,6 +48,7 @@ CREATE TABLE brandings (
     industry_category_id UUID NOT NULL REFERENCES industry_categories(id),
     title VARCHAR(100) NOT NULL,
     keywords JSONB,
+    chat_history JSONB,
     current_step VARCHAR(20) DEFAULT 'INTERVIEW',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -279,7 +280,10 @@ CREATE TABLE group_purchases (
     current_count INT DEFAULT 1,
     start_date TIMESTAMPTZ DEFAULT NOW(),
     end_date TIMESTAMPTZ NOT NULL,
-    status VARCHAR(20) CHECK (status IN ('OPEN', 'SUCCESS', 'FAIL', 'CANCEL')) DEFAULT 'OPEN'
+    status VARCHAR(20) CHECK (status IN ('OPEN', 'SUCCESS', 'FAIL', 'CANCEL')) DEFAULT 'OPEN',
+    description TEXT,
+    image_url TEXT,
+    region VARCHAR(100)
 );
 
 CREATE TABLE group_orders (
@@ -298,6 +302,11 @@ CREATE TABLE group_orders (
 CREATE TABLE chat_rooms (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(100),
+    description TEXT,
+    image_url VARCHAR(500),
+    type VARCHAR(20) DEFAULT 'GROUP',
+    password VARCHAR(255),
+    last_message_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -313,7 +322,9 @@ CREATE TABLE chat_messages (
     room_id UUID NOT NULL REFERENCES chat_rooms(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
-    is_read BOOLEAN DEFAULT FALSE,
+    type VARCHAR(20) DEFAULT 'TALK',
+    file_url TEXT,
+    file_name VARCHAR(255),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

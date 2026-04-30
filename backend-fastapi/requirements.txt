@@ -21,4 +21,5 @@ scikit-learn
 pandas
 numpy
 statsmodels
-supabase
+google-genai>=1.0.0
+apscheduler

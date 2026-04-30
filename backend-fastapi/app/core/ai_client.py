@@ -1,12 +1,22 @@
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from abc import ABC, abstractmethod
 from typing import List, Dict, Optional
 import httpx
 import asyncio
 import functools
 from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer, util
+import base64
+from PIL import Image
+import io
+
+# HuggingFace 로딩 경고 무시 설정
+os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
+os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="huggingface_hub")
 
 load_dotenv()
 
@@ -43,7 +53,7 @@ class GeminiClient(BaseAIClient):
 
     def __init__(self):
         api_key = os.getenv("GOOGLE_API_KEY")
-        genai.configure(api_key=api_key)
+        self.client = genai.Client(api_key=api_key)
         self.model_name = 'models/gemma-4-31b-it' 
         
         # 로컬 임베딩 모델 로드 (최초 1회)
@@ -54,30 +64,35 @@ class GeminiClient(BaseAIClient):
 
     @retry_async(max_retries=3, delay=2)
     async def generate_response(self, system_instruction: str, chat_history: List[Dict[str, str]]) -> str:
-        # Gemini는 별도의 system_instruction과 history를 받는 구조가 잘 잡혀있음
-        model_with_instruction = genai.GenerativeModel(
-            model_name=self.model_name,
-            system_instruction=system_instruction
-        )
-        
-        # History 변환 (Gemini 포맷: {"role": "user/model", "parts": [content]})
+        # History 변환 (새로운 SDK 포맷: types.Content 활용)
         gemini_history = []
         for msg in chat_history:
             role = "user" if msg["role"] == "user" else "model"
-            gemini_history.append({"role": role, "parts": [msg["content"]]})
+            gemini_history.append(
+                types.Content(role=role, parts=[types.Part.from_text(text=msg["content"])])
+            )
         
-        chat = model_with_instruction.start_chat(history=gemini_history[:-1]) # 마지막 메시지는 제외하고 시작
-        response = chat.send_message(chat_history[-1]["content"])
+        # 새로운 비동기(aio) 클라이언트 호출 방식 (stateless 방식)
+        response = await self.client.aio.models.generate_content(
+            model=self.model_name,
+            contents=gemini_history,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction
+            )
+        )
         
         return response.text
 
     async def generate_image(self, prompt: str, output_path: str) -> str:
         """Gemini 이미지 모델을 사용하여 이미지를 생성합니다."""
-        # 이미지 전용 모델 설정 (Pro 버전 쿼터 초과로 인해 Flash 버전으로 변경 시도)
-        image_model = genai.GenerativeModel('models/gemini-3.1-flash-image-preview')
-        
-        # 이미지 생성 요청
-        response = image_model.generate_content(prompt)
+        # 비동기 클라이언트를 사용하여 이미지 명시적 생성 (response_modalities=['IMAGE'])
+        response = await self.client.aio.models.generate_content(
+            model='models/gemini-3.1-flash-image-preview',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_modalities=["IMAGE"],
+            )
+        )
         
         # 응답에서 이미지 데이터 추출 및 저장
         try:
@@ -221,3 +236,47 @@ def get_ai_client(provider: str = "gemini") -> BaseAIClient:
         return StableDiffusionClient()
     else:
         raise ValueError(f"Unsupported AI provider: {provider}")
+
+_CLIP_TEXT_MODEL = None
+_CLIP_IMAGE_MODEL = None
+
+async def calculate_alignment_score(text: str, base64_image: str) -> float:
+    """텍스트와 Base64 이미지 간의 의미적 일치도를 계산합니다 (0.0 ~ 100.0)"""
+    global _CLIP_TEXT_MODEL, _CLIP_IMAGE_MODEL
+    if _CLIP_TEXT_MODEL is None:
+        print("🧠 로컬 다국어 CLIP 텍스트 모델 로딩 중...")
+        _CLIP_TEXT_MODEL = SentenceTransformer('clip-ViT-B-32-multilingual-v1')
+    if _CLIP_IMAGE_MODEL is None:
+        print("🧠 로컬 CLIP 이미지 모델 로딩 중...")
+        _CLIP_IMAGE_MODEL = SentenceTransformer('clip-ViT-B-32')
+        print("✅ CLIP 모델 세트 로딩 완료!")
+        
+    try:
+        if base64_image.startswith("data:image"):
+            _, encoded = base64_image.split(",", 1)
+        else:
+            encoded = base64_image
+            
+        image_bytes = base64.b64decode(encoded)
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        
+        def _compute():
+            text_emb = _CLIP_TEXT_MODEL.encode(text)
+            img_emb = _CLIP_IMAGE_MODEL.encode(image)
+            similarity = util.cos_sim(text_emb, img_emb).item()
+            return float(similarity)
+            
+        score = await asyncio.to_thread(_compute)
+        
+        # CLIP 모델의 코사인 유사도는 일반적으로 0.15 ~ 0.35 사이에 분포합니다.
+        # 이를 사용자 친화적인 0 ~ 100% 스케일로 변환(Calibration)합니다.
+        clip_min = 0.15
+        clip_max = 0.35
+        
+        calibrated_score = (score - clip_min) / (clip_max - clip_min)
+        normalized_score = max(0.0, min(1.0, calibrated_score)) * 100
+        return normalized_score
+        
+    except Exception as e:
+        print(f"⚠️ Alignment Score 계산 실패: {str(e)}")
+        return 0.0

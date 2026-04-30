@@ -8,4 +8,5 @@ import java.util.UUID;
 
 public interface MarketingAssetRepository extends JpaRepository<MarketingAsset, UUID> {
     List<MarketingAsset> findByBrandIdentity(BrandIdentity brandIdentity);
+    List<MarketingAsset> findByBrandIdentityId(UUID brandIdentityId);
 }
