@@ -413,7 +413,7 @@ const ChatComponent = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch('http://localhost:8080/api/v1/files/upload?category=chat-rooms', {
+      const response = await fetch('http://localhost:8080/api/v1/chat/files/upload?category=chat-rooms', {
         method: 'POST',
         body: formData,
       });
@@ -443,7 +443,7 @@ const ChatComponent = () => {
 
     try {
       console.log("Uploading file...");
-      const response = await fetch('http://localhost:8080/api/v1/files/upload?category=chat-messages', {
+      const response = await fetch('http://localhost:8080/api/v1/chat/files/upload?category=chat-messages', {
         method: 'POST',
         body: formData,
       });
