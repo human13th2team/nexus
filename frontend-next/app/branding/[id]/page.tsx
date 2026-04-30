@@ -46,7 +46,9 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
     const fetchBrandDetail = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/branding/${id}`);
+        const token = localStorage.getItem("accessToken");
+        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await fetch(`${API_BASE_URL}/branding/${id}`, { headers });
         if (!res.ok) throw new Error("Failed to fetch brand detail");
         const data = await res.json();
         setBrand(data);

@@ -7,7 +7,10 @@ import httpx
 import asyncio
 import functools
 from dotenv import load_dotenv
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer, util
+import base64
+from PIL import Image
+import io
 
 # HuggingFace 로딩 경고 무시 설정
 os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
@@ -233,3 +236,47 @@ def get_ai_client(provider: str = "gemini") -> BaseAIClient:
         return StableDiffusionClient()
     else:
         raise ValueError(f"Unsupported AI provider: {provider}")
+
+_CLIP_TEXT_MODEL = None
+_CLIP_IMAGE_MODEL = None
+
+async def calculate_alignment_score(text: str, base64_image: str) -> float:
+    """텍스트와 Base64 이미지 간의 의미적 일치도를 계산합니다 (0.0 ~ 100.0)"""
+    global _CLIP_TEXT_MODEL, _CLIP_IMAGE_MODEL
+    if _CLIP_TEXT_MODEL is None:
+        print("🧠 로컬 다국어 CLIP 텍스트 모델 로딩 중...")
+        _CLIP_TEXT_MODEL = SentenceTransformer('clip-ViT-B-32-multilingual-v1')
+    if _CLIP_IMAGE_MODEL is None:
+        print("🧠 로컬 CLIP 이미지 모델 로딩 중...")
+        _CLIP_IMAGE_MODEL = SentenceTransformer('clip-ViT-B-32')
+        print("✅ CLIP 모델 세트 로딩 완료!")
+        
+    try:
+        if base64_image.startswith("data:image"):
+            _, encoded = base64_image.split(",", 1)
+        else:
+            encoded = base64_image
+            
+        image_bytes = base64.b64decode(encoded)
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        
+        def _compute():
+            text_emb = _CLIP_TEXT_MODEL.encode(text)
+            img_emb = _CLIP_IMAGE_MODEL.encode(image)
+            similarity = util.cos_sim(text_emb, img_emb).item()
+            return float(similarity)
+            
+        score = await asyncio.to_thread(_compute)
+        
+        # CLIP 모델의 코사인 유사도는 일반적으로 0.15 ~ 0.35 사이에 분포합니다.
+        # 이를 사용자 친화적인 0 ~ 100% 스케일로 변환(Calibration)합니다.
+        clip_min = 0.15
+        clip_max = 0.35
+        
+        calibrated_score = (score - clip_min) / (clip_max - clip_min)
+        normalized_score = max(0.0, min(1.0, calibrated_score)) * 100
+        return normalized_score
+        
+    except Exception as e:
+        print(f"⚠️ Alignment Score 계산 실패: {str(e)}")
+        return 0.0
