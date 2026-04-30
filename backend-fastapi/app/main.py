@@ -20,6 +20,7 @@ from contextlib import asynccontextmanager
 from app.domain.subsidy import subsidyRouter as subsidy
 from app.domain.subsidy.subsidyRouter import start_scheduler as subsidy_start_scheduler
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 서버 시작 시 실행될 로직
