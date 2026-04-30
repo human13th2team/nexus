@@ -28,7 +28,7 @@ function BrandingPageContent() {
     if (resumeId) {
       const fetchResumeData = async () => {
         try {
-          const res = await fetch(`http://localhost:8080/api/v1/branding/${resumeId}`);
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/branding/${resumeId}`);
           if (!res.ok) throw new Error("Failed to fetch resume data");
           const data = await res.json();
           // 상태 및 데이터 복구
