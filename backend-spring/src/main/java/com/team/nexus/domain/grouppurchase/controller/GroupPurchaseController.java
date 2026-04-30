@@ -90,22 +90,4 @@ public class GroupPurchaseController {
         groupPurchaseService.confirmPayment(id, userId, confirmDto);
         return ResponseEntity.ok().build();
     }
-
-    @Operation(summary = "이미지 업로드", description = "공동구매 물품 이미지를 업로드합니다.")
-    @PostMapping("/upload")
-    public ResponseEntity<String> uploadImage(@RequestParam("file") MultipartFile file) throws IOException {
-        String uploadDir = "uploads/group-purchases/";
-        Path uploadPath = Paths.get(uploadDir);
-
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
-        }
-
-        String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
-        Path filePath = uploadPath.resolve(fileName);
-        Files.copy(file.getInputStream(), filePath);
-
-        // Return the accessible URL
-        return ResponseEntity.ok("http://localhost:8080/uploads/group-purchases/" + fileName);
-    }
 }

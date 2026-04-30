@@ -80,14 +80,16 @@ export default function GroupBuyCreatePage() {
       if (selectedFile) {
         const uploadFormData = new FormData();
         uploadFormData.append('file', selectedFile);
+        uploadFormData.append('category', 'product-images');
 
-        const uploadRes = await fetch('http://localhost:8080/api/v1/group-purchases/upload', {
+        const uploadRes = await fetch('http://localhost:8080/api/v1/group-purchases/files/upload', {
           method: 'POST',
           body: uploadFormData,
         });
 
         if (uploadRes.ok) {
-          finalImageUrl = await uploadRes.text();
+          const data = await uploadRes.json();
+          finalImageUrl = data.url;
         }
       }
 

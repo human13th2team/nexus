@@ -26,7 +26,7 @@ public class GroupPurchaseService {
     private final GroupPurchaseRepository groupPurchaseRepository;
     private final GroupOrderRepository groupOrderRepository;
     private final UserRepository userRepository;
-    private final com.team.nexus.global.service.ExternalApiService externalApiService;
+    private final ExternalApiService externalApiService;
     
     @org.springframework.beans.factory.annotation.Value("${toss.secret-key}")
     private String tossSecretKey;

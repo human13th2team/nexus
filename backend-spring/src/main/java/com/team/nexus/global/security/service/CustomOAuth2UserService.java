@@ -59,12 +59,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
             loginType = 2;
         }
 
-        User user = saveOrUpdate(email, nickname, loginType);
-
-        // 추가적인 정보를 attributes에 담아서 반환
-        Map<String, Object> customAttributes = new java.util.HashMap<>(attributes);
-        customAttributes.put("userId", user.getId());
-        customAttributes.put("nickname", user.getNickname());
+        saveOrUpdate(email, nickname, loginType);
 
         try (java.io.FileWriter fw = new java.io.FileWriter("C:/nexus/oauth_debug.log", true)) {
             fw.write(new java.util.Date() + " - CustomOAuth2UserService.loadUser completed for: " + email + "\n");
@@ -74,19 +69,19 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
         return new DefaultOAuth2User(
                 Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")),
-                customAttributes,
+                attributes,
                 userNameAttributeName
         );
     }
 
-    private User saveOrUpdate(String email, String nickname, int loginType) {
+    private void saveOrUpdate(String email, String nickname, int loginType) {
         Optional<User> userOptional = userRepository.findByEmail(email);
         
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             // 닉네임 정도만 업데이트하거나 필요 로직 추가
             user.setNickname(nickname);
-            return userRepository.save(user);
+            userRepository.save(user);
         } else {
             User user = User.builder()
                     .email(email)
@@ -96,7 +91,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                     .loginType(loginType)
                     .address("") // 소셜 로그인은 주소 정보 없음
                     .build();
-            return userRepository.save(user);
+            userRepository.save(user);
         }
     }
 }

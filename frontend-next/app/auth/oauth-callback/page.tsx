@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, Suspense } from "react";
+import React, { useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-function OAuthCallbackHandler() {
+export default function OAuthCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -22,7 +22,7 @@ function OAuthCallbackHandler() {
       const providerName = provider === "google" ? "구글" : provider === "kakao" ? "카카오" : "소셜";
       alert(`${providerName} 로그인에 성공했습니다!`);
       
-      // 헤더에 로그인 상태 변경 이벤트 알림 (수정된 Header.tsx 반영)
+      // 헤더에 로그인 상태 변경 이벤트 알림
       window.dispatchEvent(new Event('login-status-change'));
       
       router.push("/");
@@ -34,19 +34,11 @@ function OAuthCallbackHandler() {
   }, [router, searchParams]);
 
   return (
-    <div className="text-center">
-      <div className="w-12 h-12 border-4 border-black/10 border-t-black rounded-full animate-spin mx-auto mb-4"></div>
-      <p className="text-zinc-500 font-medium">로그인 처리 중입니다...</p>
-    </div>
-  );
-}
-
-export default function OAuthCallbackPage() {
-  return (
     <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
-      <Suspense fallback={<div>Loading...</div>}>
-        <OAuthCallbackHandler />
-      </Suspense>
+      <div className="text-center">
+        <div className="w-12 h-12 border-4 border-black/10 border-t-black rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-zinc-500 font-medium">로그인 처리 중입니다...</p>
+      </div>
     </div>
   );
 }

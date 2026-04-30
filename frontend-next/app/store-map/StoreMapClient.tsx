@@ -169,7 +169,7 @@ export default function StoreMapClient({ kakaoApiKey, initialIndustries, initial
         if (path.length >= 3) {
           // 폴리곤 중심점 계산
           let pLatSum = 0, pLngSum = 0;
-          path.forEach((pt: { lat: number; lng: number }) => { pLatSum += pt.lat; pLngSum += pt.lng; });
+          path.forEach((pt: any) => { pLatSum += pt.lat; pLngSum += pt.lng; });
           const center = { lat: pLatSum / path.length, lng: pLngSum / path.length };
           results.push({ id: `${rCode}-${pIdx}`, region_code: rCode, region_name: rName, count: rCount, path, center, isHigh: rCount >= avg, isFirst: pIdx === 0 });
         }
@@ -186,7 +186,7 @@ export default function StoreMapClient({ kakaoApiKey, initialIndustries, initial
       try {
         const bounds = new window.kakao.maps.LatLngBounds();
         memoizedPolygons.forEach(p => {
-          if (p.path) p.path.forEach((pt: { lat: number; lng: number }) => bounds.extend(new window.kakao.maps.LatLng(pt.lat, pt.lng)));
+          if (p.path) p.path.forEach((pt: any) => bounds.extend(new window.kakao.maps.LatLng(pt.lat, pt.lng)));
         });
 
         mapInstance.relayout();
