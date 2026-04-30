@@ -38,6 +38,12 @@ public class Prediction {
     @Column(name = "predicted_cost")
     private Integer predictedCost;
 
+    @Column(name = "moving_average")
+    private Double movingAverage;
+
+    @Column(name = "return_rate")
+    private Double returnRate;
+
     @OneToMany(mappedBy = "prediction", cascade = CascadeType.ALL)
     private List<DailyPrediction> dailyPredictions = new ArrayList<>();
 
