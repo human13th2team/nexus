@@ -138,6 +138,7 @@ CREATE TABLE sales (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     sales_date TIMESTAMPTZ NOT NULL,
     total_amount INT DEFAULT 0,
+    store_number VARCHAR(255),
     file_url VARCHAR(255),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -158,6 +159,8 @@ CREATE TABLE predictions (
     base_date TIMESTAMPTZ NOT NULL,
     total_sales INT,
     predicted_cost INT,
+    moving_average DOUBLE PRECISION,
+    return_rate DOUBLE PRECISION,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -166,7 +169,10 @@ CREATE TABLE daily_predictions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     prediction_id UUID NOT NULL REFERENCES predictions(id) ON DELETE CASCADE,
     target_date TIMESTAMPTZ NOT NULL,
-    pred_sales INT
+    pred_sales INT,
+    actual_sales INT,
+    moving_average DOUBLE PRECISION,
+    return_rate DOUBLE PRECISION
 );
 
 -- 리뷰 및 감성 분석 데이터
@@ -289,7 +295,7 @@ CREATE TABLE group_orders (
     pg_provider VARCHAR(20) CHECK (pg_provider IN ('TOSS', 'KAKAO')),
     pg_tid VARCHAR(200),
     payment_method VARCHAR(50),
-    payment_status VARCHAR(20) CHECK (payment_status IN ('READY', 'PAID', 'CANCELLED', 'FAILED', 'REFUNDED')) DEFAULT 'READY',
+    payment_status VARCHAR(20) CHECK (payment_status IN ('READY', 'PAID', 'CANCELLED', 'FAILED')) DEFAULT 'READY',
     paid_at TIMESTAMPTZ
 );
 

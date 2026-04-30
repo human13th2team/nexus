@@ -24,7 +24,6 @@ interface Brand {
 }
 
 const API_BASE_URL = "http://localhost:8080/api/v1";
-const TARGET_USER_ID = "a248bb6e-7302-4b48-9375-c23ee477ea45";
 
 export default function BrandListPage() {
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -36,8 +35,16 @@ export default function BrandListPage() {
       setIsLoading(true);
       try {
         const token = localStorage.getItem("accessToken");
+        const userId = localStorage.getItem("userId");
+        
+        if (!userId) {
+          console.warn("User ID not found in localStorage");
+          setIsLoading(false);
+          return;
+        }
+
         const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
-        const res = await fetch(`${API_BASE_URL}/branding?userId=${TARGET_USER_ID}`, {
+        const res = await fetch(`${API_BASE_URL}/branding?userId=${userId}`, {
           headers
         });
         if (!res.ok) throw new Error("Failed to fetch brands");

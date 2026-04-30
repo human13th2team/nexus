@@ -3,6 +3,7 @@ from sqlalchemy import String, ForeignKey, Integer, SmallInteger, Boolean, Text,
 from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
+from sqlalchemy import String, Integer, SmallInteger, Text, TIMESTAMP, Boolean, text
 from typing import Optional, List
 import datetime
 import uuid
@@ -243,12 +244,24 @@ class Subsidy(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     organization: Mapped[str] = mapped_column(String(100), nullable=False)
-    max_amount: Mapped[Optional[str]] = mapped_column(String(50))
-    deadline: Mapped[Optional[str]] = mapped_column(String(50))
+    region: Mapped[Optional[str]] = mapped_column(String(100))
+    industry: Mapped[Optional[str]] = mapped_column(String(100))
+    min_age: Mapped[Optional[int]] = mapped_column(SmallInteger)
+    max_age: Mapped[Optional[int]] = mapped_column(SmallInteger)
+    max_amount: Mapped[Optional[int]] = mapped_column(Integer)
+    deadline: Mapped[Optional[datetime.date]] = mapped_column(Date)
+    start_date: Mapped[Optional[datetime.date]] = mapped_column(Date)
     description: Mapped[Optional[str]] = mapped_column(Text)
-    eligibility: Mapped[Optional[str]] = mapped_column(Text)
-    apply_url: Mapped[Optional[str]] = mapped_column(String(500))
-    # embedding column (vector) is skipped
+    support_content: Mapped[Optional[str]] = mapped_column(Text)
+    target: Mapped[Optional[str]] = mapped_column(Text)
+    how_to_apply: Mapped[Optional[str]] = mapped_column(Text)
+    contact: Mapped[Optional[str]] = mapped_column(Text)
+    apply_url: Mapped[Optional[str]] = mapped_column(Text)
+    source_url: Mapped[Optional[str]] = mapped_column(String(500), unique=True)
+    embedding: Mapped[Optional[list]] = mapped_column(Vector(768))
+    life_cycle: Mapped[Optional[str]] = mapped_column(String(20))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("true"))
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
     updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
 class Sale(Base):
@@ -259,6 +272,7 @@ class Sale(Base):
     sales_date: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=False)
     total_amount: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("0"))
     file_url: Mapped[Optional[str]] = mapped_column(String(255))
+    store_number: Mapped[Optional[str]] = mapped_column(String(255))
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
@@ -285,6 +299,8 @@ class Prediction(Base):
     base_date: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=False)
     total_sales: Mapped[Optional[int]] = mapped_column(Integer)
     predicted_cost: Mapped[Optional[int]] = mapped_column(Integer)
+    moving_average: Mapped[Optional[float]] = mapped_column(DOUBLE_PRECISION)
+    return_rate: Mapped[Optional[float]] = mapped_column(DOUBLE_PRECISION)
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
@@ -298,6 +314,9 @@ class DailyPrediction(Base):
     prediction_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("predictions.id", ondelete="CASCADE"), nullable=False)
     target_date: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=False)
     pred_sales: Mapped[Optional[int]] = mapped_column(Integer)
+    actual_sales: Mapped[Optional[int]] = mapped_column(Integer)
+    moving_average: Mapped[Optional[float]] = mapped_column(DOUBLE_PRECISION)
+    return_rate: Mapped[Optional[float]] = mapped_column(DOUBLE_PRECISION)
 
     # Relationships
     prediction: Mapped["Prediction"] = relationship(back_populates="daily_predictions")

@@ -14,4 +14,12 @@ pgvector
 google-generativeai
 sentence-transformers
 greenlet
+langchain-community
+langchain-core
+tensorflow
+scikit-learn
+pandas
+numpy
+statsmodels
 google-genai>=1.0.0
+apscheduler
