@@ -287,13 +287,19 @@ async def generate_brand_names(db: AsyncSession, branding_id: uuid.UUID):
                     continue # DANGER는 사용자에게 보여주지 않고 버림
                 
                 # SAFE 또는 WARNING인 경우만 채택
+                
+                # 브랜드 정체성 텍스트 임베딩 생성 (명칭 + 슬로건 + 스토리)
+                full_identity_text = f"{brand_name} {opt.get('slogan', '')} {opt.get('story', '')}"
+                identity_vector = await ai_client.embed_text(full_identity_text)
+                
                 identity = BrandIdentity(
                     id=uuid.uuid4(),
                     branding_id=branding_id,
                     brand_name=brand_name,
                     slogan=opt.get("slogan"),
                     brand_story=opt.get("story"),
-                    is_selected=False
+                    is_selected=False,
+                    embedding=identity_vector # 임베딩 값 저장
                 )
                 db.add(identity)
                 
@@ -398,7 +404,29 @@ async def generate_brand_logo(db: AsyncSession, identity_id: uuid.UUID):
 
     tasks = [create_logo_base64(p, i) for i, p in enumerate(prompts)]
     results = await asyncio.gather(*tasks)
-    return [r for r in results if r is not None]
+    
+    # --- Alignment Score 계산 및 품질 로깅 ---
+    try:
+        from app.core.ai_client import calculate_alignment_score
+        
+        valid_results = [r for r in results if r is not None]
+        
+        if valid_results:
+            print(f"\n🎯 [AI Quality Log] 브랜드명: {identity.brand_name}")
+            print("-" * 50)
+            
+            # 모든 로고에 대해 병렬로 점수 계산 (context는 텍스트, r["imageUrl"]은 Base64)
+            score_tasks = [calculate_alignment_score(context, r["imageUrl"]) for r in valid_results]
+            scores = await asyncio.gather(*score_tasks)
+            
+            for i, score in enumerate(scores):
+                print(f"▶ {i+1}번 로고 - 정렬 점수(Alignment Score): {score:.1f}%")
+            print("-" * 50 + "\n")
+            
+        return valid_results
+    except Exception as e:
+        print(f"⚠️ Alignment Score 로깅 중 에러 발생: {e}")
+        return [r for r in results if r is not None]
 
 # [추가] 마케팅 에셋(목업) 생성 프롬프트 메이커
 MOCKUP_PROMPT_MAKER = """

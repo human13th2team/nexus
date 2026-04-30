@@ -35,7 +35,11 @@ export default function BrandListPage() {
     const fetchBrands = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/branding?userId=${TARGET_USER_ID}`);
+        const token = localStorage.getItem("accessToken");
+        const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await fetch(`${API_BASE_URL}/branding?userId=${TARGET_USER_ID}`, {
+          headers
+        });
         if (!res.ok) throw new Error("Failed to fetch brands");
         const data = await res.json();
         setBrands(data);
