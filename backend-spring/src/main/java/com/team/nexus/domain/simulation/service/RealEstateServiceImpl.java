@@ -37,7 +37,8 @@ public class RealEstateServiceImpl implements RealEstateService {
         for (int i = 0; i < 12; i++) {
             String dealYMD = searchDate.minusMonths(i).format(formatter);
             boolean filled = fetchMonthUntilFull(regionCode, dealYMD, under100M, over100M);
-            if (filled) break;
+            if (filled)
+                break;
         }
 
         return combine(under100M, over100M);
@@ -48,8 +49,8 @@ public class RealEstateServiceImpl implements RealEstateService {
      * 두 리스트가 모두 TARGET_COUNT에 도달하면 즉시 true를 반환(조기 종료).
      */
     private boolean fetchMonthUntilFull(Integer regionCode, String dealYMD,
-                                        List<ProcessedRealEstateDto> under100M,
-                                        List<ProcessedRealEstateDto> over100M) {
+            List<ProcessedRealEstateDto> under100M,
+            List<ProcessedRealEstateDto> over100M) {
         int pageNo = 1;
         while (true) {
             RealEstateAPIResponseDto response = fetchApi(regionCode, dealYMD, pageNo);
@@ -63,9 +64,11 @@ public class RealEstateServiceImpl implements RealEstateService {
                 for (var item : items) {
                     ProcessedRealEstateDto dto = mapAndCalculate(item);
                     if (Boolean.TRUE.equals(dto.getIsWithin100M())) {
-                        if (under100M.size() < TARGET_COUNT) under100M.add(dto);
+                        if (under100M.size() < TARGET_COUNT)
+                            under100M.add(dto);
                     } else {
-                        if (over100M.size() < TARGET_COUNT) over100M.add(dto);
+                        if (over100M.size() < TARGET_COUNT)
+                            over100M.add(dto);
                     }
                     // 두 버킷 모두 채워지면 즉시 종료
                     if (under100M.size() >= TARGET_COUNT && over100M.size() >= TARGET_COUNT) {
@@ -75,7 +78,7 @@ public class RealEstateServiceImpl implements RealEstateService {
             }
 
             // 다음 페이지 존재 여부 확인
-            if (body.getNumOfRows() != null && body.getTotalCount() != null
+            if (body.getNumOfRows() > 0 && body.getTotalCount() > 0
                     && pageNo * body.getNumOfRows() < body.getTotalCount()) {
                 pageNo++;
             } else {
@@ -84,7 +87,6 @@ public class RealEstateServiceImpl implements RealEstateService {
         }
         return under100M.size() >= TARGET_COUNT && over100M.size() >= TARGET_COUNT;
     }
-
 
     private RealEstateAPIResponseDto fetchApi(Integer regionCode, String dealYMD, int pageNo) {
         try {

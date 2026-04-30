@@ -2,24 +2,29 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const MENU_DATA = [
-  { id: 'analysis', title: '창업 분석', hasSub: true,
+  {
+    id: 'analysis', title: '창업 분석', hasSub: true,
     subMenu: [{ name: '창업 비용 시뮬레이션', href: '/simulation' },
-              { name: '상권 분석 지도', href: '/store-map' }]
+    { name: '상권 분석 지도', href: '/store-map' }]
   },
   { id: 'subsidy', title: '지원금 찾기', hasSub: false, href: '/' },
-  { id: 'creative', title: 'AI 브랜딩', hasSub: false, href: '/branding'},
-  { id: 'experts', title: '전문가 매칭', hasSub: false, href: '/' },
-  { id: 'compliance', title: '창업 가이드', hasSub: true,
+  { id: 'creative', title: 'AI 브랜딩', hasSub: false, href: '/branding' },
+  {
+    id: 'compliance', title: '창업 가이드', hasSub: true,
     subMenu: [{ name: '서류 가이드', href: '/' },
-              { name: '고용 가이드', href: '/' }]
+    { name: '고용 가이드', href: '/' }]
   },
-  { id: 'community', title: '커뮤니티', hasSub: true,
+  {
+    id: 'community', title: '커뮤니티', hasSub: true,
     subMenu: [{ name: '자유 게시판', href: '/' },
-              { name: '지역별 게시판', href: '/' },
-              { name: '업종별 게시판', href: '/'}]
+    { name: '지역별 게시판', href: '/' },
+    { name: '업종별 게시판', href: '/' },
+    { name: '전문가 매칭', href: '/' }]
   },
+  { id: 'group-purchases', title: '공동구매', hasSub: false, href: '/group-purchases' },
 ];
 
 export default function Header() {
@@ -29,6 +34,7 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [nickname, setNickname] = useState('');
+  const pathname = usePathname();
 
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -51,9 +57,17 @@ export default function Header() {
     // 처음 로드될 때 체크
     checkLoginStatus();
 
-    // 2. 다른 탭에서의 변화나 커스텀 이벤트를 감지합니다.
-    window.addEventListener('storage', checkLoginStatus); // 로컬스토리지 변경 감지
+    // 다른 탭에서의 변화나 커스텀 이벤트를 감지합니다.
+    window.addEventListener('storage', checkLoginStatus); // 다른 탭의 로컬스토리지 변경 감지
     window.addEventListener('login-status-change', checkLoginStatus); // 커스텀 이벤트 감지
+
+    // 탭 포커스 복귀 시에도 로그인 상태를 재확인합니다.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkLoginStatus();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     const handleClickOutside = (event: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
@@ -65,9 +79,17 @@ export default function Header() {
     return () => {
       window.removeEventListener('storage', checkLoginStatus);
       window.removeEventListener('login-status-change', checkLoginStatus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [checkLoginStatus]);
+
+  // 경로 변경 시마다 로그인 상태를 재확인합니다.
+  // (Next.js의 SPA 내비게이션은 컴포넌트를 리마운트하지 않으므로
+  //  router.push 후에도 위의 useEffect가 다시 실행되지 않습니다.)
+  useEffect(() => {
+    checkLoginStatus();
+  }, [pathname, checkLoginStatus]);
 
   const handleMenuHover = (menuId: string | null, hasSub: boolean) => {
     if (hasSub) {
@@ -142,12 +164,12 @@ export default function Header() {
                   </button>
                   {isProfileOpen && (
                     <div className="absolute right-0 top-14 w-52 bg-white border border-[var(--nexus-outline-variant)] shadow-xl rounded-md overflow-hidden z-[110]">
-                        <div className="px-5 py-3.5 text-sm text-gray-400 border-b border-gray-100 bg-gray-50/50">
-                            <span className="font-bold text-[var(--nexus-primary)]">{nickname}</span>님 환영합니다
-                          </div>
-                          <Link href="/" className="block px-5 py-3.5 text-sm hover:bg-gray-50 border-b border-gray-100">ℹ️ 프로필</Link>
-                          <Link href="/chat" className="block px-5 py-3.5 text-sm hover:bg-gray-50 border-b border-gray-100">💬 채팅하기</Link>
-                          <button onClick={handleLogout} className="w-full text-left px-5 py-3.5 text-sm text-red-500 hover:bg-red-50 font-semibold">🚣 로그아웃</button>
+                      <div className="px-5 py-3.5 text-sm text-gray-400 border-b border-gray-100 bg-gray-50/50">
+                        <span className="font-bold text-[var(--nexus-primary)]">{nickname}</span>님 환영합니다
+                      </div>
+                      <Link href="/" className="block px-5 py-3.5 text-sm hover:bg-gray-50 border-b border-gray-100">ℹ️ 프로필</Link>
+                      <Link href="/chat" className="block px-5 py-3.5 text-sm hover:bg-gray-50 border-b border-gray-100">💬 채팅하기</Link>
+                      <button onClick={handleLogout} className="w-full text-left px-5 py-3.5 text-sm text-red-500 hover:bg-red-50 font-semibold">🚣 로그아웃</button>
                     </div>
                   )}
                 </div>
