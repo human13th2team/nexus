@@ -1,20 +1,12 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import Dict, Any
 
-class ReceiptItemSchema(BaseModel):
-    name: str = Field(..., description="품목명")
-    price: int = Field(0, description="단가")
-    quantity: int = Field(1, description="수량")
-
-class ReceiptDataSchema(BaseModel):
-    saleNo: Optional[str] = Field(None, alias="sale_no", description="거래 번호")
-    totalPrice: int = Field(0, alias="total_price", description="총 금액")
-    transactionDate: Optional[str] = Field(None, description="거래 일시 (YYYY-MM-DD HH:MM:SS)")
-    items: List[ReceiptItemSchema] = Field(default_factory=list, description="상세 품목 리스트")
+class SalesUploadResponseSchema(BaseModel):
+    """CSV 업로드 응답 스키마입니다."""
+    status: str = Field(..., description="처리 상태")
+    count: int = Field(..., description="적재된 데이터 건수")
+    message: str = Field(..., description="결과 메시지")
 
     class Config:
+        # 응답 시 camelCase 변수명을 사용할 수 있도록 설정 (필요 시)
         populate_by_name = True
-
-class ReceiptResponseSchema(BaseModel):
-    status: str
-    data: ReceiptDataSchema

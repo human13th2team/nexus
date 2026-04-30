@@ -28,10 +28,12 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable) // API 서버이므로 CSRF 비활성화
-            .cors(cors -> cors.configure(http)) // CORS 설정 적용
+            .csrf(AbstractHttpConfigurer::disable)
+            .cors(cors -> cors.configure(http))
             .authorizeHttpRequests(auth -> auth
-                .anyRequest().permitAll() // 개발 중 모든 요청 허용
+                .requestMatchers("/api/v1/auth/**", "/api/v1/status/**", "/api/v1/comm/**", "/login/oauth2/**", "/oauth2/**").permitAll()
+                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                .anyRequest().permitAll() // 개발 편의를 위해 일단 모두 허용
             )
             .oauth2Login(oauth2 -> oauth2
                 .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))

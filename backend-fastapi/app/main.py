@@ -12,6 +12,7 @@ from app.domain.simulation import simulationRouter as simulation
 from app.domain.compliance import complianceRouter as compliance
 from app.domain.community import communityRouter as community
 from app.domain.dashboard import dashboardRouter as dashboard
+from app.domain.dashboard import predictionRouter as prediction
 from app.core.database import get_db, AsyncSessionLocal
 from app.domain.branding.brandingService import initialize_industry_cache
 from app.core.ai_client import get_ai_client
@@ -77,6 +78,7 @@ app.include_router(simulation.router, prefix="/api/v1/ai/simulation", tags=["Sta
 app.include_router(compliance.router, prefix="/api/v1/ai/compliance", tags=["Compliance & Policy"])
 app.include_router(community.router, prefix="/api/v1/ai/community", tags=["Hyper-local Community"])
 app.include_router(dashboard.router, prefix="/api/v1/ai/dashboard", tags=["Ops & Dashboard"])
+app.include_router(prediction.router, prefix="/api/v1/ai/prediction", tags=["Sales Prediction"])
 app.include_router(subsidy.router, prefix="/api/v1/ai/subsidy", tags=["Subsidy Guide"])
 
 @app.get("/")

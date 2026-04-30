@@ -272,6 +272,7 @@ class Sale(Base):
     sales_date: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=False)
     total_amount: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("0"))
     file_url: Mapped[Optional[str]] = mapped_column(String(255))
+    store_number: Mapped[Optional[str]] = mapped_column(String(255))
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
@@ -298,6 +299,8 @@ class Prediction(Base):
     base_date: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=False)
     total_sales: Mapped[Optional[int]] = mapped_column(Integer)
     predicted_cost: Mapped[Optional[int]] = mapped_column(Integer)
+    moving_average: Mapped[Optional[float]] = mapped_column(DOUBLE_PRECISION)
+    return_rate: Mapped[Optional[float]] = mapped_column(DOUBLE_PRECISION)
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
@@ -311,6 +314,9 @@ class DailyPrediction(Base):
     prediction_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("predictions.id", ondelete="CASCADE"), nullable=False)
     target_date: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=False)
     pred_sales: Mapped[Optional[int]] = mapped_column(Integer)
+    actual_sales: Mapped[Optional[int]] = mapped_column(Integer)
+    moving_average: Mapped[Optional[float]] = mapped_column(DOUBLE_PRECISION)
+    return_rate: Mapped[Optional[float]] = mapped_column(DOUBLE_PRECISION)
 
     # Relationships
     prediction: Mapped["Prediction"] = relationship(back_populates="daily_predictions")

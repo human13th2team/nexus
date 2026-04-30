@@ -35,6 +35,9 @@ public class Sale {
     @Column(name = "total_amount")
     private Integer totalAmount;
 
+    @Column(name = "store_number", length = 255)
+    private String storeNumber;
+
     @Column(name = "file_url", length = 255)
     private String fileUrl;
 
