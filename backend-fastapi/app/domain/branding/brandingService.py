@@ -10,8 +10,8 @@ import os
 import uuid
 import base64
 
-# 테스트용 고정 유저 ID
-TEST_USER_ID = uuid.UUID("a248bb6e-7302-4b48-9375-c23ee477ea45")
+# 테스트용 기본 유저 ID (요청에 없을 경우 대비)
+DEFAULT_USER_ID = uuid.UUID("a248bb6e-7302-4b48-9375-c23ee477ea45")
 
 # [최적화] 업종 데이터 인메모리 캐시
 INDUSTRY_CACHE = {
@@ -56,7 +56,7 @@ async def create_new_branding(db: AsyncSession, request: BrandingCreateRequest) 
     """새로운 브랜딩 프로젝트를 생성하고 DB에 저장합니다."""
     new_branding = Branding(
         id=uuid.uuid4(),
-        user_id=TEST_USER_ID,
+        user_id=request.userId or DEFAULT_USER_ID,
         industry_category_id=request.industryId,
         title=request.title or "새 브랜딩 프로젝트",
         current_step="INTERVIEW"

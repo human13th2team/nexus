@@ -274,7 +274,10 @@ CREATE TABLE group_purchases (
     current_count INT DEFAULT 1,
     start_date TIMESTAMPTZ DEFAULT NOW(),
     end_date TIMESTAMPTZ NOT NULL,
-    status VARCHAR(20) CHECK (status IN ('OPEN', 'SUCCESS', 'FAIL', 'CANCEL')) DEFAULT 'OPEN'
+    status VARCHAR(20) CHECK (status IN ('OPEN', 'SUCCESS', 'FAIL', 'CANCEL')) DEFAULT 'OPEN',
+    description TEXT,
+    image_url TEXT,
+    region VARCHAR(100)
 );
 
 CREATE TABLE group_orders (

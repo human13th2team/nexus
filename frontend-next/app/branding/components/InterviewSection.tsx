@@ -54,7 +54,8 @@ export default function InterviewSection({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             industryId: "550e8400-e29b-41d4-a716-446655440000", // 초기 기본값
-            title: "새로운 창업 프로젝트"
+            title: "새로운 창업 프로젝트",
+            userId: localStorage.getItem("userId")
           }),
         });
         const result = await response.json();
