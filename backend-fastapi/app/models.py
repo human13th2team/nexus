@@ -377,7 +377,10 @@ class GroupPurchase(Base):
     current_count: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("1"))
     start_date: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
     end_date: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, nullable=False)
-    status: Mapped[Optional[str]] = mapped_column(String(20), server_default=text("'OPEN'"))
+    status: Mapped[Optional[str]] = mapped_column(String(20), server_default=text("'RECRUITING'"))
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    image_url: Mapped[Optional[str]] = mapped_column(Text)
+    region: Mapped[Optional[str]] = mapped_column(String(100))
 
     # Relationships
     user: Mapped["User"] = relationship(back_populates="group_purchases")

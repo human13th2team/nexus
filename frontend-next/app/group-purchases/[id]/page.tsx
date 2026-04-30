@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, ChevronLeft } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -32,7 +32,6 @@ export default function GroupBuyDetailPage() {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: false });
   const [isLoading, setIsLoading] = useState(true);
 
-  // 현재 사용자 ID (방장 확인용)
   const currentUserId = typeof window !== 'undefined' ? localStorage.getItem('userId') || 'd38bc69d-9660-4e11-a50d-9ee90ff38673' : '';
 
   useEffect(() => {
@@ -78,9 +77,22 @@ export default function GroupBuyDetailPage() {
   const handlePayment = async (provider: string) => {
     if (!gb || timeLeft.isExpired) return;
 
+    try {
+      const checkRes = await fetch(`http://localhost:8080/api/v1/group-purchases/${params.id}/check-participation?userId=${currentUserId}`);
+      const isParticipated = await checkRes.json();
+      
+      if (isParticipated) {
+        alert("이미 참여하신 공동구매입니다. 한 명당 한 번만 참여 가능합니다.");
+        return;
+      }
+    } catch (error) {
+      console.error("Participation check error:", error);
+      alert("참여 여부 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+      return;
+    }
+
     if (provider === 'TOSS') {
       try {
-        // 백엔드에서 설정값 가져오기
         const configRes = await fetch('http://localhost:8080/api/v1/config');
         const configData = await configRes.json();
         const clientKey = configData.tossClientKey;
@@ -104,17 +116,13 @@ export default function GroupBuyDetailPage() {
           alert('결제창을 띄우는 중 오류가 발생했습니다.');
         }
       }
-    } else if (provider === 'KAKAO_PAY') {
-      // 카카오페이는 즉시 성공 페이지로 이동 (시뮬레이션)
-      const mockOrderId = `KAKAO_${Date.now()}`;
-      router.push(`/group-purchases/${gb.id}/success?orderId=${mockOrderId}&paymentKey=MOCK_KAKAOPAY&amount=${gb.itemPrice}`);
     }
   };
 
   const handleDelete = async () => {
     if (!gb) return;
     
-    if (!confirm('정말로 이 공동구매를 취소하시겠습니까? 참여자들의 결제 내역이 모두 자동으로 환불됩니다.')) {
+    if (!confirm('정말로 이 공동구매를 취소하시겠습니까? 참여자들의 결제 내역이 모두 환불 처리됩니다.')) {
       return;
     }
 
@@ -124,7 +132,7 @@ export default function GroupBuyDetailPage() {
       });
 
       if (response.ok) {
-        alert('공동구매가 취소되었으며, 환불 처리가 시작되었습니다.');
+        alert('공동구매가 취소되었습니다.');
         router.push('/group-purchases');
       } else {
         alert('취소 처리에 실패했습니다.');
@@ -135,118 +143,132 @@ export default function GroupBuyDetailPage() {
     }
   };
 
-  if (isLoading) return <div className="min-h-screen bg-[#f8fafc] flex justify-center items-center font-bold text-blue-600">Loading...</div>;
-  if (!gb) return <div className="min-h-screen bg-[#f8fafc] flex justify-center items-center font-bold">항목을 찾을 수 없습니다.</div>;
+  if (isLoading) return <div className="min-h-screen bg-[var(--nexus-bg)] flex justify-center items-center font-black text-[var(--nexus-primary)]">로딩 중...</div>;
+  if (!gb) return <div className="min-h-screen bg-[var(--nexus-bg)] flex justify-center items-center font-bold">항목을 찾을 수 없습니다.</div>;
 
   const progress = (gb.currentCount / gb.targetCount) * 100;
   const isOwner = gb.creatorId === currentUserId;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-[#1e293b] p-8 pb-32">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-[var(--nexus-bg)] text-[var(--nexus-on-bg)] p-8 pb-32">
+      <div className="max-w-7xl mx-auto">
         <button 
-          onClick={() => router.back()}
-          className="mb-8 flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold transition-colors"
+          onClick={() => router.push('/group-purchases')}
+          className="mb-10 flex items-center gap-2 text-slate-400 hover:text-[var(--nexus-primary)] font-black transition-colors uppercase tracking-widest text-xs"
         >
-          ← 목록으로 돌아가기
+          <ChevronLeft className="w-5 h-5" /> Back to list
         </button>
 
-        <div className="flex flex-col lg:flex-row gap-16 mt-4">
+        <div className="flex flex-col lg:flex-row gap-16">
           <div className="lg:w-3/5 space-y-12">
-            <div className="relative rounded-[3rem] overflow-hidden shadow-2xl border border-white shadow-slate-200">
+            <div className="relative rounded-[3rem] overflow-hidden shadow-2xl border-4 border-white">
               <img 
-                src={gb.imageUrl || 'https://images.unsplash.com/photo-1517254456976-ee8682099819?q=80&w=1200&auto=format&fit=crop'} 
+                src={gb.imageUrl || 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=1200&auto=format&fit=crop'} 
                 alt={gb.itemName}
                 className="w-full h-auto object-cover aspect-video"
               />
               <div className="absolute top-8 left-8 flex gap-3">
-                <span className={`px-5 py-2 rounded-full text-sm font-black shadow-lg ${timeLeft.isExpired ? 'bg-slate-500 text-white' : 'bg-blue-600 text-white'}`}>
-                  {timeLeft.isExpired ? '모집 마감' : '모집 중'}
+                <span className={`px-6 py-2.5 rounded-full text-[10px] font-black shadow-2xl tracking-widest ${timeLeft.isExpired ? 'bg-slate-900 text-white' : 'bg-[var(--nexus-primary)] text-white'}`}>
+                  {timeLeft.isExpired ? '모집 마감' : '실시간 진행 중'}
                 </span>
-                <span className="bg-white/90 backdrop-blur-md text-slate-800 px-5 py-2 rounded-full text-sm font-bold border border-white/50 shadow-sm">
+                <span className="bg-white/90 backdrop-blur-md text-slate-800 px-6 py-2.5 rounded-full text-[10px] font-black border border-white/50 shadow-xl tracking-widest uppercase">
                   📍 {gb.region}
                 </span>
               </div>
             </div>
 
-            <div className="space-y-6 px-4">
-              <h2 className="text-3xl font-black text-[#0f172a]">제품 상세 정보</h2>
-              <div className="h-1.5 w-20 bg-blue-600 rounded-full"></div>
-              <p className="text-slate-600 leading-relaxed text-xl font-medium whitespace-pre-line">
-                {gb.description}
-              </p>
+            <div className="space-y-8">
+              <div className="space-y-2">
+                <span className="text-[var(--nexus-primary)] font-black tracking-[0.3em] text-[10px] uppercase opacity-60">Story & Details</span>
+                <h2 className="text-3xl font-black text-[var(--nexus-primary)]">제품 상세 정보</h2>
+                <div className="h-1.5 w-16 bg-[var(--nexus-primary)] rounded-full"></div>
+              </div>
+              <div className="bg-white/60 backdrop-blur-md p-12 rounded-[3rem] border border-white shadow-xl min-h-[400px]">
+                <p className="text-slate-600 leading-relaxed text-xl font-medium whitespace-pre-line">
+                  {gb.description}
+                </p>
+              </div>
             </div>
           </div>
 
           <div className="lg:w-2/5">
-            <div className="sticky top-12 bg-white rounded-[3rem] p-10 border border-slate-100 shadow-2xl shadow-slate-200/50 space-y-10">
-              <div>
-                <span className="text-blue-600 font-bold text-sm tracking-widest uppercase mb-2 block">Premium Group Buy</span>
-                <h1 className="text-4xl font-black text-[#0f172a] leading-tight mb-4">{gb.title}</h1>
-                <p className="text-slate-400 font-semibold text-lg">{gb.itemName}</p>
+            <div className="sticky top-12 nexus-card p-12 border-2 border-white shadow-2xl space-y-12">
+              <div className="space-y-4">
+                <span className="text-[var(--nexus-primary)] font-black text-[10px] tracking-[0.4em] uppercase opacity-50 block">Nexus Collection</span>
+                <h1 className="text-4xl font-black text-[var(--nexus-primary)] leading-tight">{gb.title}</h1>
+                <p className="text-slate-400 font-bold text-xl tracking-tight">{gb.itemName}</p>
               </div>
 
-              <div className="flex items-end gap-3 mb-4">
-                <span className="text-5xl font-black text-blue-600">{gb.itemPrice.toLocaleString()}원</span>
-              </div>
-
-              <div className={`rounded-[2rem] p-6 border text-center transition-colors ${timeLeft.isExpired ? 'bg-slate-100 border-slate-200' : 'bg-blue-50/50 border-blue-100'}`}>
-                <p className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
-                  {timeLeft.isExpired ? '모집이 마감되었습니다' : '마감까지 남은 시간'}
+              <div className="space-y-1">
+                <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">단독 할인가</p>
+                <p className="text-6xl font-black text-[var(--nexus-primary)] tracking-tighter">
+                  {gb.itemPrice.toLocaleString()}<span className="text-2xl ml-1 font-bold opacity-30">원</span>
                 </p>
-                <div className="grid grid-cols-4 gap-2">
+              </div>
+
+              <div className={`rounded-[2.5rem] p-10 border text-center transition-all ${timeLeft.isExpired ? 'bg-slate-50 border-slate-100' : 'bg-[var(--nexus-bg)] border-white shadow-inner'}`}>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8">
+                  {timeLeft.isExpired ? '모집 기간 종료' : '남은 시간'}
+                </p>
+                <div className="grid grid-cols-4 gap-6">
                   {[
-                    { label: 'Days', value: timeLeft.days },
-                    { label: 'Hours', value: timeLeft.hours },
-                    { label: 'Mins', value: timeLeft.minutes },
-                    { label: 'Secs', value: timeLeft.seconds }
+                    { label: '일', value: timeLeft.days },
+                    { label: '시', value: timeLeft.hours },
+                    { label: '분', value: timeLeft.minutes },
+                    { label: '초', value: timeLeft.seconds }
                   ].map((item, idx) => (
-                    <div key={idx} className="flex flex-col">
-                      <span className={`text-3xl font-black tabular-nums ${timeLeft.isExpired ? 'text-slate-400' : 'text-[#0f172a]'}`}>
+                    <div key={idx} className="flex flex-col gap-2">
+                      <span className={`text-3xl font-black tabular-nums ${timeLeft.isExpired ? 'text-slate-300' : 'text-[var(--nexus-primary)]'}`}>
                         {String(item.value).padStart(2, '0')}
                       </span>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">{item.label}</span>
+                      <span className="text-[10px] font-black text-slate-400 opacity-60 uppercase">{item.label}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="flex justify-between items-end">
-                  <span className="text-2xl font-black text-indigo-600">{progress.toFixed(0)}% 달성</span>
-                  <span className="text-slate-500 font-bold">{gb.currentCount} <span className="text-slate-300">/</span> {gb.targetCount}명</span>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black text-[var(--nexus-primary)] uppercase tracking-widest">{progress.toFixed(0)}% 달성 완료</p>
+                    <p className="text-slate-500 font-black text-lg">{gb.currentCount}명 참여</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-1">목표 인원</p>
+                    <p className="text-slate-800 font-black text-xl">{gb.targetCount}명</p>
+                  </div>
                 </div>
-                <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-4 w-full bg-slate-50 rounded-full overflow-hidden p-1 border border-slate-100 shadow-inner">
                   <div 
-                    className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 rounded-full shadow-inner transition-all duration-1000"
-                    style={{ width: `${progress}%` }}
+                    className="h-full bg-gradient-to-r from-[var(--nexus-primary)] via-indigo-500 to-[var(--nexus-secondary)] rounded-full transition-all duration-1000 shadow-xl"
+                    style={{ width: `${Math.min(progress, 100)}%` }}
                   />
                 </div>
               </div>
 
-              <div className="space-y-4 pt-4">
+              <div className="space-y-5 pt-6">
                 <button 
                   disabled={timeLeft.isExpired}
                   onClick={() => handlePayment('TOSS')}
-                  className={`w-full py-6 rounded-2xl font-black text-xl flex items-center justify-center gap-4 transition-all shadow-2xl transform active:scale-95 ${
-                    timeLeft.isExpired ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-500/30'
+                  className={`w-full py-7 rounded-[2rem] font-black text-xl flex items-center justify-center gap-4 transition-all shadow-2xl transform active:scale-95 ${
+                    timeLeft.isExpired ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-[var(--nexus-primary)] text-white shadow-indigo-900/30 hover:bg-[#081363] hover:scale-[1.02]'
                   }`}
                 >
                   <ShoppingBag className="w-6 h-6" />
-                  {timeLeft.isExpired ? '모집이 마감되었습니다' : '결제하고 참여하기'}
+                  {timeLeft.isExpired ? '모집 마감' : '공동구매 참여하기'}
                 </button>
 
                 {isOwner && (
                   <button 
                     onClick={handleDelete}
-                    className="w-full py-4 rounded-2xl font-bold text-lg bg-white text-red-500 border-2 border-red-100 hover:bg-red-50 transition-all active:scale-95"
+                    className="w-full py-5 rounded-[1.5rem] font-black text-sm text-red-500 bg-white border-2 border-red-50 hover:bg-red-50 transition-all active:scale-95 tracking-widest"
                   >
-                    이 공동구매 취소하기 (전체 환불)
+                    공동구매 취소하기 (방장 전용)
                   </button>
                 )}
                 
-                <p className="text-center text-xs text-slate-400 font-medium">
-                  {isOwner ? '방장은 공동구매를 관리하거나 취소할 수 있습니다.' : '토스 페이먼츠의 안전한 결제 시스템을 이용합니다.'}
+                <p className="text-center text-[10px] text-slate-300 font-black tracking-widest uppercase opacity-60">
+                  {isOwner ? 'Creator Control Panel' : 'Secured by Toss Payments'}
                 </p>
               </div>
             </div>

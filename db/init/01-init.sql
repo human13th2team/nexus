@@ -274,7 +274,10 @@ CREATE TABLE group_purchases (
     current_count INT DEFAULT 1,
     start_date TIMESTAMPTZ DEFAULT NOW(),
     end_date TIMESTAMPTZ NOT NULL,
-    status VARCHAR(20) CHECK (status IN ('OPEN', 'SUCCESS', 'FAIL', 'CANCEL')) DEFAULT 'OPEN'
+    status VARCHAR(20) CHECK (status IN ('RECRUITING', 'SUCCESS', 'FAILED', 'COMPLETED', 'CANCEL')) DEFAULT 'RECRUITING',
+    description TEXT,
+    image_url TEXT,
+    region VARCHAR(100)
 );
 
 CREATE TABLE group_orders (
@@ -286,7 +289,7 @@ CREATE TABLE group_orders (
     pg_provider VARCHAR(20) CHECK (pg_provider IN ('TOSS', 'KAKAO')),
     pg_tid VARCHAR(200),
     payment_method VARCHAR(50),
-    payment_status VARCHAR(20) CHECK (payment_status IN ('READY', 'PAID', 'CANCELLED', 'FAILED')) DEFAULT 'READY',
+    payment_status VARCHAR(20) CHECK (payment_status IN ('READY', 'PAID', 'CANCELLED', 'FAILED', 'REFUNDED')) DEFAULT 'READY',
     paid_at TIMESTAMPTZ
 );
 

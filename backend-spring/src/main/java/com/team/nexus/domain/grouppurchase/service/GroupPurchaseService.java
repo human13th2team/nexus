@@ -81,14 +81,18 @@ public class GroupPurchaseService {
         return convertToDto(groupPurchase);
     }
 
+    public boolean checkParticipation(UUID groupBuyId, UUID userId) {
+        boolean exists = groupOrderRepository.existsByGroupPurchaseIdAndUserId(groupBuyId, userId);
+        log.info("[Check Participation] GroupBuyId: {}, UserId: {}, Exists: {}", groupBuyId, userId, exists);
+        return exists;
+    }
+
     @Transactional
     public void participate(UUID groupBuyId, UUID userId, com.team.nexus.domain.grouppurchase.dto.GroupOrderRequestDto orderDto) {
         // 중복 참여 체크
-        /* 테스트를 위해 중복 참여 체크 잠시 해제
         if (groupOrderRepository.existsByGroupPurchaseIdAndUserId(groupBuyId, userId)) {
             throw new RuntimeException("이미 참여한 공동구매입니다.");
         }
-        */
 
         GroupPurchase groupPurchase = groupPurchaseRepository.findById(groupBuyId)
                 .orElseThrow(() -> new IllegalArgumentException("Group purchase not found"));

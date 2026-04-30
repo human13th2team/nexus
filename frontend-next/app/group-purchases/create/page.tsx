@@ -2,8 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { ChevronLeft, Image as ImageIcon, Check } from 'lucide-react';
 
-// 대한민국 지역 데이터
 const regionData: { [key: string]: string[] } = {
   '서울특별시': ['강남구', '강동구', '강북구', '강서구', '관악구', '광진구', '구로구', '금천구', '노원구', '도봉구', '동대문구', '동작구', '마포구', '서대문구', '서초구', '성동구', '성북구', '송파구', '양천구', '영등포구', '용산구', '은평구', '종로구', '중구', '중랑구'],
   '부산광역시': ['강서구', '금정구', '기장군', '남구', '동구', '동래구', '부산진구', '북구', '사상구', '사하구', '서구', '수영구', '연제구', '영도구', '중구', '해운대구'],
@@ -31,7 +31,6 @@ export default function GroupBuyCreatePage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
-  // 지역 선택 상태
   const [selectedProvince, setSelectedProvince] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
   const [cities, setCities] = useState<string[]>([]);
@@ -45,18 +44,6 @@ export default function GroupBuyCreatePage() {
     description: '',
   });
 
-  // 테스트를 위해 로그인 체크 잠시 중단
-  useEffect(() => {
-    /*
-    const userId = localStorage.getItem('userId');
-    if (!userId) {
-      alert('로그인이 필요한 서비스입니다.');
-      router.push('/auth/login');
-    }
-    */
-  }, [router]);
-
-  // 도 선택 시 도시 목록 업데이트
   useEffect(() => {
     if (selectedProvince) {
       setCities(regionData[selectedProvince]);
@@ -104,8 +91,6 @@ export default function GroupBuyCreatePage() {
         }
       }
 
-      // 테스트용 사용자 ID (DB에 존재하는 유효한 ID: d38bc69d-9660-4e11-a50d-9ee90ff38673)
-      // 로그인 정보가 있으면 그것을 쓰고, 없으면 테스트 ID를 사용합니다.
       const userId = localStorage.getItem('userId') || 'd38bc69d-9660-4e11-a50d-9ee90ff38673';
 
       const response = await fetch(`http://localhost:8080/api/v1/group-purchases?userId=${userId}`, {
@@ -144,109 +129,130 @@ export default function GroupBuyCreatePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-[#1e293b] p-8">
+    <div className="min-h-screen bg-[var(--nexus-bg)] text-[var(--nexus-on-bg)] p-8 pb-32">
       <div className="max-w-4xl mx-auto">
         <header className="mb-12">
-          <button onClick={() => router.back()} className="flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold transition-colors mb-6">
-            ← 돌아가기
+          <button 
+            onClick={() => router.back()} 
+            className="flex items-center gap-2 text-slate-400 hover:text-[var(--nexus-primary)] font-black transition-all mb-8 uppercase tracking-widest text-xs"
+          >
+            <ChevronLeft className="w-5 h-5" /> Back to list
           </button>
-          <h1 className="text-5xl font-black text-[#0f172a] tracking-tight">
-            새로운 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">공동구매</span> 등록
+          <span className="text-[var(--nexus-primary)] font-black tracking-[0.4em] text-[10px] uppercase mb-3 block opacity-60">Seller Center</span>
+          <h1 className="text-5xl font-black text-[var(--nexus-primary)] tracking-tight">
+            새로운 <span className="opacity-30">공동구매</span> 등록
           </h1>
+          <p className="text-slate-500 mt-4 text-lg font-medium">당신의 제안이 가치가 되도록 상세 정보를 입력해 주세요.</p>
         </header>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-2xl shadow-slate-200/50 space-y-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-            {/* Image Section */}
+        <form onSubmit={handleSubmit} className="nexus-card p-16 shadow-2xl border-2 border-white space-y-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            {/* 이미지 업로드 */}
             <div className="md:col-span-2 space-y-4">
-              <label className="text-sm font-black text-slate-400 uppercase tracking-widest ml-1">물품 사진</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-2">대표 이미지 (Main Preview)</label>
               <div 
                 onClick={() => fileInputRef.current?.click()}
-                className="relative w-full h-64 bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2rem] flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 transition-all overflow-hidden"
+                className="relative w-full h-80 bg-slate-50 border-4 border-dashed border-slate-100 rounded-[3rem] flex flex-col items-center justify-center cursor-pointer hover:bg-slate-100 transition-all overflow-hidden group shadow-inner"
               >
                 {previewUrl ? (
                   <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="text-center">
-                    <span className="text-4xl mb-2 block">📸</span>
-                    <span className="text-slate-400 font-bold">클릭하여 사진 업로드</span>
+                  <div className="text-center space-y-4">
+                    <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto shadow-xl group-hover:scale-110 transition-transform">
+                      <ImageIcon className="w-10 h-10 text-slate-200" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-slate-400 font-black text-lg">클릭하여 이미지 업로드</p>
+                      <p className="text-slate-300 text-[10px] font-black uppercase tracking-widest">권장 사이즈: 16:9 비율</p>
+                    </div>
                   </div>
                 )}
               </div>
               <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
             </div>
 
-            <div className="md:col-span-2 space-y-3">
-              <label className="text-sm font-black text-slate-400 uppercase tracking-widest ml-1">공동구매 제목</label>
-              <input required name="title" value={formData.title} onChange={handleChange} placeholder="제목을 입력하세요" className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-5 focus:outline-none focus:border-blue-500 transition-all font-bold text-lg" />
+            {/* 제목 */}
+            <div className="md:col-span-2 space-y-4">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-2">공동구매 제목 (Listing Title)</label>
+              <input required name="title" value={formData.title} onChange={handleChange} placeholder="가장 매력적인 공동구매 제목을 지어주세요" className="w-full bg-slate-50 border-2 border-slate-100 rounded-[1.5rem] px-8 py-6 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-[var(--nexus-primary)] transition-all font-black text-2xl placeholder:text-slate-200" />
             </div>
 
-            <div className="space-y-3">
-              <label className="text-sm font-black text-slate-400 uppercase tracking-widest ml-1">물품명</label>
-              <input required name="itemName" value={formData.itemName} onChange={handleChange} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-5 focus:outline-none font-bold" />
+            {/* 상품명 */}
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-2">상품명</label>
+              <input required name="itemName" value={formData.itemName} onChange={handleChange} placeholder="정확한 상품명" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-5 focus:outline-none focus:border-[var(--nexus-primary)] font-bold text-lg transition-all" />
             </div>
 
-            <div className="space-y-3">
-              <label className="text-sm font-black text-slate-400 uppercase tracking-widest ml-1">물품 가격 (원)</label>
-              <input required type="number" name="itemPrice" value={formData.itemPrice} onChange={handleChange} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-5 focus:outline-none font-bold" />
+            {/* 가격 */}
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-2">판매 가격 (원)</label>
+              <input required type="number" name="itemPrice" value={formData.itemPrice} onChange={handleChange} placeholder="0" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-5 focus:outline-none focus:border-[var(--nexus-primary)] font-black text-lg transition-all" />
             </div>
 
-            <div className="space-y-3">
-              <label className="text-sm font-black text-slate-400 uppercase tracking-widest ml-1">목표 인원 (명)</label>
-              <input required type="number" name="targetCount" value={formData.targetCount} onChange={handleChange} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-5 focus:outline-none font-bold" />
+            {/* 목표 인원 */}
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-2">목표 인원 (명)</label>
+              <input required type="number" name="targetCount" value={formData.targetCount} onChange={handleChange} placeholder="최소 모집 인원" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-5 focus:outline-none focus:border-[var(--nexus-primary)] font-black text-lg transition-all" />
             </div>
 
-            <div className="space-y-3">
-              <label className="text-sm font-black text-slate-400 uppercase tracking-widest ml-1">마감 시간</label>
-              <input required type="datetime-local" name="endDate" value={formData.endDate} onChange={handleChange} className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-5 focus:outline-none font-bold [color-scheme:light]" />
+            {/* 마감 기한 */}
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-2">모집 마감 일시</label>
+              <input required type="datetime-local" name="endDate" value={formData.endDate} onChange={handleChange} className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-5 focus:outline-none focus:border-[var(--nexus-primary)] font-black text-lg transition-all [color-scheme:light]" />
             </div>
 
-            {/* Region Selection Section */}
-            <div className="space-y-3">
-              <label className="text-sm font-black text-slate-400 uppercase tracking-widest ml-1">도/특별시/광역시</label>
+            {/* 지역 선택 */}
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-2">주요 활동 지역 (시/도)</label>
               <select 
                 required 
                 value={selectedProvince} 
                 onChange={(e) => setSelectedProvince(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-5 focus:outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer"
+                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-5 focus:outline-none focus:border-[var(--nexus-primary)] font-black text-lg appearance-none cursor-pointer transition-all"
               >
-                <option value="">선택하세요</option>
+                <option value="">선택해 주세요</option>
                 {Object.keys(regionData).map(prov => (
                   <option key={prov} value={prov}>{prov}</option>
                 ))}
               </select>
             </div>
 
-            <div className="space-y-3">
-              <label className="text-sm font-black text-slate-400 uppercase tracking-widest ml-1">시/군/구</label>
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-2">상세 지역 (시/군/구)</label>
               <select 
                 required 
                 value={selectedCity} 
                 onChange={(e) => setSelectedCity(e.target.value)}
                 disabled={!selectedProvince}
-                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-5 focus:outline-none focus:border-blue-500 transition-all font-bold appearance-none cursor-pointer disabled:opacity-50"
+                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-5 focus:outline-none focus:border-[var(--nexus-primary)] font-black text-lg appearance-none cursor-pointer disabled:opacity-30 transition-all"
               >
-                <option value="">선택하세요</option>
+                <option value="">선택해 주세요</option>
                 {cities.map(city => (
                   <option key={city} value={city}>{city}</option>
                 ))}
               </select>
             </div>
 
-            <div className="md:col-span-2 space-y-3">
-              <label className="text-sm font-black text-slate-400 uppercase tracking-widest ml-1">상세 설명</label>
-              <textarea required name="description" value={formData.description} onChange={handleChange} rows={5} className="w-full bg-slate-50 border border-slate-100 rounded-[2rem] px-6 py-6 focus:outline-none font-bold resize-none" />
+            {/* 상세 설명 */}
+            <div className="md:col-span-2 space-y-4">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-2">상세 설명 (Story & Details)</label>
+              <textarea required name="description" value={formData.description} onChange={handleChange} rows={8} placeholder="참여자들이 신뢰할 수 있도록 제품의 상세한 정보와 공동구매 취지를 적어주세요." className="w-full bg-slate-50 border-2 border-slate-100 rounded-[2.5rem] px-10 py-8 focus:outline-none focus:border-[var(--nexus-primary)] font-medium text-xl resize-none transition-all placeholder:text-slate-200" />
             </div>
           </div>
 
           <button 
             type="submit" 
             disabled={isSubmitting}
-            className={`w-full py-6 rounded-2xl font-black text-xl transition-all shadow-2xl shadow-blue-900/10 transform active:scale-[0.98] mt-8 ${
-              isSubmitting ? 'bg-slate-400 cursor-not-allowed' : 'bg-[#0f172a] hover:bg-blue-600 text-white'
+            className={`w-full py-8 rounded-[2rem] font-black text-2xl transition-all shadow-2xl flex items-center justify-center gap-4 transform active:scale-95 ${
+              isSubmitting ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-[var(--nexus-primary)] text-white shadow-indigo-900/30 hover:bg-[#081363]'
             }`}
           >
-            {isSubmitting ? '게시 중...' : '공동구매 게시하기'}
+            {isSubmitting ? '등록 처리 중...' : (
+              <>
+                <Check className="w-8 h-8" />
+                공동구매 게시하기
+              </>
+            )}
           </button>
         </form>
       </div>

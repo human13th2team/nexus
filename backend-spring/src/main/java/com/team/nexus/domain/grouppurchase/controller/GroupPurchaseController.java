@@ -63,6 +63,14 @@ public class GroupPurchaseController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "참여 여부 확인", description = "사용자가 해당 공동구매에 이미 참여했는지 확인합니다.")
+    @GetMapping("/{id}/check-participation")
+    public ResponseEntity<Boolean> checkParticipation(
+            @PathVariable UUID id,
+            @RequestParam UUID userId) {
+        return ResponseEntity.ok(groupPurchaseService.checkParticipation(id, userId));
+    }
+
     @Operation(summary = "공동구매 참여(결제)", description = "특정 공동구매에 참여하고 결제 정보를 기록합니다.")
     @PostMapping("/{id}/participate")
     public ResponseEntity<Void> participate(
