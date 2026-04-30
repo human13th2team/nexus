@@ -18,13 +18,13 @@ export default function OAuthCallbackPage() {
       localStorage.setItem("accessToken", token);
       if (userId) localStorage.setItem("userId", userId);
       if (nickname) localStorage.setItem("nickname", nickname);
-      
+
       const providerName = provider === "google" ? "구글" : provider === "kakao" ? "카카오" : "소셜";
       alert(`${providerName} 로그인에 성공했습니다!`);
-      
+
       // 헤더에 로그인 상태 변경 이벤트 알림 (수정된 Header.tsx 반영)
       window.dispatchEvent(new Event('login-status-change'));
-      
+
       router.push("/");
       router.refresh();
     } else {

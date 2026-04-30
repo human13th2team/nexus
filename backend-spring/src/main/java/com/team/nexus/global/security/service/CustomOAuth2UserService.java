@@ -89,6 +89,7 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
                     .passwd("") // 소셜 로그인은 비밀번호 없음
                     .userType(0) // 기본 일반 회원
                     .loginType(loginType)
+                    .address("") // 소셜 로그인은 주소 정보 없음
                     .build();
             userRepository.save(user);
         }

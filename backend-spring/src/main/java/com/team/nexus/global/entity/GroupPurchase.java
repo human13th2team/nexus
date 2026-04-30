@@ -50,4 +50,17 @@ public class GroupPurchase {
 
     @Column(name = "status", length = 20)
     private String status;
+
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "image_url", columnDefinition = "TEXT")
+    private String imageUrl;
+
+    @Column(name = "region", length = 100)
+    private String region;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "groupPurchase", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<GroupOrder> orders = new java.util.ArrayList<>();
 }
