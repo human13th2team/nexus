@@ -47,10 +47,14 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS 설정 추가
+# CORS 설정 (운영 환경에 맞춰 허용 도메인 지정)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # 실 운영 시에는 특정 도메인으로 제한 권장
+    allow_origins=[
+        "http://localhost:3000",
+        "https://nexus-sigma-gilt.vercel.app",
+        "https://nexus-g3li.onrender.com"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
