@@ -20,7 +20,7 @@ jobs:
         run: |
           # 1. 허깅페이스 저장소를 'hf_space'라는 임시 폴더로 클론해옵니다.
           # 주의: 본인의 허깅페이스 유저명과 스페이스명으로 반드시 변경하세요!
-          git clone https://[본인유저명]:$HF_TOKEN@huggingface.co/spaces/[본인유저명]/nexus-ai-api hf_space
+          git clone https://[본인유저명]:$HF_TOKEN@huggingface.co/spaces/ashfortune/nexus-ai-api hf_space
           
           # 2. 클론해온 hf_space 안의 기존 파일들을 싹 비웁니다.
           rm -rf hf_space/*
