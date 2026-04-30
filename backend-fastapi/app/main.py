@@ -17,7 +17,7 @@ from app.domain.branding.brandingService import initialize_industry_cache
 from app.core.ai_client import get_ai_client
 from contextlib import asynccontextmanager
 from app.domain.subsidy import subsidyRouter as subsidy
-from app.domain.subsidy.subsidyRouter import scheduler as subsidy_scheduler, start_scheduler as subsidy_start_scheduler
+from app.domain.subsidy.subsidyRouter import start_scheduler as subsidy_start_scheduler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

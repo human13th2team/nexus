@@ -1,5 +1,3 @@
-#ALTER TABLE subsidies ADD COLUMN life_cycle VARCHAR(20); 나중에 테이블 컬럼 추가
-
 import requests
 import os
 import re
@@ -163,10 +161,12 @@ async def get_subsidies(
 
 
 async def fetch_subsidies_from_api():
+    yesterday = (date.today() - timedelta(days=1)).strftime("%Y%m%d")
+    today = date.today().strftime("%Y%m%d")
     params = {
         "token": SMES_TOKEN,
-        "strDt": "20200101",
-        "endDt": "20261231",
+        "strDt": yesterday, #초기 DB 저장시에는 strDt: "20200101" 돌리고 이후에는 yesterday로 변경
+        "endDt": today,
         "html": "no"
     }
     try:
@@ -188,11 +188,15 @@ async def save_subsidy(data: dict, source_url: str, db: AsyncSession):
         embedding = get_embedding(embed_text)
 
         deadline = data.get("deadline")
-        if deadline and isinstance(deadline, str):
+        if deadline and isinstance(deadline, str) and deadline.strip():
             try:
-                deadline = datetime.strptime(deadline, "%Y-%m-%d").date()
+                deadline = datetime.strptime(deadline.strip(), "%Y-%m-%d").date()
+                if deadline < date.today():
+                    return "skip"
             except ValueError:
                 deadline = None
+        else:
+            deadline = None
 
         start_date = data.get("start_date")
         if start_date and isinstance(start_date, str):
@@ -226,6 +230,7 @@ async def save_subsidy(data: dict, source_url: str, db: AsyncSession):
             {**data, "deadline": deadline, "start_date": start_date, "source_url": source_url}
         )
         await db.commit()
+        return True
     except Exception as e:
         await db.rollback()
         raise e
@@ -234,7 +239,7 @@ async def save_subsidy(data: dict, source_url: str, db: AsyncSession):
 async def delete_expired_subsidies(db: AsyncSession):
     await db.execute(
         text("DELETE FROM subsidies WHERE deadline < :today"),
-        {"today": date.today().isoformat()}
+        {"today": date.today()}
     )
     await db.commit()
     print("만료된 지원금 삭제 완료")
@@ -247,17 +252,23 @@ async def collect_subsidies(db: AsyncSession):
     items = await fetch_subsidies_from_api()
 
     success = 0
+    skip = 0
     fail = 0
     for item in items:
         try:
             data, source_url = parse_subsidy(item)
-            await save_subsidy(data, source_url, db)
-            success += 1
+            result = await save_subsidy(data, source_url, db)
+            if result == "skip":
+                skip += 1
+            elif result is True:
+                success += 1
+            else:
+                fail += 1
+                print(f"알수없는 반환값: {result} / {item.get('pblancNm')}", flush=True)
+
         except Exception as e:
             fail += 1
-            if fail == 1:
-                import traceback
-                traceback.print_exc()
-            print(f"저장 오류 ({item.get('pblancNm')}): {e}")
+            with open("error_log.txt", "a", encoding="utf-8") as f:
+                f.write(f"저장 오류 ({item.get('pblancNm')}): {e}\n")
 
-    print(f"총 {success}/{len(items)}건 저장 완료, 실패 {fail}건")
+    print(f"총 {success}건 저장, {skip}건 스킵, {fail}건 실패 / 전체 {len(items)}건")
