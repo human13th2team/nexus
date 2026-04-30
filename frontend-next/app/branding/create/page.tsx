@@ -10,7 +10,6 @@ import BrandingAssetsSection from "../components/BrandingAssetsSection";
 export default function BrandingPage() {
   const searchParams = useSearchParams();
   const resumeId = searchParams.get("resumeId");
-
   const [step, setStep] = useState(1);
   const [isResuming, setIsResuming] = useState(!!resumeId);
   const [brandData, setBrandData] = useState<any>({
@@ -32,7 +31,6 @@ export default function BrandingPage() {
           const res = await fetch(`http://localhost:8080/api/v1/branding/${resumeId}`);
           if (!res.ok) throw new Error("Failed to fetch resume data");
           const data = await res.json();
-
           // 상태 및 데이터 복구
           const recoveredData: any = {
             projectId: data.id,
@@ -42,13 +40,11 @@ export default function BrandingPage() {
             selectedIdentity: data.identities?.find((i: any) => i.isSelected) || null,
             isFinished: data.industryCategoryId !== "550e8400-e29b-41d4-a716-446655440000" && (data.keywords?.extracted_keywords?.length > 0)
           };
-
           // 현재 단계 결정
           let startStep = 1;
           if (data.currentStep === "NAMING_READY") startStep = 2;
           else if (data.currentStep === "LOGO_GENERATION") startStep = 3;
           else if (data.currentStep === "COMPLETED") startStep = 4;
-
           setBrandData(recoveredData);
           setStep(startStep);
         } catch (error) {

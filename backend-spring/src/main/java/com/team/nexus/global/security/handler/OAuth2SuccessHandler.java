@@ -61,6 +61,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                     .toUriString();
 
             log.info("Redirecting to: {}", targetUrl);
+
             // 디버깅을 위한 파일 로그 (콘솔 확인이 어려울 때 사용)
             try (java.io.FileWriter fw = new java.io.FileWriter("C:/nexus/oauth_debug.log", true)) {
                 fw.write(new java.util.Date() + " - Redirecting to: " + targetUrl + "\n");
