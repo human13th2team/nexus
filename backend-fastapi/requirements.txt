@@ -15,3 +15,4 @@ google-generativeai
 sentence-transformers
 greenlet
 google-genai>=1.0.0
+apscheduler
