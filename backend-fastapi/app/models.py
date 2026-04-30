@@ -405,6 +405,11 @@ class ChatRoom(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     title: Mapped[Optional[str]] = mapped_column(String(100))
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    image_url: Mapped[Optional[str]] = mapped_column(String(500))
+    type: Mapped[Optional[str]] = mapped_column(String(20), server_default=text("'GROUP'"))
+    password: Mapped[Optional[str]] = mapped_column(String(255))
+    last_message_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP)
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
@@ -430,7 +435,9 @@ class ChatMessage(Base):
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("chat_rooms.id", ondelete="CASCADE"), nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    is_read: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text("false"))
+    type: Mapped[Optional[str]] = mapped_column(String(20), server_default=text("'TALK'"))
+    file_url: Mapped[Optional[str]] = mapped_column(Text)
+    file_name: Mapped[Optional[str]] = mapped_column(String(255))
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
