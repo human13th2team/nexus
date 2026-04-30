@@ -1,23 +1,24 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Manrope, Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Script from "next/script";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Nexus - 공동구매 서비스",
-  description: "이웃과 함께하는 스마트한 소비",
+  title: "Nexus | The Intelligent Business Archive",
+  description: "넥서스(Nexus)는 창업과 비즈니스 성장을 돕는 지능형 브랜딩 및 상권 분석 플랫폼입니다.",
 };
 
 export default function RootLayout({
@@ -28,7 +29,7 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${manrope.variable} ${inter.variable} h-full antialiased`}
     >
       <head>
         {/* 가장 안정적인 Toss Payments v1 Core SDK */}
@@ -37,9 +38,9 @@ export default function RootLayout({
           strategy="beforeInteractive" 
         />
       </head>
-      <body className="min-h-full flex flex-col bg-white">
+      <body className="h-screen flex flex-col font-inter bg-[var(--nexus-bg)] text-[var(--nexus-on-bg)]">
         <Header />
-        <main className="flex-1 flex flex-col">
+        <main className="flex-1">
           {children}
         </main>
         <Footer />

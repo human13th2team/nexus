@@ -60,7 +60,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 3. 토큰 생성
-        String token = jwtTokenProvider.createToken(user.getEmail());
+        String token = jwtTokenProvider.createToken(user.getEmail(), user.getId(), user.getUserType());
 
         return LoginResponseDto.builder()
                 .userId(user.getId())

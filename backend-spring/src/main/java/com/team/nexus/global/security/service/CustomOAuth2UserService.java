@@ -37,6 +37,12 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
 
         Map<String, Object> attributes = oAuth2User.getAttributes();
         
+        try (java.io.FileWriter fw = new java.io.FileWriter("C:/nexus/oauth_debug.log", true)) {
+            fw.write(new java.util.Date() + " - CustomOAuth2UserService.loadUser started for: " + registrationId + "\n");
+        } catch (java.io.IOException e) {
+            log.error("Log file write error", e);
+        }
+        
         String email = "";
         String nickname = "";
         int loginType = 0; // 0: Local, 1: Google, 2: Kakao
@@ -59,6 +65,12 @@ public class CustomOAuth2UserService implements OAuth2UserService<OAuth2UserRequ
         Map<String, Object> customAttributes = new java.util.HashMap<>(attributes);
         customAttributes.put("userId", user.getId());
         customAttributes.put("nickname", user.getNickname());
+
+        try (java.io.FileWriter fw = new java.io.FileWriter("C:/nexus/oauth_debug.log", true)) {
+            fw.write(new java.util.Date() + " - CustomOAuth2UserService.loadUser completed for: " + email + "\n");
+        } catch (java.io.IOException e) {
+            log.error("Log file write error", e);
+        }
 
         return new DefaultOAuth2User(
                 Collections.singleton(new SimpleGrantedAuthority("ROLE_USER")),

@@ -1,5 +1,5 @@
 from app.core.database import Base
-from sqlalchemy import String, ForeignKey, Integer, SmallInteger, Boolean, Text, Date, TIMESTAMP, JSON, DOUBLE_PRECISION, text
+from sqlalchemy import String, ForeignKey, Integer, SmallInteger, Boolean, Text, Date, TIMESTAMP, JSON, DOUBLE_PRECISION, text, Numeric
 from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
@@ -14,6 +14,8 @@ class RegionCode(Base):
     region_code: Mapped[int] = mapped_column(Integer, nullable=False)
     city_name: Mapped[str] = mapped_column(String(10), nullable=False)
     county_name: Mapped[str] = mapped_column(String(10), nullable=False)
+    latitude: Mapped[float] = mapped_column(Numeric(13, 10), nullable=True)
+    longitude: Mapped[float] = mapped_column(Numeric(13, 10), nullable=True)
 
 class IndustryCategory(Base):
     __tablename__ = "industry_categories"
@@ -87,6 +89,7 @@ class Branding(Base):
     industry_category_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("industry_categories.id"), nullable=False)
     title: Mapped[str] = mapped_column(String(100), nullable=False)
     keywords: Mapped[Optional[dict]] = mapped_column(JSON)
+    chat_history: Mapped[Optional[list]] = mapped_column(JSON)
     current_step: Mapped[Optional[str]] = mapped_column(String(20), server_default=text("'INTERVIEW'"))
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
@@ -104,9 +107,10 @@ class BrandIdentity(Base):
     slogan: Mapped[Optional[str]] = mapped_column(String(255))
     brand_story: Mapped[Optional[str]] = mapped_column(Text)
     is_selected: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text("false"))
-    # embedding column (vector) is skipped or mapped to Text/JSON for now if pgvector is not available in the model
+    embedding: Mapped[Optional[Vector]] = mapped_column(Vector(768)) # 브랜드 정체성 의미 벡터
     
     # Relationships
+
     branding: Mapped["Branding"] = relationship(back_populates="identities")
     logo_assets: Mapped[list["LogoAsset"]] = relationship(back_populates="brand_identity", cascade="all, delete-orphan")
     marketing_assets: Mapped[list["MarketingAsset"]] = relationship(back_populates="brand_identity", cascade="all, delete-orphan")
@@ -161,7 +165,7 @@ class Survey(Base):
 
     # Relationships
     license_industry: Mapped["LicenseIndustry"] = relationship(back_populates="surveys")
-    condition_documents: Mapped[List["ConditionDocument"]] = relationship(back_populates="survey", cascade="all, delete-orphan")
+    survey_documents: Mapped[List["SurveyDocument"]] = relationship(back_populates="survey", cascade="all, delete-orphan")
 
 class Document(Base):
     __tablename__ = "documents"
@@ -174,10 +178,10 @@ class Document(Base):
 
     # Relationships
     license_industry: Mapped["LicenseIndustry"] = relationship(back_populates="documents")
-    condition_links: Mapped[List["ConditionDocument"]] = relationship(back_populates="document")
+    survey_links: Mapped[List["SurveyDocument"]] = relationship(back_populates="document")
 
-class ConditionDocument(Base):
-    __tablename__ = "condition_documents"
+class SurveyDocument(Base):
+    __tablename__ = "survey_documents"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     survey_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("surveys.id", ondelete="CASCADE"), nullable=False)
@@ -185,8 +189,8 @@ class ConditionDocument(Base):
     document_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("documents.id"), nullable=False)
 
     # Relationships
-    survey: Mapped["Survey"] = relationship(back_populates="condition_documents")
-    document: Mapped["Document"] = relationship(back_populates="condition_links")
+    survey: Mapped["Survey"] = relationship(back_populates="survey_documents")
+    document: Mapped["Document"] = relationship(back_populates="survey_links")
 
 class ChecklistStep(Base):
     __tablename__ = "checklist_steps"
@@ -402,6 +406,11 @@ class ChatRoom(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     title: Mapped[Optional[str]] = mapped_column(String(100))
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    image_url: Mapped[Optional[str]] = mapped_column(String(500))
+    type: Mapped[Optional[str]] = mapped_column(String(20), server_default=text("'GROUP'"))
+    password: Mapped[Optional[str]] = mapped_column(String(255))
+    last_message_at: Mapped[Optional[datetime.datetime]] = mapped_column(TIMESTAMP)
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
@@ -427,10 +436,21 @@ class ChatMessage(Base):
     room_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("chat_rooms.id", ondelete="CASCADE"), nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    is_read: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text("false"))
+    type: Mapped[Optional[str]] = mapped_column(String(20), server_default=text("'TALK'"))
+    file_url: Mapped[Optional[str]] = mapped_column(Text)
+    file_name: Mapped[Optional[str]] = mapped_column(String(255))
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
     chat_room: Mapped["ChatRoom"] = relationship(back_populates="messages")
     user: Mapped["User"] = relationship(back_populates="chat_messages")
 
+class SemasIndustryMapping(Base):
+    __tablename__ = "semas_industry_mappings"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    semas_ksic_code: Mapped[Optional[str]] = mapped_column(String(20))
+    ksic_code: Mapped[Optional[str]] = mapped_column(String(20))
+    large_category_name: Mapped[Optional[str]] = mapped_column(String(100))
+    medium_category_name: Mapped[Optional[str]] = mapped_column(String(100))
+    small_category_name: Mapped[Optional[str]] = mapped_column(String(100))

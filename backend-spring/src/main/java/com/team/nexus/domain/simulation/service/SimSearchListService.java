@@ -6,4 +6,6 @@ import jakarta.transaction.Transactional;
 @Transactional
 public interface SimSearchListService {
     SimSearchListDto getRegionIndustryList();
+
+    SimSearchListDto getRegionSemasIndustryList();
 }

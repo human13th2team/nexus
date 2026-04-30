@@ -33,7 +33,9 @@ CREATE TABLE region_codes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     region_code INT NOT NULL,
     city_name VARCHAR(10) NOT NULL,
-    county_name VARCHAR(10) NOT NULL
+    county_name VARCHAR(10),
+    latitude DECIMAL(13, 10),
+    longitude DECIMAL(13, 10)
 );
 
 ---------------------------------------
@@ -46,6 +48,7 @@ CREATE TABLE brandings (
     industry_category_id UUID NOT NULL REFERENCES industry_categories(id),
     title VARCHAR(100) NOT NULL,
     keywords JSONB,
+    chat_history JSONB,
     current_step VARCHAR(20) DEFAULT 'INTERVIEW',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -109,7 +112,7 @@ CREATE TABLE documents (
     is_common BOOLEAN NOT NULL DEFAULT FALSE
 );
 
-CREATE TABLE condition_documents (
+CREATE TABLE survey_documents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     survey_id UUID NOT NULL REFERENCES surveys(id) ON DELETE CASCADE,
     answer BOOLEAN NOT NULL,
@@ -290,6 +293,11 @@ CREATE TABLE group_orders (
 CREATE TABLE chat_rooms (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR(100),
+    description TEXT,
+    image_url VARCHAR(500),
+    type VARCHAR(20) DEFAULT 'GROUP',
+    password VARCHAR(255),
+    last_message_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -305,6 +313,20 @@ CREATE TABLE chat_messages (
     room_id UUID NOT NULL REFERENCES chat_rooms(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
-    is_read BOOLEAN DEFAULT FALSE,
+    type VARCHAR(20) DEFAULT 'TALK',
+    file_url TEXT,
+    file_name VARCHAR(255),
     created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+---------------------------------------
+-- 7. 업종-KSIC 매핑 (소상공인진흥공단 ksic)
+---------------------------------------
+CREATE TABLE semas_industry_mappings (
+    id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    semas_ksic_code      VARCHAR(20),
+    ksic_code            VARCHAR(20),
+    large_category_name  VARCHAR(100),
+    medium_category_name VARCHAR(100),
+    small_category_name  VARCHAR(100)
 );

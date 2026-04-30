@@ -19,7 +19,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 @RequiredArgsConstructor
 public class RealEstateServiceImpl implements RealEstateService {
     private final APIProperties apiProperties;
-    private final WebClient realEstateWebClient;
+    private final WebClient dataPortalRealEstateWebClient;
     private static final XmlMapper XML_MAPPER = new XmlMapper();
 
     private static final int TARGET_COUNT = 5;
@@ -27,58 +27,72 @@ public class RealEstateServiceImpl implements RealEstateService {
     @Override
     @Transactional
     public List<ProcessedRealEstateDto> getProcessedRealEstateList(Integer regionCode) {
+        LocalDate searchDate = LocalDate.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMM");
+
         List<ProcessedRealEstateDto> under100M = new ArrayList<>();
         List<ProcessedRealEstateDto> over100M = new ArrayList<>();
-        LocalDate searchDate = LocalDate.now();
 
+        // 최신 달부터 순서대로 조회, 5+5 채워지면 즉시 중단
         for (int i = 0; i < 12; i++) {
-            String dealYMD = searchDate.minusMonths(i).format(DateTimeFormatter.ofPattern("yyyyMM"));
-            int pageNo = 1;
-            boolean hasNextPage = true;
+            String dealYMD = searchDate.minusMonths(i).format(formatter);
+            boolean filled = fetchMonthUntilFull(regionCode, dealYMD, under100M, over100M);
+            if (filled)
+                break;
+        }
 
-            while (hasNextPage) {
-                RealEstateAPIResponseDto response = fetchApi(regionCode, dealYMD, pageNo);
+        return combine(under100M, over100M);
+    }
 
-                if (response == null || response.getResponse() == null || response.getResponse().getBody() == null) {
-                    break;
-                }
+    /**
+     * 해당 월의 API를 페이지 순서대로 호출하며 under/over 리스트를 채운다.
+     * 두 리스트가 모두 TARGET_COUNT에 도달하면 즉시 true를 반환(조기 종료).
+     */
+    private boolean fetchMonthUntilFull(Integer regionCode, String dealYMD,
+            List<ProcessedRealEstateDto> under100M,
+            List<ProcessedRealEstateDto> over100M) {
+        int pageNo = 1;
+        while (true) {
+            RealEstateAPIResponseDto response = fetchApi(regionCode, dealYMD, pageNo);
+            if (response == null || response.getResponse() == null || response.getResponse().getBody() == null) {
+                break;
+            }
+            var body = response.getResponse().getBody();
+            var items = body.getItems() != null ? body.getItems().getItem() : null;
 
-                var body = response.getResponse().getBody();
-                var items = body.getItems() != null ? body.getItems().getItem() : null;
-
-                if (items != null) {
-                    for (var item : items) {
-                        ProcessedRealEstateDto processed = mapAndCalculate(item);
-
-                        if (Boolean.TRUE.equals(processed.getIsWithin100M())) {
-                            if (under100M.size() < TARGET_COUNT)
-                                under100M.add(processed);
-                        } else {
-                            if (over100M.size() < TARGET_COUNT)
-                                over100M.add(processed);
-                        }
-
-                        if (under100M.size() >= TARGET_COUNT && over100M.size() >= TARGET_COUNT) {
-                            return combine(under100M, over100M);
-                        }
+            if (items != null) {
+                for (var item : items) {
+                    ProcessedRealEstateDto dto = mapAndCalculate(item);
+                    if (Boolean.TRUE.equals(dto.getIsWithin100M())) {
+                        if (under100M.size() < TARGET_COUNT)
+                            under100M.add(dto);
+                    } else {
+                        if (over100M.size() < TARGET_COUNT)
+                            over100M.add(dto);
+                    }
+                    // 두 버킷 모두 채워지면 즉시 종료
+                    if (under100M.size() >= TARGET_COUNT && over100M.size() >= TARGET_COUNT) {
+                        return true;
                     }
                 }
+            }
 
-                if (pageNo * body.getNumOfRows() < body.getTotalCount()) {
-                    pageNo++;
-                } else {
-                    hasNextPage = false;
-                }
+            // 다음 페이지 존재 여부 확인
+            if (body.getNumOfRows() > 0 && body.getTotalCount() > 0
+                    && pageNo * body.getNumOfRows() < body.getTotalCount()) {
+                pageNo++;
+            } else {
+                break;
             }
         }
-        return combine(under100M, over100M);
+        return under100M.size() >= TARGET_COUNT && over100M.size() >= TARGET_COUNT;
     }
 
     private RealEstateAPIResponseDto fetchApi(Integer regionCode, String dealYMD, int pageNo) {
         try {
-            String xmlResponse = realEstateWebClient.get()
+            String xmlResponse = dataPortalRealEstateWebClient.get()
                     .uri(uriBuilder -> uriBuilder
-                            .queryParam("serviceKey", apiProperties.getKey())
+                            .queryParam("serviceKey", apiProperties.getDataPortal().getKey())
                             .queryParam("LAWD_CD", regionCode)
                             .queryParam("DEAL_YMD", dealYMD)
                             .queryParam("pageNo", pageNo)
@@ -87,7 +101,7 @@ public class RealEstateServiceImpl implements RealEstateService {
                     .retrieve()
                     .bodyToMono(String.class)
                     .block();
-            
+
             return XML_MAPPER.readValue(xmlResponse, RealEstateAPIResponseDto.class);
         } catch (Exception e) {
             System.err.println("Error fetching real estate data: " + e.getMessage());
@@ -120,8 +134,7 @@ public class RealEstateServiceImpl implements RealEstateService {
             dto.setBuildAge(LocalDate.now().getYear() - Integer.parseInt(raw.buildYear.trim()));
         }
 
-        dto.setIsWithin100M(dto.getIsWithin100M());
-        dto.setPricePerPyeong(dto.getPricePerPyeong());
+        // isWithin100M, pricePerPyeong 은 getter에서 동적으로 계산되므로 별도 setter 불필요
 
         return dto;
     }

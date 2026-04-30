@@ -19,7 +19,6 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 서버 시작 시 실행될 로직
     print("🚀 Nexus API Server 시작 중...")
     
     # 1. AI 임베딩 모델 프리로딩

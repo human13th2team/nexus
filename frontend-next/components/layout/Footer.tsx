@@ -1,7 +1,7 @@
 export default function Footer() {
   return (
-    <footer>
-      {/* 푸터 작업 결과물을 여기에 붙여넣으세요 */}
+    <footer className="w-full py-12 bg-[var(--nexus-surface-low)] text-[var(--nexus-primary)] text-center font-medium opacity-50 text-sm">
+      푸터 영역
     </footer>
   );
 }

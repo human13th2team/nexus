@@ -52,16 +52,29 @@ export default function LoginPage() {
       });
 
       const result = await response.json();
+      console.log("Login Result:", result);
 
       if (response.ok && result.status === "success") {
-        const { accessToken, nickname, userId } = result.data;
-        // 로컬 스토리지에 토큰 및 정보 저장
+        const data = result.data;
+        const accessToken = data.accessToken;
+        const nickname = data.nickname;
+        const userId = data.userId || data.id; // fallback to 'id' if 'userId' is missing
+        
+        if (!userId) {
+          console.error("User ID is missing in the response:", data);
+        }
+
+        // 로컬 스토리지에 토큰 저장
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("nickname", nickname);
-        localStorage.setItem("userId", userId);
+        if (userId) localStorage.setItem("userId", userId);
         
-        alert(`${nickname}님, 환영합니다!`);
-        router.push("/"); // 메인 페이지로 이동
+        // 헤더에 로그인 상태 변경 이벤트 알림 (수정된 Header.tsx 반영)
+        window.dispatchEvent(new Event('login-status-change'));
+        
+        // 페이지 이동
+        router.push("/");
+        router.refresh(); // 최신 상태 반영을 위해 권장
       } else {
         // 서버 응답이 에러인 경우 (4xx, 5xx)
         const msg = result.message || "로그인 중 오류가 발생했습니다. 이메일과 비밀번호를 확인해 주세요.";

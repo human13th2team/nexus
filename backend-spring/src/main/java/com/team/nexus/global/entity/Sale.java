@@ -40,4 +40,7 @@ public class Sale {
 
     @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL)
     private List<SaleItem> items = new ArrayList<>();
+
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private LocalDateTime createdAt;
 }

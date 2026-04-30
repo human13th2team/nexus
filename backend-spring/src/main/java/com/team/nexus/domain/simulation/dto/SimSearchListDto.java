@@ -14,5 +14,4 @@ public class SimSearchListDto {
     private List<SimIndustCatsDto> simIndustCatsDto;
     @JsonProperty("reg_codes")
     private List<SimRegCodesDto> simRegCodesDto;
-
 }

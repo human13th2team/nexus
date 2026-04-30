@@ -31,8 +31,10 @@ public class JwtTokenProvider {
         this.key = Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String createToken(String email) {
+    public String createToken(String email, java.util.UUID userId, Integer userType) {
         Claims claims = Jwts.claims().setSubject(email);
+        claims.put("userId", userId.toString());
+        claims.put("userType", userType);
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliseconds);
 

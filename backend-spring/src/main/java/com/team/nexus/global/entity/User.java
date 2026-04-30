@@ -27,6 +27,7 @@ public class User {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(name = "passwd", nullable = false)
     private String passwd;
 
@@ -41,4 +42,7 @@ public class User {
 
     @Column(name = "login_type")
     private Integer loginType;
+
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private java.time.LocalDateTime createdAt;
 }
