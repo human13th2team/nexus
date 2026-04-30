@@ -186,7 +186,7 @@ export default function StoreMapClient({ kakaoApiKey, initialIndustries, initial
       try {
         const bounds = new window.kakao.maps.LatLngBounds();
         memoizedPolygons.forEach(p => {
-          if (p.path) p.path.forEach(pt => bounds.extend(new window.kakao.maps.LatLng(pt.lat, pt.lng)));
+          if (p.path) p.path.forEach((pt: any) => bounds.extend(new window.kakao.maps.LatLng(pt.lat, pt.lng)));
         });
 
         mapInstance.relayout();

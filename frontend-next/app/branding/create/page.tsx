@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import InterviewSection from "../components/InterviewSection";
 import IdentitySelectionSection from "../components/IdentitySelectionSection";
 import LogoGenerationSection from "../components/LogoGenerationSection";
 import BrandingAssetsSection from "../components/BrandingAssetsSection";
 
-export default function BrandingPage() {
+function BrandingPageContent() {
   const searchParams = useSearchParams();
   const resumeId = searchParams.get("resumeId");
   const [step, setStep] = useState(1);
@@ -151,5 +151,18 @@ export default function BrandingPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function BrandingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--nexus-surface-lowest)]">
+        <div className="w-16 h-16 border-4 border-[var(--nexus-primary-container)]/20 border-t-[var(--nexus-primary)] rounded-full animate-spin mb-8" />
+        <h2 className="text-xl font-black text-[var(--nexus-on-bg)] uppercase tracking-[0.2em] animate-pulse">Loading...</h2>
+      </div>
+    }>
+      <BrandingPageContent />
+    </Suspense>
   );
 }
