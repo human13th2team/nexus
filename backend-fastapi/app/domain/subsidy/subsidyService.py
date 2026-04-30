@@ -78,6 +78,8 @@ def parse_subsidy(item: dict) -> tuple:
 
     min_age_raw = item.get("minRpsntAge")
     max_age_raw = item.get("maxRpsntAge")
+    max_amount_raw = item.get("maxSportAmt")
+    max_amount = int(max_amount_raw) if max_amount_raw else None
 
     return {
         "name": name,
@@ -86,7 +88,7 @@ def parse_subsidy(item: dict) -> tuple:
         "industry": item.get("induty") or None,
         "min_age": int(min_age_raw) if min_age_raw else None,
         "max_age": int(max_age_raw) if max_age_raw else None,
-        "max_amount": item.get("maxSportAmt") or None,
+        "max_amount": max_amount,
         "deadline": item.get("pblancEndDt") or None,
         "start_date": item.get("pblancBgnDt") or None,
         "description": item.get("policyCnts") or None,
