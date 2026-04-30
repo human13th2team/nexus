@@ -16,6 +16,8 @@ from app.core.database import get_db, AsyncSessionLocal
 from app.domain.branding.brandingService import initialize_industry_cache
 from app.core.ai_client import get_ai_client
 from contextlib import asynccontextmanager
+from app.domain.subsidy import subsidyRouter as subsidy
+from app.domain.subsidy.subsidyRouter import start_scheduler as subsidy_start_scheduler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -28,7 +30,10 @@ async def lifespan(app: FastAPI):
     # 2. 업종 카테고리 데이터 캐싱
     async with AsyncSessionLocal() as db:
         await initialize_industry_cache(db)
-        
+
+    # 3. 지원금찾기 데이터 오전 3시 스케쥴
+    subsidy_start_scheduler(get_db)
+
     print("✨ 모든 초기화가 완료되었습니다. 서비스를 시작합니다.")
     yield
     # 서버 종료 시 실행될 로직 (필요 시)
@@ -72,6 +77,7 @@ app.include_router(simulation.router, prefix="/api/v1/ai/simulation", tags=["Sta
 app.include_router(compliance.router, prefix="/api/v1/ai/compliance", tags=["Compliance & Policy"])
 app.include_router(community.router, prefix="/api/v1/ai/community", tags=["Hyper-local Community"])
 app.include_router(dashboard.router, prefix="/api/v1/ai/dashboard", tags=["Ops & Dashboard"])
+app.include_router(subsidy.router, prefix="/api/v1/ai/subsidy", tags=["Subsidy Guide"])
 
 @app.get("/")
 async def root():
