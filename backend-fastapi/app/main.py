@@ -69,8 +69,8 @@ app.mount("/static/candidates", StaticFiles(directory=static_candidates_path), n
 app.mount("/static/final_logos", StaticFiles(directory=static_final_logos_path), name="final_logos")
 app.mount("/static/assets", StaticFiles(directory=static_assets_path), name="assets")
 
-# Spring Boot 서버 주소 (8080)
-SPRING_BOOT_URL = "http://localhost:8080"
+# Spring Boot 서버 주소 (배포 환경에서는 환경변수 SPRING_BOOT_URL 사용)
+SPRING_BOOT_URL = os.getenv("SPRING_BOOT_URL", "http://localhost:8080")
 
 # 도메인별 라우터 등록
 app.include_router(auth.router, prefix="/api/v1/ai/auth", tags=["Authentication"])

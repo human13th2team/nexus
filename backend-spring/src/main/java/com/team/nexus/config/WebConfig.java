@@ -12,7 +12,11 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:3000", "http://127.0.0.1:3000") // 프론트엔드 주소
+                .allowedOrigins(
+                        "http://localhost:3000", 
+                        "http://127.0.0.1:3000",
+                        "https://ashfortune-nexus-ai-api.hf.space"
+                ) // 프론트엔드 및 AI 서버 주소
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)
