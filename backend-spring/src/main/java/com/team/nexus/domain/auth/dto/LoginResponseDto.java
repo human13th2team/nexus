@@ -8,8 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.UUID;
-
 @Getter
 @Setter
 @Builder
@@ -18,7 +16,7 @@ import java.util.UUID;
 @Schema(description = "로그인 응답 데이터")
 public class LoginResponseDto {
 
-    @com.fasterxml.jackson.annotation.JsonProperty("userId")
+    @JsonProperty("userId")
     @Schema(description = "사용자 고유 ID")
     private String userId;
 
@@ -31,4 +29,3 @@ public class LoginResponseDto {
     @Schema(description = "사용자 유형 (0: 일반, 1: 사업가)")
     private int userType;
 }
-

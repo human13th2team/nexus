@@ -25,7 +25,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
     private final com.team.nexus.domain.auth.repository.UserRepository userRepository;
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+            Authentication authentication) throws IOException, ServletException {
         try {
             OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
             Map<String, Object> attributes = oAuth2User.getAttributes();
@@ -46,7 +47,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
             String provider = ((org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken) authentication)
                     .getAuthorizedClientRegistrationId();
-            
+
             log.info("OAuth2 Login Success: {} (ID: {}), Provider: {}", email, user.getId(), provider);
 
             // 닉네임 한글 인코딩 및 URL 생성
@@ -60,7 +61,6 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                     .toUriString();
 
             log.info("Redirecting to: {}", targetUrl);
-
             // 디버깅을 위한 파일 로그 (콘솔 확인이 어려울 때 사용)
             try (java.io.FileWriter fw = new java.io.FileWriter("C:/nexus/oauth_debug.log", true)) {
                 fw.write(new java.util.Date() + " - Redirecting to: " + targetUrl + "\n");
