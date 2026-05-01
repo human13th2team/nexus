@@ -18,15 +18,15 @@ const convertToWgs84 = (c: any): { lat: number; lng: number } | null => {
     return { lat: Y, lng: X };
   }
   if (X > 1000) {
-    const a = 6378137.0;          // 장반경(m)
-    const f = 1 / 298.257222101;  // 편평률
-    const b = a * (1 - f);        // 단반경
-    const e2 = 2 * f - f * f;     // 이심률 제곱
-    const k0 = 1.0;               // 축척계수
-    const lat0 = 38.0 * Math.PI / 180; // 원점 위도 (38°N)
-    const lng0 = 127.0 * Math.PI / 180; // 원점 경도 (127°E)
-    const FE = 200000.0;          // False Easting
-    const FN = 600000.0;          // False Northing
+    const a = 6378137.0;
+    const f = 1 / 298.257222101;
+    const b = a * (1 - f);
+    const e2 = 2 * f - f * f;
+    const k0 = 1.0;
+    const lat0 = 38.0 * Math.PI / 180;
+    const lng0 = 127.0 * Math.PI / 180;
+    const FE = 200000.0;
+    const FN = 600000.0;
 
     const x = X - FE;
     const y = Y - FN;
@@ -43,7 +43,6 @@ const convertToWgs84 = (c: any): { lat: number; lng: number } | null => {
     const M0 = calcM(lat0);
     const M = M0 + y / k0;
 
-    // foot point latitude (φ1) 계산 (반복법)
     const n = (a - b) / (a + b);
     const mu = M / (a * (1 - e2 / 4 - 3 * e2 * e2 / 64 - 5 * e2 * e2 * e2 / 256));
     const phi1 = mu
@@ -56,14 +55,13 @@ const convertToWgs84 = (c: any): { lat: number; lng: number } | null => {
     const cosPhi1 = Math.cos(phi1);
     const tanPhi1 = sinPhi1 / cosPhi1;
 
-    const e2p = e2 / (1 - e2); // 제2이심률 제곱
-    const N1 = a / Math.sqrt(1 - e2 * sinPhi1 * sinPhi1); // 묘유선곡률반경
+    const e2p = e2 / (1 - e2);
+    const N1 = a / Math.sqrt(1 - e2 * sinPhi1 * sinPhi1);
     const T1 = tanPhi1 * tanPhi1;
     const C1 = e2p * cosPhi1 * cosPhi1;
-    const R1 = a * (1 - e2) / Math.pow(1 - e2 * sinPhi1 * sinPhi1, 1.5); // 자오선곡률반경
+    const R1 = a * (1 - e2) / Math.pow(1 - e2 * sinPhi1 * sinPhi1, 1.5);
     const D = x / (N1 * k0);
 
-    // 위도 계산
     const lat_rad = phi1
       - (N1 * tanPhi1 / R1) * (
         D * D / 2
@@ -71,7 +69,6 @@ const convertToWgs84 = (c: any): { lat: number; lng: number } | null => {
         + (61 + 90 * T1 + 298 * C1 + 45 * T1 * T1 - 252 * e2p - 3 * C1 * C1) * D * D * D * D * D * D / 720
       );
 
-    // 경도 계산
     const lng_rad = lng0 + (
       D
       - (1 + 2 * T1 + C1) * D * D * D / 6
@@ -81,7 +78,6 @@ const convertToWgs84 = (c: any): { lat: number; lng: number } | null => {
     const lat = lat_rad * 180 / Math.PI;
     const lng = lng_rad * 180 / Math.PI;
 
-    // 한국 유효 범위 체크
     return (lat > 33 && lat < 39 && lng > 124 && lng < 132) ? { lat, lng } : null;
   }
 
@@ -151,23 +147,22 @@ export default function StoreMapClient({ kakaoApiKey, initialIndustries, initial
     return Math.ceil(storesData.totalCount / storesData.storeByRegionDtoList.length);
   }, [storesData]);
 
+  // boundary: [[[lng,lat],...], ...] — 각 원소가 폴리곤 외곽선 1개
+  // Polygon → [외곽선], MultiPolygon → [외곽선1, 외곽선2, ...]
   const memoizedPolygons = useMemo(() => {
     if (!storesData || !storesData.storeByRegionDtoList || !sdkReady) return [];
     const results: any[] = [];
 
     storesData.storeByRegionDtoList.forEach((region: any) => {
-      if (!region?.geometry?.coordinates) return;
+      if (!region?.geometry || !Array.isArray(region.geometry)) return;
       const rCode = region.adongCd || region.region_code;
       const rName = region.adongNm || region.region_name;
       const rCount = region.count || 0;
-      const polygons = region.geometry.type === "MultiPolygon" ? region.geometry.coordinates : [region.geometry.coordinates];
 
-      polygons.forEach((poly: any, pIdx: number) => {
-        const ring = poly[0];
+      region.geometry.forEach((ring: any, pIdx: number) => {
         if (!Array.isArray(ring)) return;
         const path = ring.map(convertToWgs84).filter((p: any) => p !== null) as { lat: number, lng: number }[];
         if (path.length >= 3) {
-          // 폴리곤 중심점 계산
           let pLatSum = 0, pLngSum = 0;
           path.forEach((pt: any) => { pLatSum += pt.lat; pLngSum += pt.lng; });
           const center = { lat: pLatSum / path.length, lng: pLngSum / path.length };
@@ -181,24 +176,19 @@ export default function StoreMapClient({ kakaoApiKey, initialIndustries, initial
 
   useEffect(() => {
     if (!sdkReady || !mapInstance || memoizedPolygons.length === 0) return;
-
     const performFocus = () => {
       try {
         const bounds = new window.kakao.maps.LatLngBounds();
         memoizedPolygons.forEach(p => {
           if (p.path) p.path.forEach(pt => bounds.extend(new window.kakao.maps.LatLng(pt.lat, pt.lng)));
         });
-
         mapInstance.relayout();
-        // 전체 폴리곤이 화면에 맞게 자동 줌 조정 (level 수동 조작 금지)
         mapInstance.setBounds(bounds, 30);
       } catch (e) { console.error("Focus Error:", e); }
     };
-
     const tid = setTimeout(performFocus, 300);
     return () => clearTimeout(tid);
   }, [storesData, sdkReady, mapInstance, analysisCount]);
-
 
   const handleStartAnalysis = async () => {
     if (selectedRegion == "" || !selectedIndustry) return;

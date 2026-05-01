@@ -476,3 +476,11 @@ class SemasIndustryMapping(Base):
     large_category_name: Mapped[Optional[str]] = mapped_column(String(100))
     medium_category_name: Mapped[Optional[str]] = mapped_column(String(100))
     small_category_name: Mapped[Optional[str]] = mapped_column(String(100))
+
+class AdministrativeBoundary(Base):
+    __tablename__ = "administrative_boundaries"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    adm_cd: Mapped[str] = mapped_column(String(20), nullable=False)
+    adm_nm: Mapped[str] = mapped_column(String(100), nullable=False)
+    boundary: Mapped[Optional[dict]] = mapped_column(JSON, nullable=False)

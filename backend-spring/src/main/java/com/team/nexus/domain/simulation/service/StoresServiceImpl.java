@@ -6,18 +6,16 @@ import com.team.nexus.domain.simulation.dto.SemasAPIDto;
 import com.team.nexus.domain.simulation.dto.SemasItemDto;
 import com.team.nexus.domain.simulation.dto.StoreByRegionDto;
 import com.team.nexus.domain.simulation.dto.StoreMapResponseDto;
+import com.team.nexus.domain.simulation.repository.AdministrativeBoundaryRepository;
 import com.team.nexus.domain.simulation.repository.RegionCodeRepository;
+import com.team.nexus.global.entity.AdministrativeBoundaries;
 import com.team.nexus.global.entity.RegionCode;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -30,116 +28,11 @@ public class StoresServiceImpl implements StoresService {
     private final APIProperties apiProperties;
     private final WebClient dataPortalSemasWebClient;
     private final RegionCodeRepository regionCodeRepository;
+    private final AdministrativeBoundaryRepository boundaryRepository;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    private static final Map<String, List<JsonNode>> sigunguBoundariesCache = new ConcurrentHashMap<>();
-
+    // 응답 캐시 (signguCd:semasKsicCode 기준)
     private static final Map<String, StoreMapResponseDto> responseCache = new ConcurrentHashMap<>();
-
-    private static final Map<String, String> countyNameToAdmPrefixCache = new ConcurrentHashMap<>();
-
-    @PostConstruct
-    public void init() {
-        log.info("Starting to load hangjeongdong.json into memory...");
-        try {
-            ClassPathResource resource = new ClassPathResource("hangjeongdong.json");
-            try (InputStream is = resource.getInputStream()) {
-                JsonNode root = mapper.readTree(is);
-                JsonNode features = root.path("features");
-
-                int count = 0;
-                for (JsonNode feature : features) {
-                    String admCd = feature.path("properties").path("ADM_CD").asText();
-                    if (admCd.length() >= 5) {
-                        String sigunguCd = admCd.substring(0, 5);
-                        sigunguBoundariesCache.computeIfAbsent(sigunguCd, k -> new ArrayList<>()).add(feature);
-                        count++;
-                    }
-                }
-                log.info("Successfully loaded {} administrative dongs into memory cache. sigunguCodes: {}",
-                        count, sigunguBoundariesCache.size());
-            }
-        } catch (IOException e) {
-            log.error("Failed to load hangjeongdong.json during initialization", e);
-        }
-    }
-
-    private String resolveAdmPrefix(String dbRegionCode, RegionCode regionCodeEntity) {
-        if (regionCodeEntity == null)
-            return dbRegionCode;
-
-        String countyName = regionCodeEntity.getCountyName();
-        if (countyName == null || countyName.isBlank())
-            return dbRegionCode;
-
-        if (countyNameToAdmPrefixCache.containsKey(countyName)) {
-            return countyNameToAdmPrefixCache.get(countyName);
-        }
-
-        double dbLat = regionCodeEntity.getLatitude() != null ? regionCodeEntity.getLatitude() : 0.0;
-        double dbLng = regionCodeEntity.getLongitude() != null ? regionCodeEntity.getLongitude() : 0.0;
-
-        if (dbLat == 0.0 && dbLng == 0.0) {
-            log.warn("No lat/lng for countyName={}, using dbRegionCode={} as fallback", countyName, dbRegionCode);
-            return dbRegionCode;
-        }
-
-        String bestPrefix = null;
-        double minDist = Double.MAX_VALUE;
-
-        for (Map.Entry<String, List<JsonNode>> entry : sigunguBoundariesCache.entrySet()) {
-            String admPrefix = entry.getKey();
-            List<JsonNode> features = entry.getValue();
-            if (features.isEmpty())
-                continue;
-
-            double sumLat = 0, sumLng = 0;
-            int ptCount = 0;
-            for (JsonNode feat : features) {
-                JsonNode coords = feat.path("geometry").path("coordinates");
-                JsonNode ring = coords.isArray() && coords.size() > 0 ? coords.get(0) : null;
-                if (ring == null || !ring.isArray())
-                    continue;
-                for (JsonNode pt : ring) {
-                    if (!pt.isArray() || pt.size() < 2)
-                        continue;
-                    double x = pt.get(0).asDouble();
-                    double y = pt.get(1).asDouble();
-
-                    if (x > 1000) {
-                        double DEG = 111319.49;
-                        double lat = 38.0 + (y - 600000.0) / DEG;
-                        double lng = 127.0 + (x - 200000.0) / (DEG * Math.cos(lat * Math.PI / 180.0));
-                        sumLat += lat;
-                        sumLng += lng;
-                        ptCount++;
-                    }
-                }
-            }
-
-            if (ptCount == 0)
-                continue;
-            double avgLat = sumLat / ptCount;
-            double avgLng = sumLng / ptCount;
-
-            double dist = Math.pow(avgLat - dbLat, 2) + Math.pow(avgLng - dbLng, 2);
-            if (dist < minDist) {
-                minDist = dist;
-                bestPrefix = admPrefix;
-            }
-        }
-
-        if (bestPrefix != null) {
-            countyNameToAdmPrefixCache.put(countyName, bestPrefix);
-            log.info("Resolved countyName={} (regionCode={}) -> admPrefix={} (dist={})",
-                    countyName, dbRegionCode, bestPrefix, minDist);
-            return bestPrefix;
-        }
-
-        log.warn("Could not resolve admPrefix for countyName={}, fallback to dbRegionCode={}", countyName,
-                dbRegionCode);
-        return dbRegionCode;
-    }
 
     @Override
     @Transactional(readOnly = true)
@@ -150,11 +43,16 @@ public class StoresServiceImpl implements StoresService {
         }
 
         try {
-
+            // 1. DB에서 시군구 정보 조회 (중심 좌표용)
             RegionCode sigungu = regionCodeRepository.findByRegionCode(Integer.parseInt(signguCd)).orElse(null);
             double sigLat = (sigungu != null && sigungu.getLatitude() != null) ? sigungu.getLatitude() : 37.5665;
             double sigLng = (sigungu != null && sigungu.getLongitude() != null) ? sigungu.getLongitude() : 126.978;
 
+            // 2. DB에서 해당 시군구의 행정동 경계 데이터 조회 (adm_cd가 signguCd로 시작하는 것)
+            List<AdministrativeBoundaries> dbBoundaries = boundaryRepository.findByAdmCdStartingWith(signguCd);
+            log.info("DB에서 조회된 행정동 경계 수: {} (signguCd={})", dbBoundaries.size(), signguCd);
+
+            // 3. SEMAS API 호출 — 업종별 업소 데이터
             SemasAPIDto response = dataPortalSemasWebClient.get()
                     .uri(uriBuilder -> uriBuilder
                             .path("")
@@ -170,10 +68,12 @@ public class StoresServiceImpl implements StoresService {
                     .bodyToMono(SemasAPIDto.class)
                     .block();
 
+            // 4. SEMAS API 결과가 없을 경우 — 빈 응답 (경계 데이터는 포함)
             if (response == null || response.getBody() == null || response.getBody().getItems() == null) {
+                List<StoreByRegionDto> emptyRegions = buildRegionList(dbBoundaries, Collections.emptyMap());
                 return StoreMapResponseDto.builder()
                         .totalCount(0)
-                        .storeByRegionDtoList(Collections.emptyList())
+                        .storeByRegionDtoList(emptyRegions)
                         .centerLat(sigLat)
                         .centerLng(sigLng)
                         .build();
@@ -181,43 +81,19 @@ public class StoresServiceImpl implements StoresService {
 
             List<SemasItemDto> items = response.getBody().getItems();
 
+            // 5. 행정동명 기준으로 업소수 집계
             Map<String, Integer> adongNmCountMap = items.stream()
                     .collect(Collectors.groupingBy(
                             item -> item.getAdongNm() != null ? item.getAdongNm() : "",
                             Collectors.summingInt(item -> 1)));
-            log.info("adongNmCountMap sample: {}", adongNmCountMap.entrySet().stream()
+            log.info("adongNmCountMap 샘플: {}", adongNmCountMap.entrySet().stream()
                     .limit(5).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 
-            String resolvedAdmPrefix = resolveAdmPrefix(signguCd, sigungu);
-            log.info("getStoreList: signguCd(DB/SEMAS)={} -> hangjeongdong admPrefix={} (countyName={})",
-                    signguCd, resolvedAdmPrefix,
-                    sigungu != null ? sigungu.getCountyName() : "null");
-
-            List<JsonNode> boundaries = sigunguBoundariesCache.getOrDefault(resolvedAdmPrefix, Collections.emptyList());
-            log.info("boundaries size for admPrefix={}: {}", resolvedAdmPrefix, boundaries.size());
-
-            List<StoreByRegionDto> regions = boundaries.stream()
-                    .map(feature -> {
-                        String admCd = feature.path("properties").path("ADM_CD").asText();
-                        String admNm = feature.path("properties").path("ADM_NM").asText();
-
-                        int count = adongNmCountMap.getOrDefault(admNm, 0);
-                        if (count == 0) {
-                            final String admNmNorm = normalizeAdmNm(admNm);
-                            count = adongNmCountMap.entrySet().stream()
-                                    .filter(e -> normalizeAdmNm(e.getKey()).equals(admNmNorm))
-                                    .mapToInt(Map.Entry::getValue)
-                                    .sum();
-                        }
-
-                        return StoreByRegionDto.builder()
-                                .adongCd(admCd)
-                                .adongNm(admNm)
-                                .count(count)
-                                .geometry(feature.path("geometry"))
-                                .build();
-                    })
-                    .toList();
+            // 6. DB 경계 데이터와 업소수 매핑
+            List<StoreByRegionDto> regions = buildRegionList(dbBoundaries, adongNmCountMap);
+            log.info("전체 지역 수: {}, 업소 있는 지역 수: {}",
+                    regions.size(),
+                    regions.stream().filter(r -> r.getCount() > 0).count());
 
             StoreByRegionDto mostRegion = regions.stream()
                     .max(Comparator.comparingInt(StoreByRegionDto::getCount))
@@ -236,21 +112,55 @@ public class StoresServiceImpl implements StoresService {
                     .build();
 
             responseCache.put(cacheKey, result);
-            log.info("items size: {}", items.size());
-            log.info("regions total: {}, regions with count>0: {}",
-                    regions.size(),
-                    regions.stream().filter(r -> r.getCount() > 0).count());
             return result;
 
         } catch (Exception e) {
-            log.error("Error in getStoreList for signguCd: {}, ksicCode: {}", signguCd, semasKsicCode, e);
-            throw new RuntimeException("Internal Server Error occurred while processing store list", e);
+            log.error("getStoreList 처리 중 오류 발생 — signguCd: {}, ksicCode: {}", signguCd, semasKsicCode, e);
+            throw new RuntimeException("상권 지도 데이터 조회 중 오류가 발생했습니다.", e);
         }
     }
 
-    private String normalizeAdmNm(String nm) {
-        if (nm == null)
-            return "";
+    /**
+     * DB 경계 데이터 목록과 업소수 Map을 조합하여 StoreByRegionDto 리스트 생성
+     */
+    private List<StoreByRegionDto> buildRegionList(
+            List<AdministrativeBoundaries> boundaries,
+            Map<String, Integer> adongNmCountMap) {
+
+        return boundaries.stream()
+                .map(b -> {
+                    String admNm = b.getAdmNm();
+                    int count = adongNmCountMap.getOrDefault(admNm, 0);
+
+                    // 정규화 매칭 (특수문자·공백 무시)
+                    if (count == 0) {
+                        final String normNm = normalize(admNm);
+                        count = adongNmCountMap.entrySet().stream()
+                                .filter(e -> normalize(e.getKey()).equals(normNm))
+                                .mapToInt(Map.Entry::getValue)
+                                .sum();
+                    }
+
+                    // boundary JSON 문자열을 JsonNode로 파싱
+                    JsonNode geometryNode = null;
+                    try {
+                        geometryNode = mapper.readTree(b.getBoundary());
+                    } catch (Exception ex) {
+                        log.warn("boundary JSON 파싱 실패 — admCd={}: {}", b.getAdmCd(), ex.getMessage());
+                    }
+
+                    return StoreByRegionDto.builder()
+                            .adongCd(b.getAdmCd())
+                            .adongNm(admNm)
+                            .count(count)
+                            .geometry(geometryNode)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    private String normalize(String nm) {
+        if (nm == null) return "";
         return nm.replaceAll("[·.·,\\s]+", "");
     }
 }

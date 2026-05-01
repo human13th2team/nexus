@@ -3,12 +3,11 @@ package com.team.nexus.domain.simulation.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
 import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 @RequiredArgsConstructor
-public class WebClientConfig {
+public class SimWebClientConfig {
     private final APIProperties apiProperties;
 
     @Bean
@@ -22,7 +21,7 @@ public class WebClientConfig {
     public WebClient dataPortalSemasWebClient(WebClient.Builder builder) {
         return builder
                 .baseUrl(apiProperties.getDataPortal().getSemasUrl())
-                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 10MB
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
                 .build();
     }
 
