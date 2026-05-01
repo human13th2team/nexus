@@ -1,8 +1,7 @@
 from app.core.database import Base
-from sqlalchemy import String, ForeignKey, Integer, SmallInteger, Boolean, Text, Date, TIMESTAMP, JSON, DOUBLE_PRECISION, text
+from sqlalchemy import String, ForeignKey, Integer, SmallInteger, Boolean, Text, Date, TIMESTAMP, JSON, DOUBLE_PRECISION, text, Numeric
 from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from pgvector.sqlalchemy import Vector
 from typing import Optional, List
 import datetime
 import uuid
@@ -25,7 +24,7 @@ class IndustryCategory(Base):
     parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("industry_categories.id", ondelete="SET NULL"))
     level: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     ksic_code: Mapped[Optional[str]] = mapped_column(String(20))
-    embedding: Mapped[Optional[Vector]] = mapped_column(Vector(768)) # AI 의미 검색용 벡터
+    embedding: Mapped[Optional[Vector]] = mapped_column(Vector(768))
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships
@@ -78,8 +77,7 @@ class User(Base):
     chat_participants: Mapped[List["ChatParticipant"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     chat_messages: Mapped[List["ChatMessage"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     labor_contracts: Mapped[List["LaborContract"]] = relationship(back_populates="user")
-
-# Import types for relationship resolution at the end of the file or use string references
+    checklist_progresses: Mapped[List["ChecklistProgress"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 class Branding(Base):
     __tablename__ = "brandings"
@@ -106,8 +104,8 @@ class BrandIdentity(Base):
     slogan: Mapped[Optional[str]] = mapped_column(String(255))
     brand_story: Mapped[Optional[str]] = mapped_column(Text)
     is_selected: Mapped[Optional[bool]] = mapped_column(Boolean, server_default=text("false"))
-    # embedding column (vector) is skipped or mapped to Text/JSON for now if pgvector is not available in the model
-    
+    embedding: Mapped[Optional[Vector]] = mapped_column(Vector(768))
+
     # Relationships
     branding: Mapped["Branding"] = relationship(back_populates="identities")
     logo_assets: Mapped[list["LogoAsset"]] = relationship(back_populates="brand_identity", cascade="all, delete-orphan")
@@ -136,7 +134,6 @@ class MarketingAsset(Base):
     # Relationships
     brand_identity: Mapped["BrandIdentity"] = relationship(back_populates="marketing_assets")
 
-
 class LicenseIndustry(Base):
     __tablename__ = "license_industries"
 
@@ -152,6 +149,7 @@ class LicenseIndustry(Base):
     surveys: Mapped[List["Survey"]] = relationship(back_populates="license_industry", cascade="all, delete-orphan")
     documents: Mapped[List["Document"]] = relationship(back_populates="license_industry", cascade="all, delete-orphan")
     license_mappings: Mapped[List["LicenseIndustryMapping"]] = relationship(back_populates="license")
+    checklist_progresses: Mapped[List["ChecklistProgress"]] = relationship(back_populates="license_industry", cascade="all, delete-orphan")
 
 class Survey(Base):
     __tablename__ = "surveys"
@@ -163,7 +161,7 @@ class Survey(Base):
 
     # Relationships
     license_industry: Mapped["LicenseIndustry"] = relationship(back_populates="surveys")
-    condition_documents: Mapped[List["ConditionDocument"]] = relationship(back_populates="survey", cascade="all, delete-orphan")
+    survey_documents: Mapped[List["SurveyDocument"]] = relationship(back_populates="survey", cascade="all, delete-orphan")
 
 class Document(Base):
     __tablename__ = "documents"
@@ -176,10 +174,10 @@ class Document(Base):
 
     # Relationships
     license_industry: Mapped["LicenseIndustry"] = relationship(back_populates="documents")
-    condition_links: Mapped[List["ConditionDocument"]] = relationship(back_populates="document")
+    survey_links: Mapped[List["SurveyDocument"]] = relationship(back_populates="document")
 
-class ConditionDocument(Base):
-    __tablename__ = "condition_documents"
+class SurveyDocument(Base):
+    __tablename__ = "survey_documents"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     survey_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("surveys.id", ondelete="CASCADE"), nullable=False)
@@ -187,8 +185,8 @@ class ConditionDocument(Base):
     document_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("documents.id"), nullable=False)
 
     # Relationships
-    survey: Mapped["Survey"] = relationship(back_populates="condition_documents")
-    document: Mapped["Document"] = relationship(back_populates="condition_links")
+    survey: Mapped["Survey"] = relationship(back_populates="survey_documents")
+    document: Mapped["Document"] = relationship(back_populates="survey_links")
 
 class ChecklistStep(Base):
     __tablename__ = "checklist_steps"
@@ -213,6 +211,21 @@ class LicenseIndustryMapping(Base):
     # Relationships
     category: Mapped["IndustryCategory"] = relationship(back_populates="license_mappings")
     license: Mapped["LicenseIndustry"] = relationship()
+
+class ChecklistProgress(Base):
+    __tablename__ = "checklist_progresses"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    license_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("license_industries.id"), nullable=False)
+    current_step: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default=text("1"))
+    industry_code: Mapped[Optional[str]] = mapped_column(String(50))
+    conditions: Mapped[Optional[dict]] = mapped_column(JSON)
+    updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
+
+    # Relationships
+    user: Mapped["User"] = relationship(back_populates="checklist_progresses")
+    license_industry: Mapped["LicenseIndustry"] = relationship(back_populates="checklist_progresses")
 
 class LaborContract(Base):
     __tablename__ = "labor_contracts"
@@ -241,12 +254,17 @@ class Subsidy(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     organization: Mapped[str] = mapped_column(String(100), nullable=False)
-    max_amount: Mapped[Optional[str]] = mapped_column(String(50))
-    deadline: Mapped[Optional[str]] = mapped_column(String(50))
+    region: Mapped[Optional[str]] = mapped_column(String(100))
+    industry: Mapped[Optional[str]] = mapped_column(String(100))
+    min_age: Mapped[Optional[int]] = mapped_column(SmallInteger)
+    max_age: Mapped[Optional[int]] = mapped_column(SmallInteger)
+    max_amount: Mapped[Optional[int]] = mapped_column(Integer)
+    deadline: Mapped[Optional[datetime.date]] = mapped_column(Date)
     description: Mapped[Optional[str]] = mapped_column(Text)
-    eligibility: Mapped[Optional[str]] = mapped_column(Text)
     apply_url: Mapped[Optional[str]] = mapped_column(String(500))
-    # embedding column (vector) is skipped
+    source_url: Mapped[Optional[str]] = mapped_column(String(500), unique=True)
+    embedding: Mapped[Optional[list]] = mapped_column(Vector(768))
+    created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
     updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
 class Sale(Base):
@@ -328,7 +346,6 @@ class AIReport(Base):
     # Relationships
     user: Mapped["User"] = relationship(back_populates="ai_reports")
 
-
 class Board(Base):
     __tablename__ = "boards"
 
@@ -384,7 +401,7 @@ class GroupPurchase(Base):
 class GroupOrder(Base):
     __tablename__ = "group_orders"
 
-    id: Mapped[str] = mapped_column(String(50), primary_key=True) # Order ID
+    id: Mapped[str] = mapped_column(String(50), primary_key=True)
     gp_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("group_purchases.id"), nullable=False)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
     order_count: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("1"))
