@@ -54,17 +54,22 @@ def get_full_path(ind):
 
 async def create_new_branding(db: AsyncSession, request: BrandingCreateRequest) :
     """새로운 브랜딩 프로젝트를 생성하고 DB에 저장합니다."""
-    new_branding = Branding(
-        id=uuid.uuid4(),
-        user_id=request.userId or DEFAULT_USER_ID,
-        industry_category_id=request.industryId,
-        title=request.title or "새 브랜딩 프로젝트",
-        current_step="INTERVIEW"
-    )
-    db.add(new_branding)
-    await db.commit()
-    await db.refresh(new_branding)
-    return new_branding
+    try:
+        new_branding = Branding(
+            id=uuid.uuid4(),
+            user_id=request.userId or DEFAULT_USER_ID,
+            industry_category_id=request.industryId,
+            title=request.title or "새 브랜딩 프로젝트",
+            current_step="INTERVIEW"
+        )
+        db.add(new_branding)
+        await db.commit()
+        await db.refresh(new_branding)
+        return new_branding
+    except Exception as e:
+        await db.rollback()
+        print(f"❌ [create_new_branding 에러 상세]: {str(e)}")
+        raise e
 
 async def update_branding_interview(db: AsyncSession, branding_id: uuid.UUID, request: BrandingInterviewRequest):
     """인터뷰 답변을 저장하고 단계를 업데이트합니다."""
