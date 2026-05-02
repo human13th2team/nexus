@@ -43,6 +43,12 @@ public class User {
     @Column(name = "login_type")
     private Integer loginType;
 
+    @Column(name = "profile_image")
+    private String profileImage;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private java.time.LocalDateTime createdAt;
+
+    @Column(name = "deleted_at")
+    private java.time.LocalDateTime deletedAt;
 }
