@@ -79,6 +79,7 @@ class User(Base):
     chat_participants: Mapped[List["ChatParticipant"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     chat_messages: Mapped[List["ChatMessage"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     labor_contracts: Mapped[List["LaborContract"]] = relationship(back_populates="user")
+    checklist_progresses: Mapped[List["ChecklistProgress"]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
 # Import types for relationship resolution at the end of the file or use string references
 
@@ -151,10 +152,10 @@ class LicenseIndustry(Base):
     department: Mapped[str] = mapped_column(String(100), nullable=False)
 
     # Relationships
-    checklist_steps: Mapped[List["ChecklistStep"]] = relationship(back_populates="license_industry", cascade="all, delete-orphan")
     surveys: Mapped[List["Survey"]] = relationship(back_populates="license_industry", cascade="all, delete-orphan")
     documents: Mapped[List["Document"]] = relationship(back_populates="license_industry", cascade="all, delete-orphan")
     license_mappings: Mapped[List["LicenseIndustryMapping"]] = relationship(back_populates="license")
+    checklist_progresses: Mapped[List["ChecklistProgress"]] = relationship(back_populates="license_industry", cascade="all, delete-orphan")
 
 class Survey(Base):
     __tablename__ = "surveys"
@@ -216,6 +217,7 @@ class LicenseIndustryMapping(Base):
     # Relationships
     category: Mapped["IndustryCategory"] = relationship(back_populates="license_mappings")
     license: Mapped["LicenseIndustry"] = relationship()
+    checklist_progresses: Mapped[List["ChecklistProgress"]] = relationship(back_populates="license_industry", cascade="all, delete-orphan")
 
 class LaborContract(Base):
     __tablename__ = "labor_contracts"
@@ -263,6 +265,21 @@ class Subsidy(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=text("true"))
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
     updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
+
+class ChecklistProgress(Base):
+    __tablename__ = "checklist_progresses"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    license_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("license_industries.id"), nullable=False)
+    current_step: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default=text("1"))
+    industry_code: Mapped[Optional[str]] = mapped_column(String(50))
+    conditions: Mapped[Optional[dict]] = mapped_column(JSON)
+    updated_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
+
+    # Relationships
+    user: Mapped["User"] = relationship(back_populates="checklist_progresses")
+    license_industry: Mapped["LicenseIndustry"] = relationship(back_populates="checklist_progresses")
 
 class Sale(Base):
     __tablename__ = "sales"
