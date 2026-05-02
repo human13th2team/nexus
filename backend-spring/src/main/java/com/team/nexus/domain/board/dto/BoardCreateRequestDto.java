@@ -16,4 +16,5 @@ public class BoardCreateRequestDto {
     private String categoryName;
     private Boolean isAnonymous;
     private List<String> imageUrls;
+    private String industryCategoryId;
 }

@@ -71,10 +71,24 @@ public class BoardController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "조회수 상위 게시글 조회", description = "자유게시판의 조회수 상위 3개 게시글을 조회합니다.")
+    @GetMapping("/top")
+    public ResponseEntity<Map<String, Object>> getTopBoardList() {
+        List<BoardResponseDto> topPosts = boardService.getTopPosts();
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("status", "success");
+        response.put("data", topPosts);
+        
+        return ResponseEntity.ok(response);
+    }
+
     @Operation(summary = "게시글 상세 조회", description = "게시글의 상세 내용을 조회합니다.")
     @GetMapping("/{id}")
-    public ResponseEntity<Map<String, Object>> getPostDetail(@PathVariable UUID id) {
-        BoardResponseDto postDetail = boardService.getPostDetail(id);
+    public ResponseEntity<Map<String, Object>> getPostDetail(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "false") boolean silent) {
+        BoardResponseDto postDetail = boardService.getPostDetail(id, !silent);
         
         Map<String, Object> response = new HashMap<>();
         response.put("status", "success");

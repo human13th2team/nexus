@@ -14,8 +14,8 @@ import java.util.UUID;
 public interface BoardRepository extends JpaRepository<Board, UUID> {
     Page<Board> findAllByOrderByCreatedAtDesc(Pageable pageable);
     java.util.List<Board> findTop3ByOrderByViewCountDesc();
-    Page<Board> findAllByLikeCountGreaterThanEqualOrderByCreatedAtDesc(int likeCount, Pageable pageable);
-    Page<Board> findByRegionNameAndLikeCountGreaterThanEqualOrderByCreatedAtDesc(String regionName, int likeCount, Pageable pageable);
+    Page<Board> findAllByLikeCountGreaterThanEqual(int likeCount, Pageable pageable);
+    Page<Board> findByRegionNameAndLikeCountGreaterThanEqual(String regionName, int likeCount, Pageable pageable);
     java.util.List<Board> findTop3ByRegionNameOrderByViewCountDesc(String regionName);
     // --- 자유게시판 전용 (regionName IS NULL) ---
     @Query("SELECT b FROM Board b WHERE b.regionName IS NULL")
@@ -49,4 +49,14 @@ public interface BoardRepository extends JpaRepository<Board, UUID> {
     Page<Board> findByRegionNameAndPublicUserNickname(@Param("regionName") String regionName, @Param("nickname") String nickname, Pageable pageable);
 
     Page<Board> findByIsAnonymousTrueOrderByCreatedAtDesc(Pageable pageable);
+
+    // --- 업종별 게시판 전용 (categoryName = 'INDUSTRY') ---
+    @Query("SELECT b FROM Board b WHERE b.categoryName = 'INDUSTRY' AND b.industryCategory.id = :categoryId")
+    Page<Board> findByIndustryCategoryId(@Param("categoryId") UUID categoryId, Pageable pageable);
+
+    @Query("SELECT b FROM Board b WHERE b.categoryName = 'INDUSTRY' AND b.industryCategory.id = :categoryId AND (" +
+            "LOWER(b.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "LOWER(b.content) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
+            "(b.isAnonymous = false AND LOWER(b.user.nickname) LIKE LOWER(CONCAT('%', :keyword, '%'))))")
+    Page<Board> findByIndustryCategoryIdAndKeywordAll(@Param("categoryId") UUID categoryId, @Param("keyword") String keyword, Pageable pageable);
 }

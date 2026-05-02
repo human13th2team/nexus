@@ -17,10 +17,13 @@ public interface BoardService {
     // --- 지역별 게시판 (Region Board) ---
     Page<BoardResponseDto> getRegionBoardList(String region, int page, int size);
     Page<BoardResponseDto> searchRegionPosts(String region, String keyword, String type, int page, int size);
+    Page<BoardResponseDto> getIndustryBoardList(UUID categoryId, int page, int size);
+    Page<BoardResponseDto> searchIndustryPosts(UUID categoryId, String keyword, String type, int page, int size);
     
     List<BoardResponseDto> getTopPosts();
     List<BoardResponseDto> getRegionTopPosts(String region);
     BoardResponseDto getPostDetail(UUID id);
+    BoardResponseDto getPostDetail(UUID id, boolean incrementView);
     Page<BoardResponseDto> getPopularPosts(int page, int size);
     Page<BoardResponseDto> getRegionPopularPosts(String region, int page, int size);
     void createPost(BoardCreateRequestDto requestDto, User user);

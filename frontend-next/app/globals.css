@@ -21,7 +21,40 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--nexus-bg);
+  color: var(--nexus-on-bg);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Nexus Premium Utilities */
+.nexus-card {
+  background: var(--nexus-surface-lowest);
+  border-radius: 2rem;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nexus-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -15px rgba(11, 26, 125, 0.1);
+}
+
+.nexus-glass {
+  background: var(--nexus-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--nexus-glass-border);
+  border-radius: 1.5rem;
+}
+
+.nexus-gradient-text {
+  background: linear-gradient(135deg, var(--nexus-primary), var(--nexus-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
 }

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const MENU_DATA = [
   {
@@ -11,7 +12,6 @@ const MENU_DATA = [
   },
   { id: 'subsidy', title: '지원금 찾기', hasSub: false, href: '/' },
   { id: 'creative', title: 'AI 브랜딩', hasSub: false, href: '/branding' },
-  { id: 'experts', title: '전문가 매칭', hasSub: false, href: '/' },
   {
     id: 'compliance', title: '창업 가이드', hasSub: true,
     subMenu: [{ name: '서류 가이드', href: '/' },
@@ -19,10 +19,14 @@ const MENU_DATA = [
   },
   {
     id: 'community', title: '커뮤니티', hasSub: true,
-    subMenu: [{ name: '자유 게시판', href: '/board' },
-    { name: '지역별 게시판', href: '/region-board' },
-    { name: '업종별 게시판', href: '/' }]
+    subMenu: [
+      { name: '자유 게시판', href: '/board' },
+      { name: '지역별게시판', href: '/region-board' },
+      { name: '업종별게시판', href: '/industry-board' },
+      { name: '공동구매', href: '/purchase' }
+    ]
   },
+  { id: 'group-purchases', title: '공동구매', hasSub: false, href: '/group-purchases' },
 ];
 
 export default function Header() {
@@ -32,6 +36,9 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [nickname, setNickname] = useState('');
+  const [userType, setUserType] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const pathname = usePathname();
 
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -39,12 +46,19 @@ export default function Header() {
   const checkLoginStatus = useCallback(() => {
     const token = localStorage.getItem('accessToken');
     const savedNickname = localStorage.getItem('nickname');
+    const savedUserType = localStorage.getItem('userType');
+    const savedProfileImage = localStorage.getItem('profileImage');
+
     if (token) {
       setIsLoggedIn(true);
       setNickname(savedNickname || 'User');
+      setUserType(savedUserType);
+      setProfileImage(savedProfileImage);
     } else {
       setIsLoggedIn(false);
       setNickname('');
+      setUserType(null);
+      setProfileImage(null);
     }
   }, []);
 
@@ -54,9 +68,17 @@ export default function Header() {
     // 처음 로드될 때 체크
     checkLoginStatus();
 
-    // 2. 다른 탭에서의 변화나 커스텀 이벤트를 감지합니다.
-    window.addEventListener('storage', checkLoginStatus); // 로컬스토리지 변경 감지
+    // 다른 탭에서의 변화나 커스텀 이벤트를 감지합니다.
+    window.addEventListener('storage', checkLoginStatus); // 다른 탭의 로컬스토리지 변경 감지
     window.addEventListener('login-status-change', checkLoginStatus); // 커스텀 이벤트 감지
+
+    // 탭 포커스 복귀 시에도 로그인 상태를 재확인합니다.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkLoginStatus();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     const handleClickOutside = (event: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
@@ -68,9 +90,17 @@ export default function Header() {
     return () => {
       window.removeEventListener('storage', checkLoginStatus);
       window.removeEventListener('login-status-change', checkLoginStatus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [checkLoginStatus]);
+
+  // 경로 변경 시마다 로그인 상태를 재확인합니다.
+  // (Next.js의 SPA 내비게이션은 컴포넌트를 리마운트하지 않으므로
+  //  router.push 후에도 위의 useEffect가 다시 실행되지 않습니다.)
+  useEffect(() => {
+    checkLoginStatus();
+  }, [pathname, checkLoginStatus]);
 
   const handleMenuHover = (menuId: string | null, hasSub: boolean) => {
     if (hasSub) {
@@ -128,33 +158,55 @@ export default function Header() {
           )}
         </nav>
 
-        <div className="w-[100px] lg:w-[160px] shrink-0 flex items-center justify-end gap-4" ref={profileRef}>
+        <div className="w-[100px] lg:w-[160px] shrink-0 flex items-center justify-end gap-3" ref={profileRef}>
           {mounted ? (
             <>
               {!isLoggedIn ? (
-                <Link href="/auth/login" className="text-sm font-bold text-[var(--nexus-primary)] px-3 py-1.5 md:px-4 md:py-2 border border-[var(--nexus-primary)] rounded hover:bg-[var(--nexus-primary)] hover:text-white transition-colors">
+                <Link
+                  href="/auth/login"
+                  className="whitespace-nowrap text-sm font-bold text-[var(--nexus-primary)] px-4 py-2 border border-[var(--nexus-primary)] rounded hover:bg-[var(--nexus-primary)] hover:text-white transition-colors"
+                >
                   로그인
                 </Link>
               ) : (
                 <div className="relative flex items-center">
-                  <button onClick={toggleProfile} className="w-9 h-9 md:w-10 md:h-10 rounded-full border border-[var(--nexus-outline-variant)] overflow-hidden bg-gray-100 flex items-center justify-center">
-                    <span className="text-xs font-bold text-gray-500">{nickname[0] || 'P'}</span>
+                  <button onClick={toggleProfile} className="w-9 h-9 md:w-10 md:h-10 rounded-full border border-[var(--nexus-outline-variant)] overflow-hidden bg-white flex items-center justify-center shadow-sm">
+                    {profileImage ? (
+                      <img
+                        src={`http://localhost:8080${profileImage}`}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-xs font-black text-[var(--nexus-primary)]">{nickname[0] || 'P'}</span>
+                    )}
                   </button>
                   {isProfileOpen && (
                     <div className="absolute right-0 top-14 w-52 bg-white border border-[var(--nexus-outline-variant)] shadow-xl rounded-md overflow-hidden z-[110]">
                       <div className="px-5 py-3.5 text-sm text-gray-400 border-b border-gray-100 bg-gray-50/50">
                         <span className="font-bold text-[var(--nexus-primary)]">{nickname}</span>님 환영합니다
                       </div>
-
-                      <Link href="/" className="block px-5 py-3.5 text-sm hover:bg-gray-50 border-b border-gray-100">ℹ️ 프로필</Link>
+                      <Link
+                        href={userType === '2' ? "/mypage/admin" : "/mypage"}
+                        className="block px-5 py-3.5 text-sm hover:bg-gray-50 border-b border-gray-100"
+                      >
+                        {userType === '2' ? "⚙️ 관리자 콘솔" : "ℹ️ 프로필"}
+                      </Link>
+                      {userType === '2' && (
+                        <Link href="/mypage" className="block px-5 py-3.5 text-sm hover:bg-gray-50 border-b border-gray-100 text-gray-500">ℹ️ 프로필</Link>
+                      )}
                       <Link href="/chat" className="block px-5 py-3.5 text-sm hover:bg-gray-50 border-b border-gray-100">💬 채팅하기</Link>
-                      <button onClick={handleLogout} className="w-full text-left px-5 py-3.5 text-sm text-red-500 hover:bg-red-50 font-semibold">🚪 로그아웃</button>
+                      <button onClick={handleLogout} className="w-full text-left px-5 py-3.5 text-sm text-red-500 hover:bg-red-50 font-semibold">🚣 로그아웃</button>
                     </div>
                   )}
                 </div>
               )}
-              <button className="lg:hidden p-1 text-[var(--nexus-primary)]" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-                <span className="text-2xl">☰</span>
+              <button
+                className="lg:hidden p-2 text-[var(--nexus-primary)]"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="메뉴 열기"
+              >
+                <span className="text-2xl leading-none">{isMobileMenuOpen ? '✕' : '☰'}</span>
               </button>
             </>
           ) : (
@@ -188,6 +240,72 @@ export default function Header() {
               ))}
             </div>
             <div className="w-[160px] shrink-0" />
+          </div>
+        </div>
+      )}
+      {/* ── 모바일 사이드바 드로어 ── */}
+      {mounted && isMobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-[200]" onClick={() => setIsMobileMenuOpen(false)}>
+          {/* 오버레이 */}
+          <div className="absolute inset-0 bg-black/40" />
+          {/* 드로어 패널 */}
+          <div
+            className="absolute right-0 top-0 h-full w-72 bg-[var(--nexus-surface-lowest)] shadow-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 h-20 border-b border-[var(--nexus-outline-variant)]">
+              <span className="text-xl font-black tracking-tighter text-[var(--nexus-primary)]">NEXUS</span>
+              <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-[var(--nexus-on-bg)]">
+                <span className="text-2xl leading-none">✕</span>
+              </button>
+            </div>
+            <nav className="flex-1 overflow-y-auto py-4">
+              {MENU_DATA.map((menu) => (
+                <div key={menu.id} className="border-b border-[var(--nexus-outline-variant)]/30">
+                  {menu.hasSub ? (
+                    <>
+                      <div className="px-6 py-4 text-[15px] font-bold text-[var(--nexus-on-bg)]">{menu.title}</div>
+                      {menu.subMenu?.map((sub, sIdx) => (
+                        <Link
+                          key={sIdx}
+                          href={sub.href}
+                          className="block px-10 py-3 text-sm text-gray-500 hover:text-[var(--nexus-primary)] hover:bg-[var(--nexus-surface-low)]"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          {sub.name}
+                        </Link>
+                      ))}
+                    </>
+                  ) : (
+                    <Link
+                      href={menu.href || '#'}
+                      className="block px-6 py-4 text-[15px] font-bold text-[var(--nexus-on-bg)] hover:text-[var(--nexus-primary)] hover:bg-[var(--nexus-surface-low)]"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      {menu.title}
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </nav>
+            <div className="px-6 py-6 border-t border-[var(--nexus-outline-variant)]">
+              {!isLoggedIn ? (
+                <Link
+                  href="/auth/login"
+                  className="block w-full text-center py-3 text-sm font-bold text-[var(--nexus-primary)] border border-[var(--nexus-primary)] rounded-lg hover:bg-[var(--nexus-primary)] hover:text-white transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  로그인
+                </Link>
+              ) : (
+                <button
+                  onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                  className="w-full py-3 text-sm font-bold text-red-500 border border-red-200 rounded-lg hover:bg-red-50"
+                >
+                  🚣 로그아웃
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

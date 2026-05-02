@@ -17,8 +17,14 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  CornerDownRight
+  CornerDownRight,
+  Trash2,
+  Edit2,
+  Send,
+  MoreVertical,
+  Flag
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Post {
   id: string;
@@ -37,12 +43,6 @@ interface PostDetail extends Post {
   content: string;
 }
 
-interface TopPost {
-  id: string;
-  title: string;
-  viewCount: number;
-}
-
 interface Comment {
   id: string;
   content: string;
@@ -58,7 +58,6 @@ export default function BoardDetailPage() {
   const router = useRouter();
   const [post, setPost] = useState<PostDetail | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
-  const [topPosts, setTopPosts] = useState<TopPost[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
@@ -77,7 +76,6 @@ export default function BoardDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
-  const fetchedRef = React.useRef(false);
 
   const lastFetchedId = React.useRef<string | null>(null);
 
@@ -89,16 +87,16 @@ export default function BoardDetailPage() {
         fetchComments(params.id as string);
         fetchLikeStatus(params.id as string);
       } else if (post?.regionName) {
-        fetchTopPosts();
         fetchPosts(currentPage);
       }
     }
   }, [params.id, currentPage, post?.regionName]);
 
-  const fetchPostDetail = async (id: string) => {
-    setIsLoading(true);
+  const fetchPostDetail = async (id: string, silent: boolean = false) => {
+    if (!silent) setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/board/${id}`);
+      const response = await fetch(`http://localhost:8080/api/v1/board/${id}${silent ? "?silent=true" : ""}`);
+      if (!response.ok) throw new Error(`Server returned ${response.status}`);
       const result = await response.json();
       
       if (result.status === "success") {
@@ -116,9 +114,8 @@ export default function BoardDetailPage() {
   const fetchPosts = async (page: number) => {
     if (!post?.regionName) return;
     try {
-      const response = await fetch(`http://localhost:8080/api/v1/region-board?page=${page}&size=10&region=${post.regionName}`);
+      const response = await fetch(`http://localhost:8080/api/v1/region-board?page=${page}&size=10&region=${encodeURIComponent(post.regionName)}`);
       const result = await response.json();
-      
       if (result.status === "success") {
         setPosts(result.data);
         setTotalPages(result.totalPages);
@@ -129,24 +126,10 @@ export default function BoardDetailPage() {
     }
   };
 
-  const fetchTopPosts = async () => {
-    if (!post?.regionName) return;
-    try {
-      const response = await fetch(`http://localhost:8080/api/v1/region-board/top?region=${post.regionName}`);
-      const result = await response.json();
-      if (result.status === "success") {
-        setTopPosts(result.data);
-      }
-    } catch (error) {
-      console.error("Failed to fetch top posts:", error);
-    }
-  };
-
   const fetchComments = async (id: string = params.id as string) => {
     try {
       const response = await fetch(`http://localhost:8080/api/v1/comments/${id}`);
       if (!response.ok) return;
-      
       const result = await response.json();
       if (result.status === "success") {
         setComments(result.data);
@@ -159,17 +142,12 @@ export default function BoardDetailPage() {
   const fetchLikeStatus = async (id: string) => {
     const token = localStorage.getItem("accessToken");
     if (!token) return;
-    
     try {
       const response = await fetch(`http://localhost:8080/api/v1/board/like/${id}/status`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
+        headers: { "Authorization": `Bearer ${token}` }
       });
       const result = await response.json();
-      if (result.status === "success") {
-        setIsLiked(result.isLiked);
-      }
+      if (result.status === "success") setIsLiked(result.isLiked);
     } catch (error) {
       console.error("Failed to fetch like status:", error);
     }
@@ -178,26 +156,21 @@ export default function BoardDetailPage() {
   const handleLike = async () => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
-      alert("로그인이 필요한 서비스입니다. 로그인 페이지로 이동합니다.");
+      alert("로그인이 필요한 서비스입니다.");
       router.push("/auth/login");
       return;
     }
-
     if (isLikeLoading) return;
-
     setIsLikeLoading(true);
     try {
       const response = await fetch(`http://localhost:8080/api/v1/board/like/${params.id}`, {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
+        headers: { "Authorization": `Bearer ${token}` }
       });
       const result = await response.json();
       if (result.status === "success") {
         setIsLiked(result.isLiked);
-        // Refresh post detail to get updated like count
-        fetchPostDetail(params.id as string);
+        fetchPostDetail(params.id as string, true);
       }
     } catch (error) {
       console.error("Failed to toggle like:", error);
@@ -209,14 +182,12 @@ export default function BoardDetailPage() {
   const handleCommentSubmit = async (parentId: string | null = null) => {
     const token = localStorage.getItem("accessToken");
     if (!token) {
-      alert("로그인이 필요한 서비스입니다. 로그인 페이지로 이동합니다.");
+      alert("로그인이 필요합니다.");
       router.push("/auth/login");
       return;
     }
-
     const content = parentId ? replyContent : commentContent;
     if (!content.trim()) return;
-
     setIsSubmitting(true);
     try {
       const response = await fetch(`http://localhost:8080/api/v1/comments/${params.id}`, {
@@ -225,18 +196,14 @@ export default function BoardDetailPage() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({
-          content,
-          parentId
-        })
+        body: JSON.stringify({ content, parentId })
       });
-
       const result = await response.json();
       if (result.status === "success") {
         setCommentContent("");
         setReplyContent("");
         setReplyTargetId(null);
-        fetchComments(params.id as string);
+        fetchComments();
       }
     } catch (error) {
       console.error("Failed to submit comment:", error);
@@ -245,34 +212,8 @@ export default function BoardDetailPage() {
     }
   };
 
-  const handleReportComment = async (commentId: string) => {
-    if (!confirm("이 댓글을 신고하시겠습니까?")) return;
-    
-    try {
-      const response = await fetch(`http://localhost:8080/api/v1/comments/report/${commentId}`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${localStorage.getItem("accessToken")}`
-        }
-      });
-      const result = await response.json();
-      if (result.status === "success") {
-        alert("신고가 접수되었습니다.");
-        fetchComments();
-      } else {
-        alert(result.message);
-      }
-    } catch (error) {
-      alert("신고 처리 중 오류가 발생했습니다.");
-    }
-  };
-
   const handleUpdateComment = async (commentId: string) => {
-    if (!editCommentContent.trim()) {
-      alert("댓글 내용을 입력해주세요.");
-      return;
-    }
-    
+    if (!editCommentContent.trim()) return;
     try {
       const response = await fetch(`http://localhost:8080/api/v1/comments/${commentId}`, {
         method: "PUT",
@@ -280,51 +221,64 @@ export default function BoardDetailPage() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${localStorage.getItem("accessToken")}`
         },
-        body: JSON.stringify({
-          content: editCommentContent
-        })
+        body: JSON.stringify({ content: editCommentContent })
       });
-      
       const result = await response.json();
       if (result.status === "success") {
         setEditingCommentId(null);
         fetchComments();
-      } else {
-        alert(result.message);
       }
     } catch (error) {
-      alert("댓글 수정 중 오류가 발생했습니다.");
+      console.error("Failed to update comment:", error);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm("정말 댓글을 삭제하시겠습니까?")) return;
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/comments/${commentId}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${localStorage.getItem("accessToken")}` }
+      });
+      const result = await response.json();
+      if (result.status === "success") fetchComments();
+    } catch (error) {
+      console.error("Failed to delete comment:", error);
+    }
+  };
+
+  const handleReportComment = async (commentId: string) => {
+    if (!confirm("이 댓글을 신고하시겠습니까?")) return;
+    try {
+      const response = await fetch(`http://localhost:8080/api/v1/comments/report/${commentId}`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${localStorage.getItem("accessToken")}` }
+      });
+      const result = await response.json();
+      if (result.status === "success") alert("신고가 접수되었습니다.");
+    } catch (error) {
+      console.error("Failed to report comment:", error);
     }
   };
 
   const handleDeletePost = async () => {
     if (!confirm("정말 게시글을 삭제하시겠습니까?")) return;
-    
     try {
       const response = await fetch(`http://localhost:8080/api/v1/board/${params.id}`, {
         method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${localStorage.getItem("accessToken")}`
-        }
+        headers: { "Authorization": `Bearer ${localStorage.getItem("accessToken")}` }
       });
-      const result = await response.json();
-      if (result.status === "success") {
+      if (response.ok) {
         alert("게시글이 삭제되었습니다.");
         router.push("/region-board");
-      } else {
-        alert(result.message);
       }
     } catch (error) {
-      alert("게시글 삭제 중 오류가 발생했습니다.");
+      alert("삭제 중 오류가 발생했습니다.");
     }
   };
 
   const handleUpdatePost = async () => {
-    if (!editTitle.trim() || !editContent.trim()) {
-      alert("제목과 내용을 모두 입력해주세요.");
-      return;
-    }
-    
+    if (!editTitle.trim() || !editContent.trim()) return;
     setIsSubmitting(true);
     try {
       const response = await fetch(`http://localhost:8080/api/v1/board/${params.id}`, {
@@ -340,453 +294,353 @@ export default function BoardDetailPage() {
           imageUrls: post?.imageUrls
         })
       });
-      
       const result = await response.json();
       if (result.status === "success") {
-        alert("게시글이 수정되었습니다.");
         setPost(result.data);
         setIsEditing(false);
-      } else {
-        alert(result.message);
       }
     } catch (error) {
-      alert("게시글 수정 중 오류가 발생했습니다.");
+      alert("수정 중 오류가 발생했습니다.");
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleDeleteComment = async (commentId: string) => {
-    if (!window.confirm("정말로 이 댓글을 삭제하시겠습니까?")) return;
-
-    const token = localStorage.getItem("accessToken");
-    if (!token) return;
-
-    try {
-      const response = await fetch(`http://localhost:8080/api/v1/comments/${commentId}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      const result = await response.json();
-      if (result.status === "success") {
-        alert("댓글이 삭제되었습니다.");
-        fetchComments(params.id as string);
-      } else {
-        alert(result.message || "삭제에 실패했습니다.");
-      }
-    } catch (error) {
-      console.error("Failed to delete comment:", error);
     }
   };
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "";
     const date = new Date(dateString);
-    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+    return `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   };
 
   const handlePageChange = (newPage: number) => {
-    if (newPage >= 0 && newPage < totalPages) {
-      setCurrentPage(newPage);
-    }
+    if (newPage >= 0 && newPage < totalPages) setCurrentPage(newPage);
   };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
-        <Loader2 className="w-10 h-10 text-[#3b4890] animate-spin" />
-        <p className="text-zinc-500 font-medium text-sm">로딩 중...</p>
+        <Loader2 className="w-10 h-10 text-[var(--nexus-primary)] animate-spin" />
+        <p className="text-zinc-400 font-black text-[10px] tracking-widest uppercase">Initializing Content</p>
       </div>
     );
   }
 
-  if (!post) {
-    return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
-        <AlertCircle className="w-12 h-12 text-zinc-300" />
-        <p className="text-zinc-500 font-medium">게시글을 찾을 수 없습니다.</p>
-        <button onClick={() => router.push("/region-board")} className="mt-4 px-6 py-2.5 bg-[#3b4890] text-white rounded-md font-bold text-sm">목록으로</button>
-      </div>
-    );
-  }
+  if (!post) return null;
 
   return (
-    <div className="min-h-screen bg-white font-sans text-[#333]">
-      {/* Top Banner / Gallery Title */}
-      <div className="max-w-[1200px] mx-auto pt-10 px-4">
-        <div className="flex items-center justify-between border-b border-zinc-100 pb-6 mb-8">
-          <div 
-            className="flex items-center gap-3 cursor-pointer group" 
+    <div className="min-h-screen bg-[var(--nexus-bg)] py-12 px-6 pb-32">
+      <div className="max-w-5xl mx-auto">
+        {/* Navigation & Header */}
+        <div className="flex items-center justify-between mb-10">
+          <button 
             onClick={() => router.push("/region-board")}
+            className="flex items-center gap-2 text-zinc-500 hover:text-black transition-all group font-black text-xs uppercase tracking-widest"
           >
-            <MessageSquare className="w-8 h-8 text-black transition-transform group-hover:scale-110" />
-            <h1 className="text-3xl font-black text-black tracking-tight">{post.regionName} 게시판</h1>
+            <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
+            Back to Community
+          </button>
+          
+          <div className="flex items-center gap-3">
+            <button className="nexus-glass p-3 rounded-2xl text-zinc-400 hover:text-black transition-all active:scale-90">
+              <Share2 className="w-5 h-5" />
+            </button>
+            <button className="nexus-glass p-3 rounded-2xl text-zinc-400 hover:text-black transition-all active:scale-90">
+              <MoreVertical className="w-5 h-5" />
+            </button>
           </div>
         </div>
 
-        <div className="flex gap-8 mb-12">
-          {/* Main Content Area */}
-          <div className="flex-1 min-w-0">
-            {/* Post Header */}
-            <div className="bg-[#fcfcfc] border-t border-zinc-200 py-3 px-4 mb-1">
-              <h2 className="text-[15px] font-bold flex items-center gap-2">
-                <span className="text-zinc-500">[{post.regionName || "지역"}]</span>
-                {post.likeCount >= 10 && (
-                  <span className="bg-red-50 text-red-500 text-[10px] px-1.5 py-0.5 rounded border border-red-100 font-black">인기글</span>
-                )}
-                {post.title}
-              </h2>
-            </div>
-              <div className="border-b border-zinc-100 py-2 px-4 flex justify-between items-center text-[12px]">
+        {/* Post Container */}
+        <article className="nexus-card bg-white overflow-hidden shadow-2xl shadow-black/5 mb-14">
+          <div className="p-8 md:p-14">
+            <header className="mb-14 pb-14 border-b border-zinc-50">
+              <div className="flex items-center gap-3 mb-8">
+                <span className="px-3 py-1 bg-[var(--nexus-primary-container)] text-[var(--nexus-primary)] text-[10px] font-black uppercase tracking-widest rounded-full">
+                  #{post.regionName}
+                </span>
+                <span className="w-1 h-1 bg-zinc-200 rounded-full" />
+                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Regional Feed</span>
+              </div>
+
+              {isEditing ? (
+                <input 
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full text-4xl md:text-5xl font-black tracking-tighter text-zinc-900 border-b-2 border-zinc-100 focus:border-[var(--nexus-primary)] outline-none pb-4 transition-colors mb-8"
+                />
+              ) : (
+                <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-zinc-900 leading-[1.1] mb-8">
+                  {post.title}
+                </h1>
+              )}
+
+              <div className="flex flex-wrap items-center justify-between gap-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-zinc-100 flex items-center justify-center border border-zinc-50 group-hover:bg-[var(--nexus-primary-container)] transition-colors">
+                    <User className="w-6 h-6 text-[var(--nexus-primary)]" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-black text-zinc-900">{post.author}</div>
+                    <div className="flex items-center gap-3 text-xs font-bold text-zinc-400">
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        {formatDate(post.createdAt)}
+                      </div>
+                      <span className="w-1 h-1 bg-zinc-200 rounded-full" />
+                      <div className="flex items-center gap-1">
+                        <Eye className="w-3.5 h-3.5" />
+                        {post.viewCount} views
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-2">
-                  <span className="font-bold">{post.author}</span>
-                  <span className="text-zinc-300">|</span>
-                  <span className="text-zinc-500">{formatDate(post.createdAt)}</span>
-                  {typeof window !== "undefined" && post.authorId && localStorage.getItem("userId")?.toLowerCase() === post.authorId.toLowerCase() && (
+                  <button 
+                    onClick={handleLike}
+                    className={cn(
+                      "flex items-center gap-2.5 px-8 py-4 rounded-2xl font-black text-sm transition-all active:scale-95 shadow-xl",
+                      isLiked 
+                        ? "bg-black text-white shadow-black/20" 
+                        : "nexus-glass text-zinc-500 hover:bg-zinc-50"
+                    )}
+                  >
+                    <ThumbsUp className={cn("w-5 h-5", isLiked && "fill-white")} />
+                    {isLiked ? "LIKED" : "LIKE"}
+                    <span className={cn("ml-1 opacity-50", isLiked ? "text-white" : "text-zinc-400")}>{post.likeCount}</span>
+                  </button>
+                </div>
+              </div>
+            </header>
+
+            {/* Content Body */}
+            <div className="prose prose-zinc max-w-none">
+              {isEditing ? (
+                <textarea 
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  className="w-full min-h-[400px] p-8 bg-zinc-50 rounded-[2.5rem] border-2 border-zinc-50 focus:bg-white focus:border-[var(--nexus-primary)]/10 outline-none transition-all font-medium text-lg leading-relaxed text-zinc-800 resize-none"
+                />
+              ) : (
+                <div className="text-xl font-medium leading-[1.8] text-zinc-700 whitespace-pre-wrap mb-16">
+                  {post.content}
+                </div>
+              )}
+
+              {!isEditing && post.imageUrls && post.imageUrls.length > 0 && (
+                <div className="space-y-8 mb-16">
+                  {post.imageUrls.map((url, idx) => (
+                    <div key={idx} className="rounded-[3rem] overflow-hidden shadow-2xl shadow-black/5 ring-8 ring-zinc-50">
+                      <img src={url} alt={`Post ${idx}`} className="w-full h-auto object-cover" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer Actions */}
+            <div className="pt-10 border-t border-zinc-50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Info className="w-4 h-4 text-zinc-300" />
+                <p className="text-xs font-bold text-zinc-400">서로를 배려하는 따뜻한 댓글 문화를 만들어주세요.</p>
+              </div>
+
+              {typeof window !== "undefined" && post.authorId && localStorage.getItem("userId")?.toLowerCase() === post.authorId.toLowerCase() && (
+                <div className="flex items-center gap-3">
+                  {isEditing ? (
                     <>
-                      <span className="text-zinc-300">|</span>
+                      <button onClick={() => setIsEditing(false)} className="px-6 py-3 font-black text-sm text-zinc-400 hover:text-black">CANCEL</button>
                       <button 
-                        onClick={() => setIsEditing(!isEditing)}
-                        className="text-blue-500 hover:underline font-bold"
+                        onClick={handleUpdatePost}
+                        disabled={isSubmitting}
+                        className="px-10 py-4 bg-black text-white rounded-2xl font-black text-sm active:scale-95 transition-all shadow-xl shadow-black/20"
                       >
-                        {isEditing ? "취소" : "수정"}
+                        {isSubmitting ? "SAVING..." : "SAVE CHANGES"}
                       </button>
-                      <span className="text-zinc-300">|</span>
+                    </>
+                  ) : (
+                    <>
+                      <button 
+                        onClick={() => setIsEditing(true)}
+                        className="p-4 rounded-2xl nexus-glass text-zinc-400 hover:text-black transition-all hover:bg-white active:scale-90"
+                      >
+                        <Edit2 className="w-5 h-5" />
+                      </button>
                       <button 
                         onClick={handleDeletePost}
-                        className="text-red-500 hover:underline font-bold"
+                        className="p-4 rounded-2xl nexus-glass text-zinc-400 hover:text-red-500 transition-all hover:bg-white active:scale-90"
                       >
-                        삭제
+                        <Trash2 className="w-5 h-5" />
                       </button>
                     </>
                   )}
                 </div>
-              <div className="flex items-center gap-4 text-zinc-500">
-                <div className="flex items-center gap-1">
-                  <span className="bg-zinc-200 w-5 h-5 rounded-sm flex items-center justify-center"><Share2 className="w-3 h-3 text-white fill-white" /></span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span>조회 {post.viewCount}</span>
-                  <span className="text-zinc-300">|</span>
-                  <span>추천 {post.likeCount || 0}</span>
-                  <span className="text-zinc-300">|</span>
-                  <span className="bg-zinc-100 px-2 py-0.5 rounded-full text-zinc-600 font-bold">댓글 {post.commentCount || 0}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Post Body */}
-            <div className="py-8 px-4 min-h-[400px]">
-              {isEditing ? (
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">제목 수정</label>
-                    <input 
-                      type="text"
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                      className="w-full text-lg font-bold border border-zinc-200 rounded-lg p-3 focus:border-black outline-none transition-colors"
-                      placeholder="제목을 입력하세요"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">내용 수정</label>
-                    <textarea 
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      className="w-full min-h-[300px] text-sm leading-relaxed border border-zinc-200 rounded-lg p-4 focus:border-black outline-none transition-colors resize-none"
-                      placeholder="내용을 입력하세요"
-                    />
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-2">
-                    <button 
-                      onClick={() => setIsEditing(false)}
-                      className="px-4 py-2 bg-zinc-100 text-zinc-600 rounded-lg font-bold hover:bg-zinc-200 transition-all"
-                    >
-                      취소
-                    </button>
-                    <button 
-                      onClick={handleUpdatePost}
-                      disabled={isSubmitting}
-                      className="px-6 py-2 bg-black text-white rounded-lg font-bold hover:bg-zinc-800 transition-all active:scale-[0.98] disabled:opacity-50"
-                    >
-                      {isSubmitting ? "저장 중..." : "수정 완료"}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="text-[14px] leading-relaxed mb-8 whitespace-pre-wrap font-medium">
-                    {post.content}
-                  </div>
-                  
-                  {post.imageUrls && post.imageUrls.length > 0 && (
-                    <div className="flex flex-col gap-4 mt-6">
-                      {post.imageUrls.map((url, idx) => (
-                        <div key={idx} className="relative inline-block max-w-full">
-                          <img 
-                            src={url} 
-                            alt={`Post content ${idx}`} 
-                            className="max-w-full h-auto border border-zinc-100 rounded-lg shadow-sm"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
               )}
             </div>
+          </div>
+        </article>
 
-            {/* Bottom Actions */}
-            <div className="flex justify-center gap-3 py-12 border-t border-zinc-100">
+        {/* Comment Section */}
+        <section className="mb-24">
+          <div className="flex items-center gap-4 mb-10 ml-4">
+            <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center text-white shadow-xl shadow-black/20">
+              <MessageSquare className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black text-zinc-900 leading-none mb-1.5">REPLIES</h2>
+              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">{comments.length} total discussions</p>
+            </div>
+          </div>
+
+          <div className="nexus-card bg-white p-6 md:p-10 mb-10 shadow-2xl shadow-black/5">
+            <div className="relative group">
+              <textarea 
+                value={commentContent}
+                onChange={(e) => setCommentContent(e.target.value)}
+                placeholder="어떤 생각을 가지고 계신가요? 사장님의 의견을 들려주세요."
+                className="w-full min-h-[160px] p-8 bg-zinc-50 rounded-[2.5rem] border-2 border-transparent focus:bg-white focus:border-[var(--nexus-primary)]/10 outline-none transition-all font-medium text-lg leading-relaxed text-zinc-800 resize-none"
+              />
               <button 
-                onClick={handleLike}
-                disabled={isLikeLoading}
-                className={cn(
-                  "flex flex-col items-center justify-center w-20 h-20 border rounded transition-all group",
-                  isLiked ? "border-[#3b4890] bg-blue-50/30" : "border-zinc-200 hover:bg-zinc-50"
-                )}
+                onClick={() => handleCommentSubmit()}
+                disabled={isSubmitting || !commentContent.trim()}
+                className="absolute right-6 bottom-6 flex items-center gap-3 bg-black text-white px-8 py-4 rounded-2xl font-black text-sm active:scale-95 transition-all shadow-xl shadow-black/10 disabled:opacity-20 disabled:grayscale"
               >
-                <ThumbsUp className={cn(
-                  "w-6 h-6 mb-1 transition-colors",
-                  isLiked ? "text-[#3b4890] fill-[#3b4890]/10" : "text-zinc-400 group-hover:text-[#3b4890]"
-                )} />
-                <span className={cn(
-                  "text-[12px] font-bold",
-                  isLiked ? "text-[#3b4890]" : "text-zinc-600"
-                )}>{post.likeCount || 0}</span>
-              </button>
-              <button 
-                onClick={() => {
-                  const element = document.getElementById("comment-section");
-                  element?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="flex flex-col items-center justify-center w-20 h-20 border border-zinc-200 rounded hover:bg-zinc-50 transition-all"
-              >
-                <MessageSquare className="w-6 h-6 text-zinc-400 mb-1" />
-                <span className="text-[12px] font-bold text-zinc-600">{post.commentCount || 0}</span>
+                {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                POST COMMENT
               </button>
             </div>
           </div>
 
-          {/* Right Sidebar */}
-          <div className="hidden lg:block w-[300px] flex-shrink-0">
-            {/* Advertisement Area - Further Expanded */}
-            <div className="w-full bg-[#f2f2f2] border border-zinc-200 p-4 rounded-sm mb-4 h-[600px] flex flex-col items-center justify-center text-zinc-400 text-sm">
-              <div className="w-full h-full bg-gradient-to-br from-zinc-100 to-zinc-200 flex flex-col items-center justify-center gap-6 text-center p-8">
-                <div className="bg-white p-4 rounded-full shadow-md">
-                  <Info className="w-8 h-8 text-[#3b4890]" />
-                 </div>
-                 <div>
-                   <p className="font-black text-zinc-700 text-lg mb-2">PREMIUM AD</p>
-                   <p className="font-bold text-zinc-500 text-sm leading-relaxed">이곳에 광고를<br/>게재할 수 있습니다</p>
-                 </div>
-                 <div className="mt-auto">
-                   <button className="bg-[#3b4890] text-white px-4 py-2 rounded-lg text-[11px] font-bold hover:bg-[#2e3770] transition-all">
-                     광고 문의하기
-                   </button>
-                 </div>
-               </div>
-             </div>
-             
-             {/* Popular Posts Area - Compact for 3 items */}
-             <div className="border border-zinc-200 rounded-sm p-4 text-[12px] min-h-[220px] flex flex-col bg-white">
-               <h3 className="font-bold border-b border-zinc-100 pb-2 mb-4 text-[#3b4890] text-sm">인기 게시물 TOP 3</h3>
-               <ul className="space-y-4 flex-1">
-                 {topPosts.slice(0, 3).map((tp) => (
-                   <li 
-                     key={tp.id} 
-                     onClick={() => router.push(`/region-board/detail/${tp.id}`)}
-                     className="flex justify-between text-zinc-600 hover:underline cursor-pointer group items-center"
-                   >
-                     <span className="truncate mr-2 group-hover:text-black transition-colors font-medium">{tp.title}</span>
-                     <span className="text-zinc-400 bg-zinc-50 px-2 py-0.5 rounded-full text-[10px]">{tp.viewCount}</span>
-                   </li>
-                 ))}
-                 {topPosts.length === 0 && (
-                   <li className="text-center py-10 text-zinc-400">인기글이 없습니다.</li>
-                 )}
-               </ul>
-             </div>
-           </div>
-         </div>
-
-         {/* Comment Section - Expanded to Full Width */}
-         <div id="comment-section" className="border-t border-zinc-200 pt-10">
-              <div className="flex items-center gap-2 mb-6">
-                <MessageSquare className="w-5 h-5 text-black" />
-                <h3 className="text-lg font-bold">댓글 <span className="text-[#3b4890]">{comments.length}</span></h3>
-              </div>
-
-              {/* Comment Input */}
-              <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-4 mb-10">
-                <textarea 
-                  value={commentContent}
-                  onChange={(e) => setCommentContent(e.target.value)}
-                  placeholder="타인의 권리를 침해하거나 명예를 훼손하는 댓글은 운영원칙 및 관련 법률에 의해 제재를 받을 수 있습니다."
-                  className="w-full h-24 bg-transparent resize-none focus:outline-none text-sm"
+          <div className="space-y-6">
+            {comments.length > 0 ? (
+              comments.map((comment) => (
+                <CommentItem 
+                  key={comment.id}
+                  comment={comment}
+                  onReport={handleReportComment}
+                  onReply={setReplyTargetId}
+                  replyTargetId={replyTargetId}
+                  replyContent={replyContent}
+                  onReplyContentChange={setReplyContent}
+                  onReplySubmit={handleCommentSubmit}
+                  onDelete={handleDeleteComment}
+                  isSubmitting={isSubmitting}
+                  formatDate={formatDate}
+                  editingCommentId={editingCommentId}
+                  onSetEditingCommentId={setEditingCommentId}
+                  editCommentContent={editCommentContent}
+                  onSetEditCommentContent={setEditCommentContent}
+                  onUpdate={handleUpdateComment}
                 />
-                <div className="flex justify-end mt-2">
-                  <button 
-                    disabled={isSubmitting}
-                    onClick={() => handleCommentSubmit(null)}
-                    className="bg-[#3b4890] text-white px-6 py-2 rounded font-bold text-sm hover:bg-[#2e3770] transition-all disabled:opacity-50"
-                  >
-                    {isSubmitting ? "등록 중..." : "등록"}
-                  </button>
+              ))
+            ) : (
+              <div className="nexus-card border-2 border-dashed border-zinc-100 p-20 text-center bg-white/50">
+                <div className="w-16 h-16 bg-white rounded-3xl shadow-xl shadow-black/[0.03] mx-auto mb-6 flex items-center justify-center">
+                  <MessageSquare className="w-8 h-8 text-zinc-200" />
                 </div>
+                <p className="text-zinc-400 font-black text-sm tracking-tighter italic">가장 먼저 대화를 시작해 보세요!</p>
               </div>
+            )}
+          </div>
+        </section>
 
-              {/* Comment List */}
-              <div className="space-y-6">
-                {comments.map((comment) => (
-                  <CommentItem 
-                    key={comment.id} 
-                    comment={comment} 
-                    onReport={handleReportComment}
-                    onReply={(id) => setReplyTargetId(id)}
-                    replyTargetId={replyTargetId}
-                    replyContent={replyContent}
-                    onReplyContentChange={setReplyContent}
-                    onReplySubmit={handleCommentSubmit}
-                    onDelete={handleDeleteComment}
-                    isSubmitting={isSubmitting}
-                    formatDate={formatDate}
-                    editingCommentId={editingCommentId}
-                    onSetEditingCommentId={setEditingCommentId}
-                    editCommentContent={editCommentContent}
-                    onSetEditCommentContent={setEditCommentContent}
-                    onUpdate={handleUpdateComment}
-                  />
-                ))}
-                {comments.length === 0 && (
-                  <div className="text-center py-10 text-zinc-400 text-sm">첫 번째 댓글을 남겨보세요.</div>
-                )}
-              </div>
-         </div>
-
-        {/* Board List Bottom Section - SAME UI AS MAIN BOARD */}
-        <div className="mt-8">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-[#3b4890]">{post.regionName} 전체 글 목록</h3>
+        {/* Other Posts List */}
+        <section className="space-y-10">
+          <div className="flex items-center justify-between ml-4">
+            <h3 className="text-2xl font-black text-zinc-900 tracking-tighter uppercase">More from {post.regionName}</h3>
             <button 
-              onClick={() => router.push("/region-board/create")}
-              className="px-4 py-2 bg-black text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-zinc-800 transition-all shadow-lg shadow-black/10"
+              onClick={() => router.push(`/region-board?region=${encodeURIComponent(post.regionName || "")}`)}
+              className="text-[10px] font-black text-zinc-400 hover:text-black uppercase tracking-[0.2em] transition-colors"
             >
-              <Plus className="w-3.5 h-3.5" />
-              글쓰기
+              View Full List
             </button>
           </div>
 
-          <div className="bg-white rounded-[32px] border border-zinc-100 shadow-sm overflow-hidden mb-8">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-zinc-50/50 border-bottom border-zinc-100">
-                    <th className="py-5 px-4 text-xs font-bold text-zinc-400 uppercase tracking-wider w-20 text-center">번호</th>
-                    <th className="py-5 px-4 text-xs font-bold text-zinc-400 uppercase tracking-wider text-center">제목</th>
-                    <th className="py-5 px-4 text-xs font-bold text-zinc-400 uppercase tracking-wider w-28 text-center">작성자</th>
-                    <th className="py-5 px-4 text-xs font-bold text-zinc-400 uppercase tracking-wider w-28 text-center">날짜</th>
-                    <th className="py-5 px-4 text-xs font-bold text-zinc-400 uppercase tracking-wider w-20 text-center">조회</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-50">
-                  {posts.map((p, index) => (
-                    <tr 
-                      key={p.id} 
-                      onClick={() => {
-                        if (p.id !== post.id) {
-                          router.push(`/region-board/detail/${p.id}`);
-                        }
-                      }}
-                      className={cn(
-                        "group hover:bg-zinc-50/50 cursor-pointer transition-all border-bottom border-zinc-50/50",
-                        p.id === post.id ? "bg-zinc-50/80" : ""
-                      )}
-                    >
-                      <td className="py-5 px-4 text-center">
-                        <span className="text-sm font-medium text-zinc-400">
-                          {totalElements - (currentPage * 10 + index)}
-                        </span>
-                      </td>
-                      <td className="py-5 px-4 text-center">
+          <div className="nexus-card bg-white overflow-hidden shadow-2xl shadow-black/5">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-zinc-50/50 border-b border-zinc-100">
+                  <th className="py-6 px-6 text-[10px] font-black text-zinc-400 uppercase tracking-widest w-24 text-center">No.</th>
+                  <th className="py-6 px-6 text-[10px] font-black text-zinc-400 uppercase tracking-widest">Post Title</th>
+                  <th className="py-6 px-6 text-[10px] font-black text-zinc-400 uppercase tracking-widest w-44 text-center">Author</th>
+                  <th className="py-6 px-6 text-[10px] font-black text-zinc-400 uppercase tracking-widest w-32 text-center">Date</th>
+                  <th className="py-6 px-6 text-[10px] font-black text-zinc-400 uppercase tracking-widest w-24 text-center">Stats</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-50">
+                {posts.map((p, index) => (
+                  <tr 
+                    key={p.id} 
+                    onClick={() => {
+                      if (p.id !== post.id) {
+                        router.push(`/region-board/detail/${p.id}`);
+                      }
+                    }}
+                    className={cn(
+                      "group hover:bg-zinc-50 transition-all cursor-pointer",
+                      p.id === post.id ? "bg-zinc-50/80" : ""
+                    )}
+                  >
+                    <td className="py-5 px-6 text-center">
+                      <span className={cn(
+                        "text-xs font-black",
+                        p.id === post.id ? "text-[var(--nexus-primary)]" : "text-zinc-300 group-hover:text-zinc-500"
+                      )}>
+                        {totalElements - (currentPage * 10 + index)}
+                      </span>
+                    </td>
+                    <td className="py-5 px-6">
+                      <div className="flex items-center gap-3">
                         <span className={cn(
-                          "text-zinc-900 font-bold group-hover:text-black transition-colors",
-                          p.id === post.id ? "text-[#3b4890]" : ""
+                          "text-sm font-bold truncate max-w-md",
+                          p.id === post.id ? "text-[var(--nexus-primary)]" : "text-zinc-600 group-hover:text-black"
                         )}>
-                          {p.likeCount >= 10 && (
-                            <span className="bg-red-50 text-red-500 text-[9px] px-1 py-0.5 rounded border border-red-100 font-black shrink-0 mr-1.5">인기</span>
-                          )}
                           {p.title}
                           {p.commentCount > 0 && (
-                            <span className="ml-1.5 text-[#3b4890] text-[10px] font-black">[{p.commentCount}]</span>
+                            <span className="ml-2 text-[10px] font-black opacity-50">[{p.commentCount}]</span>
                           )}
-                          {p.id === post.id && <span className="ml-2 text-[10px] bg-[#3b4890] text-white px-1.5 py-0.5 rounded-full">읽는 중</span>}
                         </span>
-                      </td>
-                      <td className="py-5 px-4 text-center text-sm font-medium text-zinc-600">{p.author}</td>
-                      <td className="py-5 px-4 text-center text-sm text-zinc-500">{formatDate(p.createdAt).split(' ')[0]}</td>
-                      <td className="py-5 px-4 text-center text-sm text-zinc-500">{p.viewCount}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        {p.id === post.id && (
+                          <span className="px-2 py-0.5 bg-[var(--nexus-primary)] text-white text-[8px] font-black uppercase rounded-full">Reading</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-5 px-6 text-center text-xs font-black text-zinc-400 group-hover:text-zinc-600">{p.author}</td>
+                    <td className="py-5 px-6 text-center text-xs font-black text-zinc-300 group-hover:text-zinc-500">{formatDate(p.createdAt).split(' ')[0]}</td>
+                    <td className="py-5 px-6 text-center text-xs font-black text-zinc-300 group-hover:text-zinc-500">{p.viewCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
-          {/* Pagination for bottom list */}
-          <div className="flex items-center justify-center gap-6 mb-12">
+          {/* Pagination */}
+          <div className="flex items-center justify-center gap-4">
             <button 
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 0}
-              className="w-11 h-11 flex items-center justify-center bg-white border border-zinc-200 rounded-2xl shadow-sm hover:border-black hover:bg-zinc-50 transition-all disabled:opacity-30 disabled:pointer-events-none"
+              className="w-12 h-12 flex items-center justify-center nexus-glass rounded-2xl text-zinc-400 hover:text-black hover:bg-white transition-all disabled:opacity-20"
             >
-              <ChevronLeft className="w-5 h-5 text-black" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-2 px-6 h-11 bg-white border border-zinc-200 rounded-2xl shadow-sm">
-              <span className="text-sm font-bold text-black">{posts.length > 0 ? currentPage + 1 : 0}</span>
-              <span className="text-zinc-300 text-xs font-bold">/</span>
-              <span className="text-sm font-medium text-zinc-500">{posts.length > 0 ? totalPages : 0}</span>
+            <div className="flex items-center gap-2 px-6 h-12 bg-white border border-zinc-100 rounded-2xl shadow-sm">
+              <span className="text-sm font-black text-zinc-900">{posts.length > 0 ? currentPage + 1 : 0}</span>
+              <span className="text-zinc-200 text-xs font-black">/</span>
+              <span className="text-sm font-medium text-zinc-400">{posts.length > 0 ? totalPages : 0}</span>
             </div>
             <button 
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage >= totalPages - 1}
-              className="w-11 h-11 flex items-center justify-center bg-white border border-zinc-200 rounded-2xl shadow-sm hover:border-black hover:bg-zinc-50 transition-all disabled:opacity-30 disabled:pointer-events-none"
+              className="w-12 h-12 flex items-center justify-center nexus-glass rounded-2xl text-zinc-400 hover:text-black hover:bg-white transition-all disabled:opacity-20"
             >
-              <ChevronRight className="w-5 h-5 text-black" />
+              <ChevronRight className="w-5 h-5" />
             </button>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
-}
-
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
-}
-
-interface CommentItemProps {
-  comment: Comment;
-  onReport: (id: string) => void;
-  onReply: (id: string | null) => void;
-  replyTargetId: string | null;
-  replyContent: string;
-  onReplyContentChange: (content: string) => void;
-  onReplySubmit: (parentId: string) => void;
-  onDelete: (id: string) => void;
-  isSubmitting: boolean;
-  formatDate: (date: string) => string;
-  isChild?: boolean;
-  editingCommentId: string | null;
-  onSetEditingCommentId: (id: string | null) => void;
-  editCommentContent: string;
-  onSetEditCommentContent: (content: string) => void;
-  onUpdate: (id: string) => void;
 }
 
 function CommentItem({ 
@@ -796,8 +650,8 @@ function CommentItem({
   replyTargetId, 
   replyContent, 
   onReplyContentChange, 
-  onReplySubmit,
-  onDelete,
+  onReplySubmit, 
+  onDelete, 
   isSubmitting,
   formatDate,
   isChild = false,
@@ -806,124 +660,112 @@ function CommentItem({
   editCommentContent,
   onSetEditCommentContent,
   onUpdate
-}: CommentItemProps) {
+}: any) {
   const isDeleted = comment.content === "삭제된 댓글입니다.";
   const myUserId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
   const isMine = comment.authorId?.toLowerCase() === myUserId?.toLowerCase();
 
   return (
-    <div className={cn("flex flex-col gap-3 relative", isChild && "pt-4")}>
-      <div className="flex justify-between items-start">
-        <div className="flex items-center gap-2">
-          {isChild && <CornerDownRight className="w-3.5 h-3.5 text-zinc-300" />}
-          <span className={cn("font-bold text-sm", isDeleted ? "text-zinc-300" : "text-black")}>
-            {comment.author}
-          </span>
-          <span className="text-zinc-300 text-xs">|</span>
-          <span className="text-zinc-400 text-xs">{formatDate(comment.createdAt)}</span>
+    <div className={cn(
+      "nexus-card bg-white overflow-hidden transition-all",
+      isChild ? "ml-8 md:ml-16 border-l-4 border-zinc-50" : ""
+    )}>
+      <div className="p-6 md:p-8">
+        <div className="flex gap-4 md:gap-6">
+          <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center border border-zinc-50 shrink-0">
+            <User className="w-6 h-6 text-zinc-400" />
+          </div>
+          <div className="flex-1 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[15px] font-black text-zinc-900 flex items-center gap-2">
+                  {comment.author}
+                  {comment.reportCount > 0 && <span className="text-[8px] bg-red-50 text-red-400 px-1.5 py-0.5 rounded uppercase">Flagged</span>}
+                </div>
+                <div className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">{formatDate(comment.createdAt)}</div>
+              </div>
+              <div className="flex items-center gap-3">
+                {!isDeleted && !isMine && (
+                  <button onClick={() => onReport(comment.id)} className="text-[10px] font-black text-zinc-300 hover:text-red-500 transition-colors uppercase tracking-widest">Report</button>
+                )}
+                {isMine && !isDeleted && (
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => {
+                        onSetEditingCommentId(comment.id);
+                        onSetEditCommentContent(comment.content);
+                      }}
+                      className="text-[10px] font-black text-zinc-300 hover:text-black transition-colors uppercase tracking-widest"
+                    >
+                      Edit
+                    </button>
+                    <button onClick={() => onDelete(comment.id)} className="text-[10px] font-black text-zinc-300 hover:text-red-500 transition-colors uppercase tracking-widest">Delete</button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {editingCommentId === comment.id ? (
+              <div className="space-y-4">
+                <textarea 
+                  value={editCommentContent}
+                  onChange={(e) => onSetEditCommentContent(e.target.value)}
+                  className="w-full p-6 bg-zinc-50 rounded-2xl border-2 border-transparent focus:bg-white focus:border-[var(--nexus-primary)]/10 outline-none transition-all font-medium text-base text-zinc-800 resize-none"
+                />
+                <div className="flex justify-end gap-2">
+                  <button onClick={() => onSetEditingCommentId(null)} className="px-4 py-2 font-black text-[10px] text-zinc-400 uppercase tracking-widest">Cancel</button>
+                  <button onClick={() => onUpdate(comment.id)} className="bg-black text-white px-6 py-2 rounded-xl font-black text-[10px] uppercase tracking-widest">Save Changes</button>
+                </div>
+              </div>
+            ) : (
+              <p className={cn("text-[16px] font-medium leading-relaxed whitespace-pre-wrap", isDeleted ? "text-zinc-300 italic" : "text-zinc-700")}>
+                {comment.content}
+              </p>
+            )}
+
+            {!isDeleted && (
+              <div className="flex items-center gap-6 pt-2">
+                <button 
+                  onClick={() => onReply(replyTargetId === comment.id ? null : comment.id)}
+                  className="flex items-center gap-2 text-[10px] font-black text-[var(--nexus-primary)] uppercase tracking-widest hover:opacity-70 transition-opacity"
+                >
+                  <CornerDownRight className="w-3.5 h-3.5" />
+                  {replyTargetId === comment.id ? "Cancel Reply" : "Reply"}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-        {!isDeleted && !isMine && (
-          <button 
-            onClick={() => onReport(comment.id)}
-            className="text-xs text-zinc-400 hover:text-red-500 flex items-center gap-1 transition-colors"
-          >
-            <AlertCircle className="w-3 h-3" />
-            신고
-          </button>
-        )}
-        {isMine && !isDeleted && (
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => {
-                onSetEditingCommentId(comment.id);
-                onSetEditCommentContent(comment.content);
-              }}
-              className="text-xs text-blue-500 hover:text-blue-700 font-bold transition-colors"
-            >
-              수정
-            </button>
-            <span className="text-zinc-200 text-[10px]">|</span>
-            <button 
-              onClick={() => onDelete(comment.id)}
-              className="text-xs text-red-400 hover:text-red-600 font-bold transition-colors"
-            >
-              삭제
-            </button>
+
+        {/* Reply Input */}
+        {replyTargetId === comment.id && (
+          <div className="mt-8 pl-16">
+            <div className="relative group">
+              <textarea 
+                value={replyContent}
+                onChange={(e) => onReplyContentChange(e.target.value)}
+                placeholder="답글을 남겨주세요..."
+                className="w-full min-h-[100px] p-6 bg-zinc-50 rounded-[2rem] border-2 border-transparent focus:bg-white focus:border-[var(--nexus-primary)]/10 outline-none transition-all font-medium text-base text-zinc-800 resize-none"
+              />
+              <button 
+                onClick={() => onReplySubmit(comment.id)}
+                disabled={isSubmitting || !replyContent.trim()}
+                className="absolute right-4 bottom-4 bg-black text-white px-6 py-3 rounded-xl font-black text-xs active:scale-95 transition-all shadow-xl shadow-black/10 disabled:opacity-20"
+              >
+                POST REPLY
+              </button>
+            </div>
           </div>
         )}
-        </div>
       </div>
-      
-      {editingCommentId === comment.id ? (
-        <div className={cn("mt-2 bg-white border border-zinc-200 rounded-lg p-3", isChild && "ml-5")}>
-          <textarea 
-            value={editCommentContent}
-            onChange={(e) => onSetEditCommentContent(e.target.value)}
-            className="w-full h-20 bg-transparent resize-none focus:outline-none text-sm"
-          />
-          <div className="flex justify-end gap-2 mt-2">
-            <button 
-              onClick={() => onSetEditingCommentId(null)}
-              className="px-3 py-1 bg-zinc-100 text-zinc-600 rounded text-[11px] font-bold hover:bg-zinc-200"
-            >
-              취소
-            </button>
-            <button 
-              onClick={() => onUpdate(comment.id)}
-              className="bg-black text-white px-4 py-1.5 rounded font-bold text-[11px] hover:bg-zinc-800"
-            >
-              저장
-            </button>
-          </div>
-        </div>
-      ) : (
-        <p className={cn("text-sm leading-relaxed", isDeleted ? "text-zinc-400 italic" : "text-zinc-800", isChild && "ml-5")}>
-          {comment.content}
-        </p>
-      )}
 
-      {!isDeleted && (
-        <div className={cn("flex items-center gap-4", isChild && "ml-5")}>
-          <button 
-            onClick={() => onReply(replyTargetId === comment.id ? null : comment.id)}
-            className="text-[11px] font-bold text-[#3b4890] hover:underline"
-          >
-            답글달기
-          </button>
-        </div>
-      )}
-
-      {replyTargetId === comment.id && (
-        <div className={cn("mt-4 bg-zinc-50 border border-zinc-200 rounded-lg p-3", isChild && "ml-5")}>
-          <textarea 
-            value={replyContent}
-            onChange={(e) => onReplyContentChange(e.target.value)}
-            placeholder="답글을 입력해주세요."
-            className="w-full h-20 bg-transparent resize-none focus:outline-none text-sm"
-          />
-          <div className="flex justify-end mt-2">
-            <button 
-              disabled={isSubmitting}
-              onClick={() => onReplySubmit(comment.id)}
-              className="bg-black text-white px-4 py-1.5 rounded font-bold text-[11px] hover:bg-zinc-800 transition-all disabled:opacity-50"
-            >
-              답글등록
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Children Comments (Recursion) */}
+      {/* Children Comments */}
       {comment.children && comment.children.length > 0 && (
-        <div className={cn(
-          "flex flex-col gap-6 mt-2", 
-          !isChild ? "ml-5 border-l-2 border-zinc-100 pl-5" : "ml-0 border-l-0 pl-0"
-        )}>
-          {comment.children.map((child) => (
+        <div className="bg-zinc-50/30">
+          {comment.children.map((child: any) => (
             <CommentItem 
-              key={child.id} 
-              comment={child} 
+              key={child.id}
+              comment={child}
               onReport={onReport}
               onReply={onReply}
               replyTargetId={replyTargetId}
@@ -937,7 +779,7 @@ function CommentItem({
               editingCommentId={editingCommentId}
               onSetEditingCommentId={onSetEditingCommentId}
               editCommentContent={editCommentContent}
-              onSetEditCommentContent={onSetEditCommentContent}
+              onSetEditCommentContent={setEditCommentContent}
               onUpdate={onUpdate}
             />
           ))}

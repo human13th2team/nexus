@@ -43,6 +43,9 @@ export default function InterviewSection({
             title: "새로운 창업 프로젝트"
           }),
         });
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}`);
+        }
         const result = await response.json();
         if (result.success) {
           setProjectId(result.data.projectId);
@@ -79,6 +82,9 @@ export default function InterviewSection({
         }),
       });
 
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
       const result = await response.json();
 
       if (result.success) {
@@ -114,6 +120,9 @@ export default function InterviewSection({
       const response = await fetch(`${API_BASE_URL}/${projectId}/naming`, {
         method: "POST",
       });
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
       const result = await response.json();
       
       if (result.success) {

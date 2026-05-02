@@ -28,6 +28,7 @@ public class BoardServiceImpl implements BoardService {
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final com.team.nexus.domain.board.repository.BoardLikeRepository boardLikeRepository;
+    private final com.team.nexus.domain.board.repository.IndustryCategoryRepository industryCategoryRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -83,6 +84,23 @@ public class BoardServiceImpl implements BoardService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<BoardResponseDto> getIndustryBoardList(UUID categoryId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return boardRepository.findByIndustryCategoryId(categoryId, pageable)
+                .map(this::convertToDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<BoardResponseDto> searchIndustryPosts(UUID categoryId, String keyword, String type, int page, int size) {
+        String trimmedKeyword = (keyword != null) ? keyword.trim() : "";
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        return boardRepository.findByIndustryCategoryIdAndKeywordAll(categoryId, trimmedKeyword, pageable)
+                .map(this::convertToDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<BoardResponseDto> getTopPosts() {
         return boardRepository.findTop3ByOrderByViewCountDesc().stream()
                 .map(this::convertToDto)
@@ -100,11 +118,19 @@ public class BoardServiceImpl implements BoardService {
     @Override
     @Transactional
     public BoardResponseDto getPostDetail(UUID id) {
+        return getPostDetail(id, true);
+    }
+
+    @Override
+    @Transactional
+    public BoardResponseDto getPostDetail(UUID id, boolean incrementView) {
         Board board = boardRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("게시글을 찾을 수 없습니다."));
         
-        // 조회수 증가
-        board.setViewCount((board.getViewCount() == null ? 0 : board.getViewCount()) + 1);
+        if (incrementView) {
+            // 조회수 증가
+            board.setViewCount((board.getViewCount() == null ? 0 : board.getViewCount()) + 1);
+        }
         
         return convertToDto(board);
     }
@@ -113,7 +139,7 @@ public class BoardServiceImpl implements BoardService {
     @Transactional(readOnly = true)
     public Page<BoardResponseDto> getPopularPosts(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return boardRepository.findAllByLikeCountGreaterThanEqualOrderByCreatedAtDesc(10, pageable)
+        return boardRepository.findAllByLikeCountGreaterThanEqual(10, pageable)
                 .map(this::convertToDto);
     }
 
@@ -121,7 +147,7 @@ public class BoardServiceImpl implements BoardService {
     @Transactional(readOnly = true)
     public Page<BoardResponseDto> getRegionPopularPosts(String region, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return boardRepository.findByRegionNameAndLikeCountGreaterThanEqualOrderByCreatedAtDesc(region, 10, pageable)
+        return boardRepository.findByRegionNameAndLikeCountGreaterThanEqual(region, 10, pageable)
                 .map(this::convertToDto);
     }
 
@@ -137,6 +163,11 @@ public class BoardServiceImpl implements BoardService {
                 .viewCount(0)
                 .user(user)
                 .build();
+        
+        if (requestDto.getIndustryCategoryId() != null && !requestDto.getIndustryCategoryId().isEmpty()) {
+            industryCategoryRepository.findById(UUID.fromString(requestDto.getIndustryCategoryId()))
+                    .ifPresent(board::setIndustryCategory);
+        }
         
         if (requestDto.getImageUrls() != null && !requestDto.getImageUrls().isEmpty()) {
             List<BoardImage> boardImages = requestDto.getImageUrls().stream()
@@ -254,6 +285,8 @@ public class BoardServiceImpl implements BoardService {
                 .authorId(board.getUser() != null ? board.getUser().getId() : null)
                 .regionName(board.getRegionName())
                 .categoryName(board.getCategoryName())
+                .industryCategoryId(board.getIndustryCategory() != null ? board.getIndustryCategory().getId().toString() : null)
+                .industryCategoryName(board.getIndustryCategory() != null ? board.getIndustryCategory().getName() : null)
                 .createdAt(board.getCreatedAt())
                 .viewCount(board.getViewCount() == null ? 0 : board.getViewCount())
                 .likeCount(board.getLikeCount() == null ? 0 : board.getLikeCount())

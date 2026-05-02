@@ -37,6 +37,10 @@ public class Board {
     @Column(name = "category_name", length = 20)
     private String categoryName;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "industry_category_id")
+    private IndustryCategory industryCategory;
+
     @Column(name = "view_count")
     private Integer viewCount;
 
@@ -55,6 +59,14 @@ public class Board {
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private java.util.List<BoardImage> images = new java.util.ArrayList<>();
+
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private java.util.List<Comment> comments = new java.util.ArrayList<>();
+
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private java.util.List<BoardLike> likes = new java.util.ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

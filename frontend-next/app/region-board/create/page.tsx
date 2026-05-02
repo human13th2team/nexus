@@ -9,7 +9,10 @@ import {
   CheckCircle2,
   Lock,
   Unlock,
-  Loader2
+  Loader2,
+  Plus,
+  Send,
+  Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +25,7 @@ export default function BoardCreatePage() {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
-  const [regionName, setRegionName] = useState<string>(""); // Always start empty to force selection
+  const [regionName, setRegionName] = useState<string>("");
 
   const regions = [
     { id: 'gyeonggi', name: '경기도' },
@@ -77,7 +80,6 @@ export default function BoardCreatePage() {
         return;
       }
 
-      // 1. 이미지 업로드 (FastAPI)
       let imageUrls: string[] = [];
       if (images.length > 0) {
         const formData = new FormData();
@@ -95,7 +97,6 @@ export default function BoardCreatePage() {
         }
       }
 
-      // 2. 게시글 저장 (Spring Boot - Region Board)
       const response = await fetch("http://localhost:8080/api/v1/region-board", {
         method: "POST",
         headers: {
@@ -127,31 +128,38 @@ export default function BoardCreatePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fcfcfc] py-12 px-6">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-[var(--nexus-bg)] py-12 px-6 pb-32">
+      <div className="max-w-4xl mx-auto">
         {/* Navigation */}
         <button 
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-zinc-500 hover:text-black transition-colors mb-8 group"
+          className="flex items-center gap-2 text-zinc-500 hover:text-black transition-all mb-10 group font-black text-xs uppercase tracking-widest"
         >
           <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
-          <span className="font-medium">목록으로 돌아가기</span>
+          Go Back
         </button>
 
-        <div className="bg-white rounded-[40px] border border-zinc-100 shadow-xl shadow-zinc-200/20 overflow-hidden">
-          <div className="p-8 md:p-12">
-            <header className="mb-10">
-              <h1 className="text-3xl font-black tracking-tighter text-zinc-900 mb-2">지역별 게시판 글쓰기</h1>
-              <p className="text-zinc-500 font-medium">우리 동네 소식과 이야기를 공유해 주세요.</p>
-            </header>
+        <header className="mb-14 space-y-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-[var(--nexus-primary-container)] text-[var(--nexus-primary)] rounded-full text-[10px] font-black tracking-widest uppercase">
+            <Plus className="w-3.5 h-3.5" />
+            New Discussion
+          </div>
+          <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-zinc-900 leading-tight">지역 사회와 소통하기</h1>
+          <p className="text-zinc-400 font-medium text-lg max-w-xl">사장님의 소중한 경험과 지역 정보를 공유해 주세요. 따뜻한 한마디가 큰 힘이 됩니다.</p>
+        </header>
 
-            <form onSubmit={handleSubmit} className="space-y-8">
+        <div className="nexus-card bg-white overflow-hidden shadow-2xl shadow-black/5">
+          <form onSubmit={handleSubmit} className="divide-y divide-zinc-50">
+            <div className="p-8 md:p-12 space-y-12">
               {/* Region Selection */}
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-zinc-900 ml-1 flex items-center gap-2">
-                  지역 선택
-                  {!regionName && <span className="text-red-500 text-[10px] font-black animate-pulse">필수 선택</span>}
-                </label>
+              <section className="space-y-4">
+                <div className="flex items-center justify-between ml-1">
+                  <div className="flex items-center gap-3">
+                    <div className="w-1 h-4 bg-[var(--nexus-primary)] rounded-full" />
+                    <h2 className="text-xs font-black text-zinc-400 uppercase tracking-widest">Location Selection</h2>
+                  </div>
+                  {!regionName && <span className="text-red-500 animate-pulse text-[10px] font-black uppercase tracking-widest">* Required</span>}
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {regions.map((region) => (
                     <button
@@ -159,118 +167,126 @@ export default function BoardCreatePage() {
                       type="button"
                       onClick={() => setRegionName(region.name)}
                       className={cn(
-                        "px-5 py-2.5 rounded-xl font-bold text-sm transition-all",
+                        "px-6 py-3 rounded-full font-black text-[13px] transition-all active:scale-95",
                         regionName === region.name 
-                          ? "bg-black text-white shadow-md" 
-                          : "bg-zinc-50 text-zinc-500 border border-zinc-100 hover:border-zinc-200"
+                          ? "bg-black text-white shadow-xl shadow-black/20" 
+                          : "nexus-glass text-zinc-500 hover:bg-white hover:text-black hover:border-zinc-300"
                       )}
                     >
                       {region.name}
                     </button>
                   ))}
                 </div>
-              </div>
+              </section>
 
               {/* Title Input */}
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-zinc-900 ml-1">제목</label>
+              <section className="space-y-4">
+                <div className="flex items-center gap-3 ml-1">
+                  <div className="w-1 h-4 bg-[var(--nexus-primary)] rounded-full" />
+                  <h2 className="text-xs font-black text-zinc-400 uppercase tracking-widest">Post Title</h2>
+                </div>
                 <input 
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="제목을 입력해 주세요"
-                  className="w-full h-14 px-6 bg-zinc-50 border border-zinc-100 rounded-2xl focus:outline-none focus:ring-4 focus:ring-black/5 focus:border-black transition-all font-medium text-zinc-900"
+                  className="w-full text-3xl font-black tracking-tight text-zinc-900 border-b-2 border-transparent focus:border-[var(--nexus-primary)]/10 outline-none pb-4 transition-all placeholder:text-zinc-200"
                 />
-              </div>
+              </section>
 
               {/* Image Upload Area */}
-              <div className="space-y-4">
+              <section className="space-y-6">
                 <div className="flex items-center justify-between ml-1">
-                  <label className="text-sm font-bold text-zinc-900">사진 첨부 ({images.length}장)</label>
-                  <label className="cursor-pointer bg-zinc-100 hover:bg-zinc-200 px-3 py-1.5 rounded-xl text-xs font-bold text-zinc-600 transition-all flex items-center gap-1.5">
-                    <Camera className="w-3.5 h-3.5" />
-                    추가하기
-                    <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageChange} />
-                  </label>
+                  <div className="flex items-center gap-3">
+                    <div className="w-1 h-4 bg-[var(--nexus-primary)] rounded-full" />
+                    <h2 className="text-xs font-black text-zinc-400 uppercase tracking-widest">Media Gallery</h2>
+                  </div>
+                  <span className="text-[10px] font-black text-zinc-300 uppercase tracking-widest">{images.length} / 10 Files</span>
                 </div>
                 
-                {imagePreviews.length === 0 ? (
-                  <label className="flex flex-col items-center justify-center w-full h-48 bg-zinc-50 border-2 border-dashed border-zinc-200 rounded-[32px] cursor-pointer hover:bg-zinc-100/50 hover:border-zinc-300 transition-all group">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <div className="p-4 bg-white rounded-2xl shadow-sm mb-3 group-hover:scale-110 transition-transform">
-                        <Camera className="w-6 h-6 text-zinc-400" />
-                      </div>
-                      <p className="text-sm text-zinc-500 font-medium">클릭하여 사진 업로드 (여러 장 가능)</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative aspect-square rounded-3xl overflow-hidden group shadow-lg shadow-black/5 border border-zinc-50">
+                      <img src={preview} alt={`Preview ${index}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                      <button 
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute top-2 right-2 p-2 bg-black/50 hover:bg-red-500 text-white rounded-xl transition-all backdrop-blur-md opacity-0 group-hover:opacity-100 active:scale-90"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
-                    <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageChange} />
-                  </label>
-                ) : (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {imagePreviews.map((preview, index) => (
-                      <div key={index} className="relative aspect-square rounded-2xl overflow-hidden group shadow-md">
-                        <img src={preview} alt={`Preview ${index}`} className="w-full h-full object-cover" />
-                        <button 
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-500 text-white rounded-full transition-all backdrop-blur-sm opacity-0 group-hover:opacity-100"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                        {index === 0 && (
-                          <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 text-white text-[10px] font-bold rounded-lg backdrop-blur-sm">대표</div>
-                        )}
+                  ))}
+                  
+                  {images.length < 10 && (
+                    <label className="flex flex-col items-center justify-center aspect-square bg-zinc-50 border-2 border-dashed border-zinc-100 rounded-3xl cursor-pointer hover:bg-white hover:border-[var(--nexus-primary)]/20 transition-all group">
+                      <div className="p-4 bg-white rounded-2xl shadow-xl shadow-black/[0.03] mb-3 group-hover:scale-110 transition-transform">
+                        <Camera className="w-6 h-6 text-[var(--nexus-primary)]" />
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                      <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Add Media</p>
+                      <input type="file" className="hidden" accept="image/*" multiple onChange={handleImageChange} />
+                    </label>
+                  )}
+                </div>
+              </section>
 
               {/* Content Textarea */}
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-zinc-900 ml-1">내용</label>
+              <section className="space-y-4">
+                <div className="flex items-center gap-3 ml-1">
+                  <div className="w-1 h-4 bg-[var(--nexus-primary)] rounded-full" />
+                  <h2 className="text-xs font-black text-zinc-400 uppercase tracking-widest">Content Body</h2>
+                </div>
                 <textarea 
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  placeholder="따뜻한 커뮤니티를 위해 서로를 존중하는 마음을 담아주세요."
-                  rows={8}
-                  className="w-full p-6 bg-zinc-50 border border-zinc-100 rounded-[32px] focus:outline-none focus:ring-4 focus:ring-black/5 focus:border-black transition-all font-medium text-zinc-900 resize-none"
+                  placeholder="사장님들과 공유하고 싶은 소중한 이야기를 들려주세요."
+                  className="w-full min-h-[400px] p-8 bg-zinc-50 rounded-[2.5rem] border-2 border-transparent focus:bg-white focus:border-[var(--nexus-primary)]/10 outline-none transition-all font-medium text-lg leading-relaxed text-zinc-800 resize-none"
                 />
-              </div>
+              </section>
+            </div>
 
-              {/* Options & Submit */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pt-4 border-t border-zinc-50">
+            {/* Bottom Actions */}
+            <div className="p-8 md:p-12 flex flex-col md:flex-row md:items-center justify-between gap-8 bg-zinc-50/30">
+              <div className="flex items-center gap-6">
                 <button 
                   type="button"
                   onClick={() => setIsAnonymous(!isAnonymous)}
                   className={cn(
-                    "flex items-center gap-3 px-6 py-3 rounded-2xl border transition-all active:scale-95",
+                    "flex items-center gap-3 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95",
                     isAnonymous 
-                      ? "bg-zinc-900 border-zinc-900 text-white shadow-lg shadow-zinc-900/10" 
-                      : "bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300"
+                      ? "bg-black text-white shadow-xl shadow-black/20" 
+                      : "bg-white text-zinc-400 hover:text-black border border-zinc-100"
                   )}
                 >
                   {isAnonymous ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-                  <span className="font-bold text-sm">익명으로 작성하기</span>
-                  {isAnonymous && <CheckCircle2 className="w-4 h-4 text-white/50" />}
+                  익명으로 작성
+                  {isAnonymous && <CheckCircle2 className="w-3.5 h-3.5 text-[var(--nexus-primary)]" />}
                 </button>
+                <div className="hidden md:flex items-center gap-2 text-zinc-300">
+                  <Info className="w-4 h-4" />
+                  <span className="text-[10px] font-bold">작성 가이드라인을 준수해 주세요.</span>
+                </div>
+              </div>
 
+              <div className="flex items-center gap-4">
+                <button 
+                  type="button"
+                  onClick={() => router.back()}
+                  className="px-8 py-4 text-xs font-black text-zinc-400 hover:text-black uppercase tracking-widest"
+                >
+                  Cancel
+                </button>
                 <button 
                   type="submit"
-                  disabled={isLoading}
-                  className="flex items-center justify-center gap-2 bg-black text-white px-10 py-4 rounded-2xl font-bold transition-all hover:bg-zinc-800 active:scale-95 shadow-lg shadow-black/10 disabled:bg-zinc-300 disabled:pointer-events-none"
+                  disabled={isLoading || !title.trim() || !content.trim() || !regionName}
+                  className="flex items-center gap-3 bg-[var(--nexus-primary)] text-white px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all hover:translate-y-[-2px] active:scale-95 shadow-2xl shadow-[var(--nexus-primary)]/30 disabled:grayscale disabled:opacity-20"
                 >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>처리 중...</span>
-                    </>
-                  ) : (
-                    <span>게시글 등록하기</span>
-                  )}
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                  {isLoading ? "Publishing..." : "Post Now"}
                 </button>
               </div>
-            </form>
-          </div>
+            </div>
+          </form>
         </div>
       </div>
     </div>

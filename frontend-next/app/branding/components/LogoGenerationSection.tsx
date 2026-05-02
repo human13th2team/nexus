@@ -30,6 +30,9 @@ export default function LogoGenerationSection({
     
     try {
       const targetId = identity?.identityId || identity?.id; 
+      if (!targetId) {
+        throw new Error("Identity ID가 유효하지 않습니다.");
+      }
       
       const response = await fetch(`${API_BASE_URL}/identity/${targetId}/logo`, {
         method: "POST",
@@ -38,6 +41,9 @@ export default function LogoGenerationSection({
         },
       });
 
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
       const result = await response.json();
 
       if (result.success) {
@@ -67,6 +73,9 @@ export default function LogoGenerationSection({
     setIsFinalizing(true);
     try {
       const targetId = identity?.identityId || identity?.id;
+      if (!targetId) {
+        throw new Error("Identity ID가 유효하지 않습니다.");
+      }
       // Base64 데이터인 경우 그대로 전송, 일반 URL인 경우 상대 경로 추출
       const sendUrl = selected.url.startsWith("data:image") 
         ? selected.url 
@@ -80,6 +89,9 @@ export default function LogoGenerationSection({
         body: JSON.stringify({ imageUrl: sendUrl }),
       });
 
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
       const result = await response.json();
       if (result.success) {
         // 확정된 ID와 함께 완료 처리

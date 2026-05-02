@@ -23,6 +23,8 @@ public class BoardResponseDto {
     private List<String> imageUrls;
     private String regionName;
     private String categoryName;
+    private String industryCategoryId;
+    private String industryCategoryName;
     private LocalDateTime createdAt;
     private Integer viewCount;
     private Integer likeCount;
