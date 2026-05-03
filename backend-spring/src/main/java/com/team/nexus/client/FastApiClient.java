@@ -39,4 +39,20 @@ public class FastApiClient {
                 .retrieve()
                 .bodyToMono(Map.class);
     }
+    /**
+     * FastAPI 서버로 전문가 AI 매칭 요청
+     */
+    public Mono<Map> requestExpertMatch(String categoryId, String requestContent) {
+        java.util.Map<String, String> body = new java.util.HashMap<>();
+        if (categoryId != null) {
+            body.put("industry_category_id", categoryId);
+        }
+        body.put("request_content", requestContent);
+
+        return this.webClient.post()
+                .uri("/api/v1/ai/experts/match")
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(Map.class);
+    }
 }

@@ -19,7 +19,7 @@ from app.core.ai_client import get_ai_client
 from contextlib import asynccontextmanager
 from app.domain.subsidy import subsidyRouter as subsidy
 from app.domain.subsidy.subsidyRouter import start_scheduler as subsidy_start_scheduler
-
+from app.domain.expert import expertRouter as expert
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 서버 시작 시 실행될 로직
@@ -80,7 +80,7 @@ app.include_router(community.router, prefix="/api/v1/ai/community", tags=["Hyper
 app.include_router(dashboard.router, prefix="/api/v1/ai/dashboard", tags=["Ops & Dashboard"])
 app.include_router(prediction.router, prefix="/api/v1/ai/prediction", tags=["Sales Prediction"])
 app.include_router(subsidy.router, prefix="/api/v1/ai/subsidy", tags=["Subsidy Guide"])
-
+app.include_router(expert.router)
 @app.get("/")
 async def root():
     return {"message": "Nexus FastAPI Server is running!"}
