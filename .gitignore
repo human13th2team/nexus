@@ -10,11 +10,11 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
-*.log
 .env
 .env*
 !.env.example
 .vercel
+render-env.env
 
 # --- Frontend (Next.js) ---
 frontend-next/node_modules/
