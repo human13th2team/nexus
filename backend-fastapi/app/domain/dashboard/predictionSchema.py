@@ -8,14 +8,18 @@ class PredictionDetailSchema(BaseModel):
 
 class DailyStatSchema(BaseModel):
     date: str
-    amount: int
+    actual: int
+    movingAverage: Optional[float] = None
+    returnRate: Optional[float] = None
 
 class PredictionDataSchema(BaseModel):
-    prediction: PredictionDetailSchema
-    daily_stats: List[DailyStatSchema]
-    analysis_report: str
-    moving_average: Optional[float] = None
-    return_rate: Optional[float] = None
+    predictedSales: int
+    predictionDate: str
+    analysisData: List[DailyStatSchema]
+    analysisReport: str
+    predictionMethod: Optional[str] = None
+    movingAverage: Optional[float] = None
+    returnRate: Optional[float] = None
 
 class PredictionResponseSchema(BaseModel):
     status: str
