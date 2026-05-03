@@ -28,9 +28,13 @@ public class ExternalApiServiceImpl implements ExternalApiService {
         try {
             ResponseEntity<T> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, responseType);
             return response.getBody();
+        } catch (org.springframework.web.client.RestClientResponseException e) {
+            String errorBody = e.getResponseBodyAsString();
+            log.error("[External API Error] URL: {}, Status: {}, Response: {}", url, e.getStatusCode(), errorBody);
+            throw new RuntimeException("외부 API 호출 실패 (" + e.getStatusCode() + "): " + errorBody);
         } catch (Exception e) {
-            log.error("External API POST request failed. URL: {}, Error: {}", url, e.getMessage());
-            throw new RuntimeException("External API call failed: " + e.getMessage());
+            log.error("[External API Exception] URL: {}, Error: {}", url, e.getMessage());
+            throw new RuntimeException("외부 API 호출 중 예외 발생: " + e.getMessage());
         }
     }
 

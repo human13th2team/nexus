@@ -53,6 +53,10 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("탈퇴한 계정입니다.");
         }
 
+        if (user.getIsSuspended() != null && user.getIsSuspended()) {
+            throw new IllegalArgumentException("관리자에 의해 활동이 정지된 계정입니다.");
+        }
+
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswd())) {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }

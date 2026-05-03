@@ -51,4 +51,8 @@ public class User {
 
     @Column(name = "deleted_at")
     private java.time.LocalDateTime deletedAt;
+
+    @Builder.Default
+    @Column(name = "is_suspended")
+    private Boolean isSuspended = false;
 }

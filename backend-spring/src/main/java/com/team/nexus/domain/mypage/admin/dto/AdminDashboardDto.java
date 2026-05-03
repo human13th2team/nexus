@@ -24,6 +24,7 @@ public class AdminDashboardDto {
         private Integer loginType;
         private String bizNo;
         private LocalDateTime createdAt;
+        private Boolean isSuspended;
     }
 
     @Getter

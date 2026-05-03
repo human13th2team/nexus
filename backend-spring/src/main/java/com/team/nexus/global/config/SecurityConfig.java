@@ -29,11 +29,11 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
-            .cors(cors -> cors.configure(http))
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/**", "/api/v1/status/**", "/api/v1/comm/**", "/login/oauth2/**", "/oauth2/**").permitAll()
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                .anyRequest().permitAll() // 개발 편의를 위해 일단 모두 허용
+                .anyRequest().permitAll()
             )
             .oauth2Login(oauth2 -> oauth2
                 .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
@@ -41,5 +41,17 @@ public class SecurityConfig {
             );
 
         return http.build();
+    }
+
+    @Bean
+    public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
+        org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
+        configuration.addAllowedOrigin("http://localhost:3000");
+        configuration.addAllowedMethod("*");
+        configuration.addAllowedHeader("*");
+        configuration.setAllowCredentials(true);
+        org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }
