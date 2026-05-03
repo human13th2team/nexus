@@ -156,7 +156,7 @@ class LicenseIndustry(Base):
     documents: Mapped[List["Document"]] = relationship(back_populates="license_industry", cascade="all, delete-orphan")
     license_mappings: Mapped[List["LicenseIndustryMapping"]] = relationship(back_populates="license")
     checklist_progresses: Mapped[List["ChecklistProgress"]] = relationship(back_populates="license_industry", cascade="all, delete-orphan")
-
+    checklist_steps: Mapped[List["ChecklistStep"]] = relationship(back_populates="license_industry", cascade="all, delete-orphan")
 class Survey(Base):
     __tablename__ = "surveys"
 
@@ -217,7 +217,6 @@ class LicenseIndustryMapping(Base):
     # Relationships
     category: Mapped["IndustryCategory"] = relationship(back_populates="license_mappings")
     license: Mapped["LicenseIndustry"] = relationship()
-    checklist_progresses: Mapped[List["ChecklistProgress"]] = relationship(back_populates="license_industry", cascade="all, delete-orphan")
 
 class LaborContract(Base):
     __tablename__ = "labor_contracts"
