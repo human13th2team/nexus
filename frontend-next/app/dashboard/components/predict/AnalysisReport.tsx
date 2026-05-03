@@ -31,7 +31,7 @@ const AnalysisReport: React.FC<AnalysisReportProps> = ({ data }) => {
           </h3>
           <div className="flex items-center gap-1 text-xs text-blue-400">
             <Activity size={14} />
-            <span>지수평활법(SES) 기반 분석 결과</span>
+            <span>{data.predictionMethod || '지수평활법(SES)'} 기반 분석 결과</span>
           </div>
         </div>
 
