@@ -11,13 +11,12 @@ except ImportError:
     timesfm = None
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, List, Any
-import uuid
-import datetime
-from app.models import Prediction, DailyPrediction, Sale
-import logging
+from statsmodels.tsa.holtwinters import SimpleExpSmoothing
+
+from app.models import DailyPrediction, Prediction
 
 logger = logging.getLogger(__name__)
+
 
 async def fetchSalesData(userId: uuid.UUID, db: AsyncSession) -> pd.DataFrame:
     """DB에서 최근 매출 데이터를 조회하여 DataFrame으로 반환합니다."""
@@ -27,14 +26,14 @@ async def fetchSalesData(userId: uuid.UUID, db: AsyncSession) -> pd.DataFrame:
     """)
     result = await db.execute(query, {"uid": userId})
     rows = result.fetchall()
-    
+
     if len(rows) < 2:
         raise ValueError("분석을 위한 데이터가 충분하지 않습니다. (최소 2건 필요)")
-        
-    df = pd.DataFrame(rows, columns=['date', 'actual'])
+
+    df = pd.DataFrame(rows, columns=["date", "actual"])
     # 날짜 정제: 시간대 정보를 완전히 제거하여 Naive 상태로 만듦
-    df['date'] = pd.to_datetime(df['date']).dt.tz_localize(None)
-    df['actual'] = df['actual'].astype(float)
+    df["date"] = pd.to_datetime(df["date"]).dt.tz_localize(None)
+    df["actual"] = df["actual"].astype(float)
     return df
 
 # TimesFM 모델 전역 캐시 (CPU 모드 로딩은 시간이 걸리므로 처음 한 번만 수행)
@@ -102,16 +101,18 @@ async def predictWithTimesFm(df: pd.DataFrame) -> Dict[str, Any]:
 
 def analyzeStatistics(df: pd.DataFrame) -> Dict[str, Any]:
     """매출 데이터의 통계치(이동평균, 변동률)를 계산합니다."""
-    df['movingAverage'] = df['actual'].rolling(window=min(7, len(df))).mean()
-    df['returnRate'] = df['actual'].pct_change() * 100
-    
-    currentMa = df['movingAverage'].iloc[-1] if not pd.isna(df['movingAverage'].iloc[-1]) else df['actual'].mean()
-    currentReturnRate = df['returnRate'].iloc[-1] if not pd.isna(df['returnRate'].iloc[-1]) else 0.0
-    
-    return {
-        "currentMa": float(currentMa),
-        "currentReturnRate": float(currentReturnRate)
-    }
+    df["movingAverage"] = df["actual"].rolling(window=min(7, len(df))).mean()
+    df["returnRate"] = df["actual"].pct_change() * 100
+
+    currentMa = (
+        df["movingAverage"].iloc[-1]
+        if not pd.isna(df["movingAverage"].iloc[-1])
+        else df["actual"].mean()
+    )
+    currentReturnRate = df["returnRate"].iloc[-1] if not pd.isna(df["returnRate"].iloc[-1]) else 0.0
+
+    return {"currentMa": float(currentMa), "currentReturnRate": float(currentReturnRate)}
+
 
 async def generatePrediction(df: pd.DataFrame) -> Dict[str, Any]:
     """데이터 기간에 따라 최적의 모델을 선택하여 매출을 예측합니다."""
@@ -180,8 +181,11 @@ async def generatePrediction(df: pd.DataFrame) -> Dict[str, Any]:
     }
 
 async def persistAnalysisResults(
-    userId: uuid.UUID, df: pd.DataFrame, stats: Dict[str, Any], 
-    pred: Dict[str, Any], db: AsyncSession
+    userId: uuid.UUID,
+    df: pd.DataFrame,
+    stats: Dict[str, Any],
+    pred: Dict[str, Any],
+    db: AsyncSession,
 ) -> Prediction:
     """분석 및 예측 결과를 DB에 저장합니다. 미래 예측치도 함께 저장합니다."""
     nowNaive = datetime.datetime.now().replace(tzinfo=None)
@@ -202,9 +206,9 @@ async def persistAnalysisResults(
         pureDate = row['date']
         if hasattr(pureDate, 'to_pydatetime'):
             pureDate = pureDate.to_pydatetime().replace(tzinfo=None)
-        elif hasattr(pureDate, 'replace'):
+        elif hasattr(pureDate, "replace"):
             pureDate = pureDate.replace(tzinfo=None)
-            
+
         daily = DailyPrediction(
             id=uuid.uuid4(), prediction_id=newPred.id, target_date=pureDate,
             pred_sales=int(row['exponentialSmoothing']), 
@@ -234,6 +238,7 @@ async def persistAnalysisResults(
     
     await db.commit()
     return newPred
+
 
 async def getAnalysisFromDb(userId: str, db: AsyncSession) -> Dict[str, Any]:
     """메인 분석 프로세스: 프론트엔드 요구사항 및 Schema에 맞춰 반환합니다."""
