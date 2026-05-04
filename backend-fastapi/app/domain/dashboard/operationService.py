@@ -1,6 +1,6 @@
 import os
 import re
-from typing import List, Dict, Any
+from typing import List
 from dotenv import load_dotenv
 
 # LangChain 관련 임포트
@@ -9,6 +9,9 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_postgres import PGVector
 from langchain_core.documents import Document
+from fastapi import UploadFile
+import tempfile
+import shutil
 
 # 1. 환경 변수 로드 및 설정
 load_dotenv()
@@ -52,7 +55,7 @@ def split_pdf_by_parts(file_path: str) -> List[dict]:
     """
     PyPDFLoader로 PDF를 읽고 'Part [숫자]'를 기준으로 텍스트를 분리합니다.
     """
-    print(f"[*] PDF 로딩 및 섹션 분리 중: {os.path.basename(file_path)}")
+    print(f"[1/4] PDF 로딩 및 섹션 분리 중: {os.path.basename(file_path)}")
     loader = PyPDFLoader(file_path)
     pages = loader.load()
     
@@ -60,6 +63,8 @@ def split_pdf_by_parts(file_path: str) -> List[dict]:
     full_text = "\n".join([p.page_content for p in pages])
     
     # 'Part' 키워드를 기준으로 텍스트 분할 (Regex 사용)
+    # Part 1, Part 2 등을 기준으로 나누며, 파트 제목도 함께 캡처하기 위해 split 대신 finditer 사용 고려 가능
+    # 여기서는 간단히 Part [숫자]를 구분자로 사용하여 분할
     parts = re.split(r"(Part\s+\d+\.)", full_text)
     
     parts_data = []
@@ -78,7 +83,7 @@ def chunk_documents(parts_data: List[dict], metadata_base: dict) -> List[Documen
     """
     분리된 Part별 텍스트를 RecursiveCharacterTextSplitter로 세부 청킹합니다.
     """
-    print(f"[*] 텍스트 청킹(Chunking) 중... (Part 수: {len(parts_data)})")
+    print(f"[2/4] 텍스트 청킹(Chunking) 중... (Part 수: {len(parts_data)})")
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
         chunk_overlap=150,
@@ -107,12 +112,13 @@ def upsert_to_vector_db(documents: List[Document]):
     """
     PGVector를 사용하여 벡터 데이터베이스에 저장(Upsert)합니다.
     """
-    print(f"[*] 벡터 DB(PostgreSQL) 저장 중... (총 청크 수: {len(documents)})")
+    print(f"[3/4] 벡터 DB(PostgreSQL) 저장 중... (총 청크 수: {len(documents)})")
     
     # 임베딩 모델 설정
     embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
     
     # PGVector 인스턴스 생성 및 데이터 추가
+    # langchain_postgres의 PGVector 사용
     vector_store = PGVector(
         embeddings=embeddings,
         collection_name=COLLECTION_NAME,
@@ -121,14 +127,15 @@ def upsert_to_vector_db(documents: List[Document]):
     )
     
     vector_store.add_documents(documents)
-    print(f"[*] 저장 완료! 테이블명: {COLLECTION_NAME}")
+    print(f"[4/4] 저장 완료! 테이블명: {COLLECTION_NAME}")
 
-def run_ingestion(pdf_file_path: str) -> Dict[str, Any]:
+def run_ingestion(pdf_file_path: str) -> int:
     """
     전체 인제스트 프로세스를 실행합니다.
     """
     if not os.path.exists(pdf_file_path):
-        raise FileNotFoundError(f"오류: 파일을 찾을 수 없습니다. ({pdf_file_path})")
+        print(f"오류: 파일을 찾을 수 없습니다. ({pdf_file_path})")
+        return 0
 
     # 1. 파일명에서 기본 메타데이터 추출
     filename = os.path.basename(pdf_file_path)
@@ -142,12 +149,35 @@ def run_ingestion(pdf_file_path: str) -> Dict[str, Any]:
     
     # 4. 벡터 DB 저장
     upsert_to_vector_db(final_docs)
+    
+    return len(final_docs)
 
-    return {
-        "status": "success",
-        "filename": filename,
-        "year": metadata_base["year"],
-        "quarter": metadata_base["quarter"],
-        "chunk_count": len(final_docs),
-        "message": f"성공적으로 {len(final_docs)}개의 청크를 저장했습니다."
-    }
+def process_pdf_upload(file: UploadFile) -> dict:
+    """
+    업로드된 PDF 파일을 임시 저장하고 인제스트 프로세스를 실행합니다.
+    """
+    # 임시 파일 경로 생성
+    suffix = os.path.splitext(file.filename)[1]
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        shutil.copyfileobj(file.file, tmp)
+        tmp_path = tmp.name
+
+    try:
+        chunk_count = run_ingestion(tmp_path)
+        return {
+            "status": "success",
+            "message": f"성공적으로 '{file.filename}' 파일을 처리했습니다.",
+            "chunk_count": chunk_count
+        }
+    except Exception as e:
+        print(f"인제스트 중 오류 발생: {str(e)}")
+        return {
+            "status": "error",
+            "message": f"파일 처리 중 오류가 발생했습니다: {str(e)}",
+            "chunk_count": 0
+        }
+    finally:
+        # 임시 파일 삭제
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
