@@ -403,6 +403,7 @@ class Sale(Base):
     total_amount: Mapped[Optional[int]] = mapped_column(Integer, server_default=text("0"))
     file_url: Mapped[Optional[str]] = mapped_column(String(255))
     store_number: Mapped[Optional[str]] = mapped_column(String(255))
+    store_number: Mapped[Optional[str]] = mapped_column(String(255))
     created_at: Mapped[datetime.datetime] = mapped_column(TIMESTAMP, server_default=text("NOW()"))
 
     # Relationships

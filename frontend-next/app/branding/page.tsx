@@ -125,8 +125,8 @@ export default function BrandListPage() {
             <button
               key={tab}
               className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${tab === 'Overview'
-                  ? 'bg-white text-[var(--nexus-primary)] shadow-sm'
-                  : 'text-gray-500 hover:text-[var(--nexus-primary)]'
+                ? 'bg-white text-[var(--nexus-primary)] shadow-sm'
+                : 'text-gray-500 hover:text-[var(--nexus-primary)]'
                 }`}
             >
               {tab}
@@ -159,8 +159,8 @@ export default function BrandListPage() {
                     key={brand.id}
                     onClick={() => setSelectedBrandId(brand.id)}
                     className={`group relative aspect-square flex flex-col items-center justify-center p-10 rounded-[3rem] transition-all cursor-pointer border-2 ${selectedBrandId === brand.id
-                        ? 'bg-white border-[var(--nexus-primary)] shadow-[0_30px_60px_-15px_rgba(11,26,125,0.15)] -translate-y-3'
-                        : 'bg-[var(--nexus-surface-lowest)] border-transparent hover:border-[var(--nexus-outline-variant)] hover:shadow-xl hover:-translate-y-1'
+                      ? 'bg-white border-[var(--nexus-primary)] shadow-[0_30px_60px_-15px_rgba(11,26,125,0.15)] -translate-y-3'
+                      : 'bg-[var(--nexus-surface-lowest)] border-transparent hover:border-[var(--nexus-outline-variant)] hover:shadow-xl hover:-translate-y-1'
                       }`}
                   >
                     <div className="mb-8 transform transition-transform group-hover:scale-110 duration-700 w-36 h-36 flex items-center justify-center bg-[var(--nexus-surface-low)] rounded-[2.5rem] p-6 border border-[var(--nexus-outline-variant)]/30">
