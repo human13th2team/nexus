@@ -1,8 +1,10 @@
 'use client';
 
+import { api } from '@/lib/api';
 import { useState } from 'react';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_FASTAPI_URL + '/api/v1/ai/branding';
+const FASTAPI_URL = process.env.NEXT_PUBLIC_FASTAPI_URL || 'http://localhost:8000';
+const API_BASE_PATH = '/api/v1/ai/branding';
 
 interface Logo {
   id: string;
@@ -31,11 +33,8 @@ export default function LogoGenerationSection({
     try {
       const targetId = identity?.identityId || identity?.id;
 
-      const response = await fetch(`${API_BASE_URL}/identity/${targetId}/logo`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await api.post(`${API_BASE_PATH}/identity/${targetId}/logo`, null, {
+        baseUrl: FASTAPI_URL,
       });
 
       const result = await response.json();
@@ -46,7 +45,7 @@ export default function LogoGenerationSection({
           url:
             l.imageUrl.startsWith('http') || l.imageUrl.startsWith('data:')
               ? l.imageUrl
-              : `${process.env.NEXT_PUBLIC_FASTAPI_URL}${l.imageUrl}`,
+              : `${FASTAPI_URL}${l.imageUrl}`,
         }));
         setLogos(newLogos);
         if (newLogos.length > 0) setSelectedLogoId(newLogos[0].id);
@@ -71,14 +70,12 @@ export default function LogoGenerationSection({
       // Base64 데이터인 경우 그대로 전송, 일반 URL인 경우 상대 경로 추출
       const sendUrl = selected.url.startsWith('data:image')
         ? selected.url
-        : selected.url.replace(process.env.NEXT_PUBLIC_FASTAPI_URL + '', '');
+        : selected.url.replace(FASTAPI_URL + '', '');
 
-      const response = await fetch(`${API_BASE_URL}/identity/${targetId}/logo/finalize`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ imageUrl: sendUrl }),
+      const response = await api.post(`${API_BASE_PATH}/identity/${targetId}/logo/finalize`, {
+        imageUrl: sendUrl,
+      }, {
+        baseUrl: FASTAPI_URL,
       });
 
       const result = await response.json();
@@ -105,7 +102,7 @@ export default function LogoGenerationSection({
         link.click();
         document.body.removeChild(link);
       } else {
-        const response = await fetch(url);
+        const response = await api.get(url);
         const blob = await response.blob();
         const blobUrl = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -141,11 +138,10 @@ export default function LogoGenerationSection({
             <button
               onClick={generateLogos}
               disabled={isGenerating}
-              className={`px-12 py-5 bg-[var(--nexus-primary)] text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-2xl shadow-[var(--nexus-primary)]/20 hover:-translate-y-1 active:scale-95 ${
-                isGenerating
+              className={`px-12 py-5 bg-[var(--nexus-primary)] text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-2xl shadow-[var(--nexus-primary)]/20 hover:-translate-y-1 active:scale-95 ${isGenerating
                   ? 'opacity-50 cursor-not-allowed'
                   : 'hover:bg-[var(--nexus-primary-container)]'
-              }`}
+                }`}
             >
               {isGenerating ? 'Analyzing Visual Patterns...' : 'Generate Logo Concepts'}
             </button>
@@ -228,11 +224,10 @@ export default function LogoGenerationSection({
                 <div key={logo.id} className={`group relative flex flex-col gap-4`}>
                   <div
                     onClick={() => setSelectedLogoId(logo.id)}
-                    className={`relative aspect-square cursor-pointer overflow-hidden rounded-[3.5rem] border-4 transition-all duration-700 p-2 ${
-                      selectedLogoId === logo.id
+                    className={`relative aspect-square cursor-pointer overflow-hidden rounded-[3.5rem] border-4 transition-all duration-700 p-2 ${selectedLogoId === logo.id
                         ? 'border-[var(--nexus-primary)] bg-white shadow-[0_40px_80px_-20px_rgba(11,26,125,0.2)] -translate-y-3'
                         : 'border-transparent bg-[var(--nexus-surface-low)] hover:border-[var(--nexus-outline-variant)]'
-                    }`}
+                      }`}
                   >
                     <div className="w-full h-full rounded-[3rem] overflow-hidden bg-white flex items-center justify-center p-12">
                       <img
@@ -358,11 +353,10 @@ export default function LogoGenerationSection({
           <button
             disabled={!selectedLogoId || isGenerating || isFinalizing}
             onClick={handleConfirmSelection}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-3 px-12 py-5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-2xl active:scale-95 ${
-              selectedLogoId && !isGenerating && !isFinalizing
+            className={`flex-1 md:flex-none flex items-center justify-center gap-3 px-12 py-5 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-2xl active:scale-95 ${selectedLogoId && !isGenerating && !isFinalizing
                 ? 'bg-[var(--nexus-primary)] text-white hover:bg-[var(--nexus-primary-container)] shadow-[var(--nexus-primary)]/30'
                 : 'bg-gray-100 text-gray-300 cursor-not-allowed shadow-none'
-            }`}
+              }`}
           >
             {isFinalizing ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>

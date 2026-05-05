@@ -26,6 +26,10 @@ import {
   Briefcase
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+<<<<<<< HEAD
+=======
+import { api } from "@/lib/api";
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
 
 interface Post {
   id: string;
@@ -96,7 +100,11 @@ export default function IndustryBoardDetailPage() {
   const fetchPostDetail = async (id: string, silent: boolean = false) => {
     if (!silent) setIsLoading(true);
     try {
+<<<<<<< HEAD
       const response = await fetch(`http://localhost:8080/api/v1/board/${id}${silent ? "?silent=true" : ""}`);
+=======
+      const response = await api.get(`/api/v1/board/${id}${silent ? "?silent=true" : ""}`);
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       
       if (result.status === "success") {
@@ -114,7 +122,13 @@ export default function IndustryBoardDetailPage() {
   const fetchPosts = async (page: number) => {
     if (!post?.industryCategoryId) return;
     try {
+<<<<<<< HEAD
       const response = await fetch(`http://localhost:8080/api/v1/industry-board/${post.industryCategoryId}?page=${page}&size=10`);
+=======
+      const response = await api.get(`/api/v1/industry-board/${post.industryCategoryId}`, {
+        params: { page: String(page), size: "10" }
+      });
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === "success") {
         setPosts(result.data);
@@ -128,7 +142,11 @@ export default function IndustryBoardDetailPage() {
 
   const fetchComments = async (id: string = params.id as string) => {
     try {
+<<<<<<< HEAD
       const response = await fetch(`http://localhost:8080/api/v1/comments/${id}`);
+=======
+      const response = await api.get(`/api/v1/comments/${id}`);
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === "success") {
         setComments(result.data);
@@ -139,12 +157,18 @@ export default function IndustryBoardDetailPage() {
   };
   
   const fetchLikeStatus = async (id: string) => {
+<<<<<<< HEAD
     const token = localStorage.getItem("accessToken");
     if (!token) return;
     try {
       const response = await fetch(`http://localhost:8080/api/v1/board/like/${id}/status`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
+=======
+    try {
+      const response = await api.get(`/api/v1/board/like/${id}/status`);
+      if (!response.ok) return;
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === "success") setIsLiked(result.isLiked);
     } catch (error) {
@@ -162,10 +186,14 @@ export default function IndustryBoardDetailPage() {
     if (isLikeLoading) return;
     setIsLikeLoading(true);
     try {
+<<<<<<< HEAD
       const response = await fetch(`http://localhost:8080/api/v1/board/like/${params.id}`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${token}` }
       });
+=======
+      const response = await api.post(`/api/v1/board/like/${params.id}`);
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === "success") {
         setIsLiked(result.isLiked);
@@ -189,6 +217,7 @@ export default function IndustryBoardDetailPage() {
     if (!content.trim()) return;
     setIsSubmitting(true);
     try {
+<<<<<<< HEAD
       const response = await fetch(`http://localhost:8080/api/v1/comments/${params.id}`, {
         method: "POST",
         headers: {
@@ -197,6 +226,9 @@ export default function IndustryBoardDetailPage() {
         },
         body: JSON.stringify({ content, parentId })
       });
+=======
+      const response = await api.post(`/api/v1/comments/${params.id}`, { content, parentId });
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === "success") {
         setCommentContent("");
@@ -214,6 +246,7 @@ export default function IndustryBoardDetailPage() {
   const handleUpdateComment = async (commentId: string) => {
     if (!editCommentContent.trim()) return;
     try {
+<<<<<<< HEAD
       const response = await fetch(`http://localhost:8080/api/v1/comments/${commentId}`, {
         method: "PUT",
         headers: {
@@ -222,6 +255,9 @@ export default function IndustryBoardDetailPage() {
         },
         body: JSON.stringify({ content: editCommentContent })
       });
+=======
+      const response = await api.put(`/api/v1/comments/${commentId}`, { content: editCommentContent });
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === "success") {
         setEditingCommentId(null);
@@ -235,10 +271,14 @@ export default function IndustryBoardDetailPage() {
   const handleDeleteComment = async (commentId: string) => {
     if (!confirm("정말 댓글을 삭제하시겠습니까?")) return;
     try {
+<<<<<<< HEAD
       const response = await fetch(`http://localhost:8080/api/v1/comments/${commentId}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${localStorage.getItem("accessToken")}` }
       });
+=======
+      const response = await api.delete(`/api/v1/comments/${commentId}`);
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === "success") fetchComments();
     } catch (error) {
@@ -249,10 +289,14 @@ export default function IndustryBoardDetailPage() {
   const handleReportComment = async (commentId: string) => {
     if (!confirm("이 댓글을 신고하시겠습니까?")) return;
     try {
+<<<<<<< HEAD
       const response = await fetch(`http://localhost:8080/api/v1/comments/report/${commentId}`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${localStorage.getItem("accessToken")}` }
       });
+=======
+      const response = await api.post(`/api/v1/comments/report/${commentId}`);
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === "success") alert("신고가 접수되었습니다.");
     } catch (error) {
@@ -263,10 +307,14 @@ export default function IndustryBoardDetailPage() {
   const handleDeletePost = async () => {
     if (!confirm("정말 게시글을 삭제하시겠습니까?")) return;
     try {
+<<<<<<< HEAD
       const response = await fetch(`http://localhost:8080/api/v1/board/${params.id}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${localStorage.getItem("accessToken")}` }
       });
+=======
+      const response = await api.delete(`/api/v1/board/${params.id}`);
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       if (response.ok) {
         alert("게시글이 삭제되었습니다.");
         router.push("/industry-board");
@@ -280,6 +328,7 @@ export default function IndustryBoardDetailPage() {
     if (!editTitle.trim() || !editContent.trim()) return;
     setIsSubmitting(true);
     try {
+<<<<<<< HEAD
       const response = await fetch(`http://localhost:8080/api/v1/board/${params.id}`, {
         method: "PUT",
         headers: {
@@ -294,6 +343,15 @@ export default function IndustryBoardDetailPage() {
           isAnonymous: post?.author === "익명",
           imageUrls: post?.imageUrls
         })
+=======
+      const response = await api.put(`/api/v1/board/${params.id}`, {
+        title: editTitle,
+        content: editContent,
+        categoryName: "INDUSTRY",
+        industryCategoryId: post?.industryCategoryId,
+        isAnonymous: post?.author === "익명",
+        imageUrls: post?.imageUrls
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       });
       const result = await response.json();
       if (result.status === "success") {
@@ -435,7 +493,11 @@ export default function IndustryBoardDetailPage() {
                   {post.imageUrls.map((url, idx) => (
                     <div key={idx} className="rounded-[3rem] overflow-hidden shadow-2xl shadow-black/5 ring-8 ring-zinc-50">
                       <img 
+<<<<<<< HEAD
                         src={url.startsWith('http') ? url : `http://localhost:8080${url}`} 
+=======
+                        src={url.startsWith('http') ? url : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${url}`} 
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
                         alt={`Post ${idx}`} 
                         className="w-full h-auto object-cover" 
                       />

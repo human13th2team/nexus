@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@/lib/api';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -33,18 +34,19 @@ export default function GroupBuyListPage() {
     return () => clearInterval(timer);
   }, []);
 
+
   // API 호출
   useEffect(() => {
     setIsLoading(true);
-    const params = new URLSearchParams();
-    if (searchKeyword) params.append('itemName', searchKeyword);
-    if (selectedRegion && selectedRegion !== '전체') params.append('region', selectedRegion);
+    const params: Record<string, string> = {};
+    if (searchKeyword) params.itemName = searchKeyword;
+    if (selectedRegion && selectedRegion !== '전체') params.region = selectedRegion;
 
-    const url = params.toString()
-      ? `${process.env.NEXT_PUBLIC_API_URL}/api/v1/group-purchases/search?${params.toString()}`
-      : process.env.NEXT_PUBLIC_API_URL + '/api/v1/group-purchases';
+    const endpoint = Object.keys(params).length > 0
+      ? '/api/v1/group-purchases/search'
+      : '/api/v1/group-purchases';
 
-    fetch(url)
+    api.get(endpoint, { params })
       .then((res) => res.json())
       .then((data) => {
         setGroupBuys(data);
@@ -188,19 +190,19 @@ export default function GroupBuyListPage() {
                   <div className="relative h-56">
                     <img
                       src={
-                        gb.imageUrl ||
-                        'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=800&auto=format&fit=crop'
+                        gb.imageUrl
+                          ? (gb.imageUrl.startsWith('http') ? gb.imageUrl : `http://localhost:8080${gb.imageUrl}`)
+                          : 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=800&auto=format&fit=crop'
                       }
                       alt={gb.itemName}
                       className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                     />
                     <div className="absolute top-4 left-4 flex gap-2">
                       <span
-                        className={`px-5 py-2 rounded-full text-[10px] font-black shadow-2xl ${
-                          isCompleted || isExpired
+                        className={`px-5 py-2 rounded-full text-[10px] font-black shadow-2xl ${isCompleted || isExpired
                             ? 'bg-slate-900 text-white'
                             : 'bg-[var(--nexus-primary)] text-white'
-                        }`}
+                          }`}
                       >
                         {isCompleted ? '마감' : isExpired ? '만료' : '모집 중'}
                       </span>
@@ -242,11 +244,10 @@ export default function GroupBuyListPage() {
                     <div className="space-y-4">
                       <div className="h-3 w-full bg-slate-50 rounded-full overflow-hidden p-0.5 border border-slate-100 shadow-inner">
                         <div
-                          className={`h-full transition-all duration-1000 rounded-full ${
-                            isCompleted
+                          className={`h-full transition-all duration-1000 rounded-full ${isCompleted
                               ? 'bg-slate-300'
                               : 'bg-gradient-to-r from-[var(--nexus-primary)] via-indigo-500 to-[var(--nexus-secondary)]'
-                          }`}
+                            }`}
                           style={{ width: `${Math.min(progress, 100)}%` }}
                         />
                       </div>

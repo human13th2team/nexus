@@ -16,6 +16,7 @@ class DailyStatSchema(BaseModel):
     returnRate: Optional[float] = None
 
 
+
 class PredictionDataSchema(BaseModel):
     predictedSales: int
     predictionDate: str
@@ -24,6 +25,7 @@ class PredictionDataSchema(BaseModel):
     predictionMethod: Optional[str] = None
     movingAverage: Optional[float] = None
     returnRate: Optional[float] = None
+
 
 
 class PredictionResponseSchema(BaseModel):

@@ -1,9 +1,11 @@
 'use client';
 
+import { api } from '@/lib/api';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_FASTAPI_URL + '/api/v1/ai/branding';
+const FASTAPI_URL = process.env.NEXT_PUBLIC_FASTAPI_URL || 'http://localhost:8000';
+const API_BASE_PATH = '/api/v1/ai/branding';
 
 interface Logo {
   id: string;
@@ -35,8 +37,8 @@ export default function BrandingAssetsSection({
     setIsGenerating(true);
     try {
       const targetId = identity?.identityId || identity?.id;
-      const response = await fetch(`${API_BASE_URL}/identity/${targetId}/assets`, {
-        method: 'POST',
+      const response = await api.post(`${API_BASE_PATH}/identity/${targetId}/assets`, null, {
+        baseUrl: FASTAPI_URL,
       });
       const result = await response.json();
 
@@ -45,7 +47,7 @@ export default function BrandingAssetsSection({
           ...a,
           imageUrl: a.imageUrl.startsWith('http')
             ? a.imageUrl
-            : `${process.env.NEXT_PUBLIC_FASTAPI_URL}${a.imageUrl}`,
+            : `${FASTAPI_URL}${a.imageUrl}`,
         }));
         setAssets(newAssets);
       } else {
@@ -61,7 +63,8 @@ export default function BrandingAssetsSection({
 
   const handleDownload = async (url: string, filename: string) => {
     try {
-      const response = await fetch(url);
+      // 이미지 다운로드는 인증이 필요할 수 있으므로 api.get 사용
+      const response = await api.get(url);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -124,11 +127,10 @@ export default function BrandingAssetsSection({
                   handleDownload(logo?.url || '', `${identity?.brandName || 'Brand'}_Logo.png`)
                 }
                 disabled={!logo?.url}
-                className={`px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-3 transition-all ${
-                  logo?.url
+                className={`px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-3 transition-all ${logo?.url
                     ? 'bg-[var(--nexus-primary)] text-white hover:bg-[var(--nexus-primary-container)] shadow-xl shadow-[var(--nexus-primary)]/20 active:scale-95'
                     : 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                }`}
+                  }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -186,47 +188,47 @@ export default function BrandingAssetsSection({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
           {isGenerating
             ? [1, 2, 3].map((i) => (
-                <div key={i} className="space-y-6 animate-pulse">
-                  <div className="aspect-[4/3] bg-[var(--nexus-surface-low)] rounded-[3rem] border border-[var(--nexus-outline-variant)]/20" />
-                  <div className="space-y-3 px-4">
-                    <div className="h-3 bg-[var(--nexus-surface-low)] rounded-full w-1/3" />
-                    <div className="h-5 bg-[var(--nexus-surface-low)] rounded-full w-3/4" />
-                  </div>
+              <div key={i} className="space-y-6 animate-pulse">
+                <div className="aspect-[4/3] bg-[var(--nexus-surface-low)] rounded-[3rem] border border-[var(--nexus-outline-variant)]/20" />
+                <div className="space-y-3 px-4">
+                  <div className="h-3 bg-[var(--nexus-surface-low)] rounded-full w-1/3" />
+                  <div className="h-5 bg-[var(--nexus-surface-low)] rounded-full w-3/4" />
                 </div>
-              ))
+              </div>
+            ))
             : assets.map((asset) => (
-                <div key={asset.id} className="group flex flex-col gap-6">
-                  <div className="relative aspect-[4/3] bg-[var(--nexus-surface-low)] rounded-[3rem] overflow-hidden border border-[var(--nexus-outline-variant)]/30 transition-all duration-700 hover:shadow-[0_40px_80px_-20px_rgba(7,30,39,0.15)] hover:-translate-y-2">
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-300 font-black text-[9px] uppercase tracking-[0.3em] italic opacity-20 group-hover:opacity-0 transition-opacity">
-                      Rendering {asset.title}...
-                    </div>
-                    <img
-                      src={asset.imageUrl}
-                      alt={asset.title}
-                      className="w-full h-full object-cover transition-all duration-[1.5s] group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <button
-                        onClick={() => handleDownload(asset.imageUrl, `${asset.title}.png`)}
-                        className="px-6 py-3 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-xl transform translate-y-4 group-hover:translate-y-0 transition-all duration-500 hover:bg-[var(--nexus-primary)] hover:text-white"
-                      >
-                        Download Asset
-                      </button>
-                    </div>
+              <div key={asset.id} className="group flex flex-col gap-6">
+                <div className="relative aspect-[4/3] bg-[var(--nexus-surface-low)] rounded-[3rem] overflow-hidden border border-[var(--nexus-outline-variant)]/30 transition-all duration-700 hover:shadow-[0_40px_80px_-20px_rgba(7,30,39,0.15)] hover:-translate-y-2">
+                  <div className="absolute inset-0 flex items-center justify-center text-gray-300 font-black text-[9px] uppercase tracking-[0.3em] italic opacity-20 group-hover:opacity-0 transition-opacity">
+                    Rendering {asset.title}...
                   </div>
-                  <div className="px-6 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 bg-[var(--nexus-secondary)] rounded-full" />
-                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                        {asset.type}
-                      </h4>
-                    </div>
-                    <p className="text-base font-black text-[var(--nexus-on-bg)] leading-tight">
-                      {asset.description}
-                    </p>
+                  <img
+                    src={asset.imageUrl}
+                    alt={asset.title}
+                    className="w-full h-full object-cover transition-all duration-[1.5s] group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <button
+                      onClick={() => handleDownload(asset.imageUrl, `${asset.title}.png`)}
+                      className="px-6 py-3 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-xl transform translate-y-4 group-hover:translate-y-0 transition-all duration-500 hover:bg-[var(--nexus-primary)] hover:text-white"
+                    >
+                      Download Asset
+                    </button>
                   </div>
                 </div>
-              ))}
+                <div className="px-6 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-[var(--nexus-secondary)] rounded-full" />
+                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                      {asset.type}
+                    </h4>
+                  </div>
+                  <p className="text-base font-black text-[var(--nexus-on-bg)] leading-tight">
+                    {asset.description}
+                  </p>
+                </div>
+              </div>
+            ))}
         </div>
       </section>
 

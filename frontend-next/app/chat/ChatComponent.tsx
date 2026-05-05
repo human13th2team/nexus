@@ -1,5 +1,8 @@
 'use client';
 
+import { api } from '@/lib/api';
+import { useAuthStore } from '@/store/useAuthStore';
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -15,7 +18,7 @@ import {
   ChevronLeft,
   Smile,
   Paperclip,
-  Image as ImageIcon,
+  ImageIcon,
   MessageSquare,
   File,
   Download,
@@ -51,7 +54,7 @@ interface ChatRoomResponseDto {
   hasPassword?: boolean;
 }
 
-interface ChatRoom extends ChatRoomResponseDto {}
+interface ChatRoom extends ChatRoomResponseDto { }
 
 interface UserSummary {
   id: string;
@@ -67,8 +70,6 @@ const ChatComponent = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isConnected, setIsConnected] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [currentNickname, setCurrentNickname] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -98,36 +99,27 @@ const ChatComponent = () => {
   const chatServiceRef = useRef<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 1. 초기화: 로컬 스토리지에서 사용자 정보 로드
   const router = useRouter();
+  const { user } = useAuthStore.getState();
+  const currentUserId = user?.id;
+  const currentNickname = user?.nickname || '익명';
 
+  // 1. 초기화: 사용자 정보 로드
   useEffect(() => {
-    const initAuth = () => {
-      const storedUserId = localStorage.getItem('userId');
-      const storedNickname = localStorage.getItem('nickname');
-
-      if (storedUserId) {
-        setCurrentUserId(storedUserId);
-        setCurrentNickname(storedNickname || '익명');
-        fetchMyRooms(storedUserId);
-      } else {
-        // 로그인이 안 되어 있으면 로그인 페이지로 리다이렉트
-        router.push('/auth/login');
-      }
-      setIsLoading(false);
-    };
-
-    initAuth();
-    window.addEventListener('storage', initAuth);
-    return () => window.removeEventListener('storage', initAuth);
-  }, [router]);
+    if (currentUserId) {
+      fetchMyRooms(currentUserId);
+    } else {
+      router.push('/auth/login');
+    }
+    setIsLoading(false);
+  }, [currentUserId, router]);
 
   // 2. 초기 데이터 로드 (내 채팅방 목록)
   const fetchMyRooms = async (userId: string) => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/rooms/mine?userId=${userId}`
-      );
+      const response = await api.get('/api/v1/chat/rooms/mine', {
+        params: { userId }
+      });
       if (response.ok) {
         const data = await response.json();
         setRooms(data);
@@ -143,7 +135,7 @@ const ChatComponent = () => {
 
   const fetchAllRooms = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/rooms`);
+      const response = await api.get('/api/v1/chat/rooms');
       if (response.ok) {
         const data = await response.json();
         setAllRooms(data);
@@ -162,13 +154,12 @@ const ChatComponent = () => {
     if (!currentUserId || !joiningRoom) return;
 
     try {
-      const passwordParam = joinPassword ? `&password=${joinPassword}` : '';
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/rooms/${joiningRoom.id}/join?userId=${currentUserId}${passwordParam}`,
-        {
-          method: 'POST',
-        }
-      );
+      const params: Record<string, string> = { userId: currentUserId };
+      if (joinPassword) params.password = joinPassword;
+
+      const response = await api.post(`/api/v1/chat/rooms/${joiningRoom.id}/join`, null, {
+        params
+      });
       if (response.ok) {
         await fetchMyRooms(currentUserId);
         setActiveRoomId(joiningRoom.id);
@@ -195,12 +186,9 @@ const ChatComponent = () => {
     if (!activeRoomId || !currentUserId) return;
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/rooms/${activeRoomId}/leave?userId=${currentUserId}`,
-        {
-          method: 'POST',
-        }
-      );
+      const response = await api.post(`/api/v1/chat/rooms/${activeRoomId}/leave`, null, {
+        params: { userId: currentUserId }
+      });
       if (response.ok) {
         await fetchMyRooms(currentUserId);
         setActiveRoomId(null);
@@ -270,9 +258,9 @@ const ChatComponent = () => {
   const fetchMessages = async (roomId: string) => {
     if (!currentUserId) return;
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/rooms/${roomId}/messages?userId=${currentUserId}`
-      );
+      const response = await api.get(`/api/v1/chat/rooms/${roomId}/messages`, {
+        params: { userId: currentUserId }
+      });
       if (response.ok) {
         const data = await response.json();
         setMessages(data);
@@ -318,17 +306,13 @@ const ChatComponent = () => {
         }
       }
 
-      const response = await fetch(process.env.NEXT_PUBLIC_API_URL + '/api/v1/chat/rooms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: newRoomTitle,
-          type: newRoomType,
-          description: newRoomDescription,
-          imageUrl: finalImageUrl,
-          creatorId: currentUserId,
-          password: newRoomPassword,
-        }),
+      const response = await api.post('/api/v1/chat/rooms', {
+        title: newRoomTitle,
+        type: newRoomType,
+        description: newRoomDescription,
+        imageUrl: finalImageUrl,
+        creatorId: currentUserId,
+        password: newRoomPassword,
       });
 
       if (response.ok) {
@@ -356,9 +340,7 @@ const ChatComponent = () => {
   const fetchInviteCandidates = async () => {
     if (!activeRoomId) return;
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/rooms/${activeRoomId}/invite-candidates`
-      );
+      const response = await api.get(`/api/v1/chat/rooms/${activeRoomId}/invite-candidates`);
       if (response.ok) {
         const data = await response.json();
         setInviteCandidates(data);
@@ -374,14 +356,7 @@ const ChatComponent = () => {
 
     setIsInviting(true);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/chat/rooms/${activeRoomId}/invite`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(selectedUserIds),
-        }
-      );
+      const response = await api.post(`/api/v1/chat/rooms/${activeRoomId}/invite`, selectedUserIds);
 
       if (response.ok) {
         alert('성공적으로 초대되었습니다.');
@@ -422,20 +397,17 @@ const ChatComponent = () => {
   const uploadRoomImage = async (file: File): Promise<string | null> => {
     setIsUploading(true);
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('files', file);
 
     try {
-      const response = await fetch(
-        process.env.NEXT_PUBLIC_API_URL + '/api/v1/chat/files/upload?category=chat-rooms',
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
+      const response = await api.post('/api/v1/upload/chat', formData, {
+        params: { category: 'chat-rooms' },
+        headers: {} // Forcing FormData boundary logic
+      });
 
       if (response.ok) {
         const data = await response.json();
-        return data.url;
+        return data.urls[0];
       }
     } catch (error) {
       console.error('Upload error:', error);
@@ -447,40 +419,25 @@ const ChatComponent = () => {
 
   const handleFileMessageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    // console.log("File selected:", file);
     if (!file || !activeRoomId || !currentUserId || !chatServiceRef.current) {
-      // console.log("Missing required data:", { file, activeRoomId, currentUserId, connected: !!chatServiceRef.current });
       return;
     }
 
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('files', file);
 
     try {
       console.log('Uploading file...');
-      const response = await fetch(
-        process.env.NEXT_PUBLIC_API_URL + '/api/v1/chat/files/upload?category=chat-messages',
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
+      const response = await api.post('/api/v1/chat/files/upload', formData, {
+        params: { category: 'chat-messages' },
+        headers: {}
+      });
 
       if (response.ok) {
         const data = await response.json();
-        // console.log("Upload success:", data);
         const fileUrl = data.url;
         const fileName = file.name;
         const isImage = file.type.startsWith('image/');
-
-        /* console.log("Sending file message:", {
-          activeRoomId,
-          currentUserId,
-          text: isImage ? '사진을 보냈습니다.' : `파일을 보냈습니다: ${fileName}`,
-          type: isImage ? 'IMAGE' : 'FILE',
-          fileUrl,
-          fileName
-        }); */
 
         chatServiceRef.current.sendMessage(
           activeRoomId,
@@ -491,7 +448,6 @@ const ChatComponent = () => {
           fileName
         );
       } else {
-        console.error('Upload failed with status:', response.status);
         alert('파일 업로드에 실패했습니다.');
       }
     } catch (error) {
@@ -607,24 +563,22 @@ const ChatComponent = () => {
                     setActiveRoomId(room.id);
                   }
                 }}
-                className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${
-                  activeRoomId === room.id
+                className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${activeRoomId === room.id
                     ? 'bg-[var(--nexus-surface-lowest)] shadow-lg shadow-[var(--nexus-primary)]/5 border border-[var(--nexus-surface-container)]'
                     : 'hover:bg-[var(--nexus-surface-container)]/50'
-                }`}
+                  }`}
               >
                 <div
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg overflow-hidden ${
-                    room.imageUrl
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold text-lg overflow-hidden ${room.imageUrl
                       ? 'bg-transparent'
                       : room.type === 'GROUP'
                         ? 'bg-[var(--nexus-primary)]'
                         : 'bg-[var(--nexus-secondary)]'
-                  }`}
+                    }`}
                 >
                   {room.imageUrl ? (
                     <img
-                      src={room.imageUrl}
+                      src={room.imageUrl.startsWith('http') ? room.imageUrl : `http://localhost:8080${room.imageUrl}`}
                       alt={room.title}
                       className="w-full h-full object-cover"
                     />
@@ -669,26 +623,26 @@ const ChatComponent = () => {
           {(showAllRooms ? allRooms : rooms).filter((room) =>
             room.title.toLowerCase().includes(roomSearchQuery.toLowerCase())
           ).length === 0 && (
-            <div className="text-center py-12 px-6">
-              <div className="w-16 h-16 bg-[var(--nexus-surface-container)] rounded-2xl flex items-center justify-center mx-auto mb-4 opacity-50">
-                <Search size={24} className="text-[var(--nexus-outline)]" />
+              <div className="text-center py-12 px-6">
+                <div className="w-16 h-16 bg-[var(--nexus-surface-container)] rounded-2xl flex items-center justify-center mx-auto mb-4 opacity-50">
+                  <Search size={24} className="text-[var(--nexus-outline)]" />
+                </div>
+                <p className="text-sm font-black text-[var(--nexus-on-bg)] mb-1">
+                  {roomSearchQuery
+                    ? '검색 결과가 없습니다'
+                    : showAllRooms
+                      ? '개설된 방이 없습니다'
+                      : '참여 중인 방이 없습니다'}
+                </p>
+                <p className="text-[11px] text-[var(--nexus-outline)] font-medium">
+                  {roomSearchQuery
+                    ? '검색어를 다시 확인하거나 다른 키워드로 검색해 보세요.'
+                    : showAllRooms
+                      ? '새로운 채팅방을 직접 만들어보세요!'
+                      : "'전체 탐색' 탭에서 흥미로운 방을 찾아보세요!"}
+                </p>
               </div>
-              <p className="text-sm font-black text-[var(--nexus-on-bg)] mb-1">
-                {roomSearchQuery
-                  ? '검색 결과가 없습니다'
-                  : showAllRooms
-                    ? '개설된 방이 없습니다'
-                    : '참여 중인 방이 없습니다'}
-              </p>
-              <p className="text-[11px] text-[var(--nexus-outline)] font-medium">
-                {roomSearchQuery
-                  ? '검색어를 다시 확인하거나 다른 키워드로 검색해 보세요.'
-                  : showAllRooms
-                    ? '새로운 채팅방을 직접 만들어보세요!'
-                    : "'전체 탐색' 탭에서 흥미로운 방을 찾아보세요!"}
-              </p>
-            </div>
-          )}
+            )}
         </div>
       </div>
 
@@ -708,7 +662,7 @@ const ChatComponent = () => {
                 <div className="w-10 h-10 bg-[var(--nexus-surface-low)] rounded-xl flex items-center justify-center font-bold text-[var(--nexus-primary)] overflow-hidden border border-[var(--nexus-surface-container)]">
                   {activeRoom.imageUrl ? (
                     <img
-                      src={activeRoom.imageUrl}
+                      src={activeRoom.imageUrl.startsWith('http') ? activeRoom.imageUrl : `http://localhost:8080${activeRoom.imageUrl}`}
                       alt={activeRoom.title}
                       className="w-full h-full object-cover"
                     />
@@ -839,15 +793,14 @@ const ChatComponent = () => {
                       {/* 프로필 이미지 (상대방일 때만) */}
                       {!isMe && (
                         <div
-                          className={`flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-sm overflow-hidden ${
-                            msg.senderProfileImageUrl
+                          className={`flex-shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-sm overflow-hidden ${msg.senderProfileImageUrl
                               ? 'bg-transparent'
                               : 'bg-zinc-100 text-zinc-400'
-                          } ${!showNickname ? 'opacity-0' : 'opacity-100'}`}
+                            } ${!showNickname ? 'opacity-0' : 'opacity-100'}`}
                         >
                           {msg.senderProfileImageUrl ? (
                             <img
-                              src={msg.senderProfileImageUrl}
+                              src={msg.senderProfileImageUrl.startsWith('http') ? msg.senderProfileImageUrl : `http://localhost:8080${msg.senderProfileImageUrl}`}
                               alt={msg.senderNickname}
                               className="w-full h-full object-cover"
                             />
@@ -869,19 +822,18 @@ const ChatComponent = () => {
                         )}
 
                         <div
-                          className={`group relative rounded-2xl text-sm font-medium leading-relaxed overflow-hidden ${
-                            isMe
+                          className={`group relative rounded-2xl text-sm font-medium leading-relaxed overflow-hidden ${isMe
                               ? 'bg-[var(--nexus-primary)] text-[var(--nexus-on-primary)] rounded-tr-none shadow-xl shadow-[var(--nexus-primary)]/10'
                               : 'bg-[var(--nexus-surface-lowest)] text-[var(--nexus-on-bg)] rounded-tl-none shadow-lg shadow-black/5 border border-[var(--nexus-surface-container)]'
-                          }`}
+                            }`}
                         >
                           {msg.type === 'IMAGE' && msg.fileUrl ? (
                             <div className="flex flex-col">
                               <img
-                                src={msg.fileUrl}
+                                src={msg.fileUrl.startsWith('http') ? msg.fileUrl : `http://localhost:8080${msg.fileUrl}`}
                                 alt="Shared Image"
                                 className="w-full max-h-[300px] object-cover cursor-pointer hover:opacity-90 transition-opacity"
-                                onClick={() => setSelectedImageUrl(msg.fileUrl!)}
+                                onClick={() => setSelectedImageUrl(msg.fileUrl!.startsWith('http') ? msg.fileUrl! : `http://localhost:8080${msg.fileUrl}`)}
                               />
                               <div className="px-4 py-2 text-[11px] opacity-70">{msg.message}</div>
                             </div>
@@ -954,11 +906,10 @@ const ChatComponent = () => {
                 <button
                   type="submit"
                   disabled={!inputValue.trim()}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                    inputValue.trim()
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${inputValue.trim()
                       ? 'bg-[var(--nexus-primary)] text-[var(--nexus-on-primary)] hover:scale-105 active:scale-95 shadow-lg shadow-[var(--nexus-primary)]/20'
                       : 'bg-[var(--nexus-surface-container-highest)] text-[var(--nexus-outline)]'
-                  }`}
+                    }`}
                 >
                   <Send size={18} />
                 </button>
@@ -1062,11 +1013,10 @@ const ChatComponent = () => {
                   <button
                     type="button"
                     onClick={() => setNewRoomType('GROUP')}
-                    className={`flex-1 p-5 rounded-2xl border-2 transition-all text-left ${
-                      newRoomType === 'GROUP'
+                    className={`flex-1 p-5 rounded-2xl border-2 transition-all text-left ${newRoomType === 'GROUP'
                         ? 'border-[var(--nexus-primary)] bg-[var(--nexus-primary)] text-[var(--nexus-on-primary)] shadow-xl shadow-[var(--nexus-primary)]/20'
                         : 'border-[var(--nexus-surface-container)] bg-[var(--nexus-surface-low)] text-[var(--nexus-outline)] hover:border-[var(--nexus-primary)]/30'
-                    }`}
+                      }`}
                   >
                     <Users
                       size={24}
@@ -1086,11 +1036,10 @@ const ChatComponent = () => {
                   <button
                     type="button"
                     onClick={() => setNewRoomType('PRIVATE')}
-                    className={`flex-1 p-5 rounded-2xl border-2 transition-all text-left ${
-                      newRoomType === 'PRIVATE'
+                    className={`flex-1 p-5 rounded-2xl border-2 transition-all text-left ${newRoomType === 'PRIVATE'
                         ? 'border-[var(--nexus-secondary)] bg-[var(--nexus-secondary)] text-white shadow-xl shadow-[var(--nexus-secondary)]/20'
                         : 'border-[var(--nexus-surface-container)] bg-[var(--nexus-surface-low)] text-[var(--nexus-outline)] hover:border-[var(--nexus-secondary)]/30'
-                    }`}
+                      }`}
                   >
                     <Plus
                       size={24}
@@ -1224,7 +1173,7 @@ const ChatComponent = () => {
             <div className="p-8 text-center">
               <div className="w-20 h-20 bg-[var(--nexus-surface-low)] rounded-3xl mx-auto mb-6 flex items-center justify-center text-[var(--nexus-primary)] overflow-hidden shadow-inner border border-[var(--nexus-surface-container)]">
                 {joiningRoom.imageUrl ? (
-                  <img src={joiningRoom.imageUrl} alt="" className="w-full h-full object-cover" />
+                  <img src={joiningRoom.imageUrl.startsWith('http') ? joiningRoom.imageUrl : `http://localhost:8080${joiningRoom.imageUrl}`} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <Users size={40} />
                 )}
@@ -1370,18 +1319,16 @@ const ChatComponent = () => {
                     <div
                       key={user.id}
                       onClick={() => toggleUserSelection(user.id)}
-                      className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all mb-1 ${
-                        selectedUserIds.includes(user.id)
+                      className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all mb-1 ${selectedUserIds.includes(user.id)
                           ? 'bg-[var(--nexus-primary)] text-[var(--nexus-on-primary)] shadow-lg shadow-[var(--nexus-primary)]/20'
                           : 'hover:bg-[var(--nexus-surface-container)] text-[var(--nexus-on-bg)] border border-transparent'
-                      }`}
+                        }`}
                     >
                       <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
-                          selectedUserIds.includes(user.id)
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${selectedUserIds.includes(user.id)
                             ? 'bg-[var(--nexus-primary-container)]'
                             : 'bg-[var(--nexus-surface-low)] text-[var(--nexus-outline)] border border-[var(--nexus-surface-container)]'
-                        }`}
+                          }`}
                       >
                         {user.nickname[0]}
                       </div>
@@ -1394,11 +1341,10 @@ const ChatComponent = () => {
                         </div>
                       </div>
                       <div
-                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                          selectedUserIds.includes(user.id)
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${selectedUserIds.includes(user.id)
                             ? 'border-[var(--nexus-on-primary)] bg-[var(--nexus-on-primary)]'
                             : 'border-[var(--nexus-outline)]/30'
-                        }`}
+                          }`}
                       >
                         {selectedUserIds.includes(user.id) && (
                           <div className="w-2.5 h-2.5 bg-[var(--nexus-primary)] rounded-full animate-in zoom-in duration-200" />
@@ -1431,11 +1377,10 @@ const ChatComponent = () => {
               <button
                 disabled={selectedUserIds.length === 0 || isInviting}
                 onClick={handleInviteUsers}
-                className={`flex-2 px-8 py-4 rounded-2xl font-black text-sm shadow-xl transition-all active:scale-95 ${
-                  selectedUserIds.length > 0
+                className={`flex-2 px-8 py-4 rounded-2xl font-black text-sm shadow-xl transition-all active:scale-95 ${selectedUserIds.length > 0
                     ? 'bg-[var(--nexus-primary)] text-[var(--nexus-on-primary)] shadow-[var(--nexus-primary)]/20 hover:opacity-90'
                     : 'bg-[var(--nexus-surface-container)] text-[var(--nexus-outline)] shadow-none cursor-not-allowed'
-                }`}
+                  }`}
               >
                 {isInviting ? '초대 중...' : `${selectedUserIds.length}명 초대하기`}
               </button>

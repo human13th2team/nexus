@@ -52,6 +52,11 @@ public interface BoardRepository extends JpaRepository<Board, UUID> {
 
     Page<Board> findByIsAnonymousTrueOrderByCreatedAtDesc(Pageable pageable);
 
+<<<<<<< HEAD
+=======
+    java.util.List<Board> findByUserIdOrderByCreatedAtDesc(UUID userId);
+
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
     // --- 업종별 게시판 전용 (categoryName = 'INDUSTRY') ---
     @Query("SELECT b FROM Board b WHERE b.categoryName = 'INDUSTRY' AND b.industryCategory.id = :categoryId")
     Page<Board> findByIndustryCategoryId(@Param("categoryId") UUID categoryId, Pageable pageable);

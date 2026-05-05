@@ -2,6 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+<<<<<<< HEAD
+=======
+import { api } from '@/lib/api';
+import { useAuthStore } from '@/store/useAuthStore';
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
 
 interface MyPageData {
   email: string;
@@ -25,10 +30,16 @@ export default function MyPage() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
 
+<<<<<<< HEAD
+=======
+  const { user, isAuthenticated, _hasHydrated } = useAuthStore();
+
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+<<<<<<< HEAD
     const userId = localStorage.getItem('userId');
     const formData = new FormData();
     formData.append('file', file);
@@ -38,14 +49,29 @@ export default function MyPage() {
         method: 'POST',
         body: formData,
       });
+=======
+    const userId = user?.id;
+    const formData = new FormData();
+    formData.append('files', file);
+
+    try {
+      const response = await api.post(`/api/v1/mypage/profile-image/${userId}`, formData);
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === 'success') {
         alert('프로필 이미지가 변경되었습니다.');
         fetchData(userId!);
       } else {
+<<<<<<< HEAD
         alert(result.message || '업로드에 실패했습니다.');
       }
     } catch (error) {
+=======
+        alert(uploadResult.message || '업로드에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Profile upload error:', error);
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       alert('오류가 발생했습니다.');
     }
   };
@@ -70,6 +96,7 @@ export default function MyPage() {
       return alert('새 비밀번호가 일치하지 않습니다.');
     }
 
+<<<<<<< HEAD
     const userId = localStorage.getItem('userId');
     try {
       const response = await fetch(
@@ -83,6 +110,14 @@ export default function MyPage() {
           }),
         }
       );
+=======
+    const userId = user?.id;
+    try {
+      const response = await api.patch(`/api/v1/mypage/change-password/${userId}`, {
+        currentPassword: passwords.current,
+        newPassword: passwords.next,
+      });
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === 'success') {
         alert('비밀번호가 변경되었습니다.');
@@ -97,21 +132,36 @@ export default function MyPage() {
   };
 
   useEffect(() => {
+<<<<<<< HEAD
     const token = localStorage.getItem('accessToken');
     const userId = localStorage.getItem('userId');
 
     if (!token || !userId) {
+=======
+    if (!_hasHydrated) return;
+
+    if (!isAuthenticated || !user?.id) {
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       alert('로그인이 필요한 서비스입니다.');
       router.push('/auth/login');
       return;
     }
 
+<<<<<<< HEAD
     fetchData(userId);
   }, [router]);
 
   const fetchData = async (userId: string) => {
     try {
       const response = await fetch(`http://localhost:8080/api/v1/mypage/me/${userId}`);
+=======
+    fetchData(user.id);
+  }, [isAuthenticated, user, router, _hasHydrated]);
+
+  const fetchData = async (userId: string) => {
+    try {
+      const response = await api.get(`/api/v1/mypage/me/${userId}`);
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === 'success') {
         setData(result.data);
@@ -127,6 +177,7 @@ export default function MyPage() {
 
   const handleUpgrade = async () => {
     if (!bizNo) return alert('사업자 등록번호를 입력해주세요.');
+<<<<<<< HEAD
     const userId = localStorage.getItem('userId');
     try {
       const response = await fetch(`http://localhost:8080/api/v1/mypage/upgrade/${userId}`, {
@@ -138,6 +189,19 @@ export default function MyPage() {
       if (result.status === 'success') {
         alert('사업자 회원으로 전환되었습니다.');
         window.location.reload();
+=======
+    const userId = user?.id;
+    try {
+      const response = await api.patch(`/api/v1/mypage/upgrade/${userId}`, { bizNo });
+      const result = await response.json();
+      if (result.status === 'success') {
+        alert('사업자 회원으로 전환되었습니다.');
+        // 전역 상태 업데이트 추가
+        useAuthStore.getState().updateUser({ userType: 1, bizNo });
+        window.location.reload();
+      } else {
+        alert(result.message || '전환 처리에 실패했습니다.');
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       }
     } catch (error) {
       alert('전환 처리 중 오류가 발생했습니다.');
@@ -146,6 +210,7 @@ export default function MyPage() {
 
   const handleUnregister = async () => {
     if (!confirm('정말로 탈퇴하시겠습니까? 탈퇴 후 7일간은 데이터 복구가 불가능합니다.')) return;
+<<<<<<< HEAD
     const userId = localStorage.getItem('userId');
     try {
       const response = await fetch(`http://localhost:8080/api/v1/mypage/unregister/${userId}`, {
@@ -155,6 +220,15 @@ export default function MyPage() {
       if (result.status === 'success') {
         alert('탈퇴 처리가 완료되었습니다. 이용해주셔서 감사합니다.');
         localStorage.clear();
+=======
+    const userId = user?.id;
+    try {
+      const response = await api.delete(`/api/v1/mypage/unregister/${userId}`);
+      const result = await response.json();
+      if (result.status === 'success') {
+        alert('탈퇴 처리가 완료되었습니다. 이용해주셔서 감사합니다.');
+        useAuthStore.getState().clearAuth();
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
         router.push('/');
       }
     } catch (error) {
@@ -181,7 +255,11 @@ export default function MyPage() {
                 <div className="w-full h-full bg-[var(--nexus-surface-container)] rounded-3xl flex items-center justify-center overflow-hidden shadow-inner border-2 border-white">
                   {data.profileImage ? (
                     <img
+<<<<<<< HEAD
                       src={`http://localhost:8080${data.profileImage}`}
+=======
+                      src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${data.profileImage}`}
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
                       alt="Profile"
                       className="w-full h-full object-cover"
                     />
@@ -212,6 +290,7 @@ export default function MyPage() {
                     회원 등급
                   </span>
                   <span
+<<<<<<< HEAD
                     className={`px-3 py-1 rounded-full text-[10px] font-black ${
                       data.userType === 2
                         ? 'bg-[var(--nexus-error)]/10 text-[var(--nexus-error)]'
@@ -219,6 +298,14 @@ export default function MyPage() {
                           ? 'bg-[var(--nexus-tertiary-fixed)]/20 text-[var(--nexus-tertiary-container)]'
                           : 'bg-[var(--nexus-primary)]/10 text-[var(--nexus-primary)]'
                     }`}
+=======
+                    className={`px-3 py-1 rounded-full text-[10px] font-black ${data.userType === 2
+                      ? 'bg-[var(--nexus-error)]/10 text-[var(--nexus-error)]'
+                      : data.userType === 1
+                        ? 'bg-[var(--nexus-tertiary-fixed)]/20 text-[var(--nexus-tertiary-container)]'
+                        : 'bg-[var(--nexus-primary)]/10 text-[var(--nexus-primary)]'
+                      }`}
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
                   >
                     {data.userType === 2
                       ? '관리자'
@@ -335,11 +422,18 @@ export default function MyPage() {
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
+<<<<<<< HEAD
                     className={`flex-1 py-5 text-sm font-black transition-all ${
                       activeTab === tab
                         ? 'text-[var(--nexus-primary)] bg-[var(--nexus-surface-lowest)] border-b-2 border-[var(--nexus-primary)]'
                         : 'text-[var(--nexus-outline)] hover:text-[var(--nexus-on-bg)] hover:bg-[var(--nexus-surface-low)]'
                     }`}
+=======
+                    className={`flex-1 py-5 text-sm font-black transition-all ${activeTab === tab
+                      ? 'text-[var(--nexus-primary)] bg-[var(--nexus-surface-lowest)] border-b-2 border-[var(--nexus-primary)]'
+                      : 'text-[var(--nexus-outline)] hover:text-[var(--nexus-on-bg)] hover:bg-[var(--nexus-surface-low)]'
+                      }`}
+>>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
                   >
                     {tab === 'posts'
                       ? '내 게시글'

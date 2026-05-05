@@ -1,5 +1,6 @@
 'use client';
 
+import { api } from '@/lib/api';
 import React, { useState, useCallback } from 'react';
 import { Upload, FileText, X, CheckCircle2, Loader2 } from 'lucide-react';
 
@@ -74,6 +75,7 @@ const DropZone: React.FC<DropZoneProps> = ({ onUploadComplete }) => {
     setErrorMsg(null);
   };
 
+
   const uploadReceipt = async () => {
     if (!file) return;
 
@@ -82,13 +84,10 @@ const DropZone: React.FC<DropZoneProps> = ({ onUploadComplete }) => {
     formData.append('file', file);
 
     try {
-      const response = await fetch(
-        process.env.NEXT_PUBLIC_FASTAPI_URL + '/api/v1/ai/dashboard/upload-receipt',
-        {
-          method: 'POST',
-          body: formData,
-        }
-      );
+      const response = await api.post('/api/v1/ai/dashboard/upload-receipt', formData, {
+        baseUrl: process.env.NEXT_PUBLIC_FASTAPI_URL || 'http://localhost:8000',
+        headers: {} // Let browser handle boundary
+      });
 
       if (!response.ok) {
         throw new Error('업로드 중 오류가 발생했습니다.');
@@ -110,11 +109,10 @@ const DropZone: React.FC<DropZoneProps> = ({ onUploadComplete }) => {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`relative min-h-[300px] flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed transition-all duration-300 ${
-          isDragging
+        className={`relative min-h-[300px] flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed transition-all duration-300 ${isDragging
             ? 'border-blue-500 bg-blue-500/10'
             : 'border-white/20 bg-white/5 hover:border-white/40'
-        }`}
+          }`}
       >
         {!file ? (
           <>
