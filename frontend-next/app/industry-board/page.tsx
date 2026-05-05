@@ -18,12 +18,9 @@ import {
   Briefcase
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-<<<<<<< HEAD
-=======
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
 
 interface Post {
   id: string;
@@ -70,11 +67,7 @@ export default function IndustryBoardPage() {
 
   const fetchCategories = async () => {
     try {
-<<<<<<< HEAD
-      const response = await fetch("http://localhost:8080/api/v1/industry-categories/main");
-=======
       const response = await api.get("/api/v1/industry-categories/main");
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === "success") {
         setCategories(result.data);
@@ -87,22 +80,6 @@ export default function IndustryBoardPage() {
     }
   };
 
-<<<<<<< HEAD
-  const fetchPosts = async (page: number, tab: 'all' | 'popular' = 'all', keyword: string = "", type: string = "all", categoryId: string) => {
-    setIsLoading(true);
-    try {
-      const baseUrl = `http://localhost:8080/api/v1/industry-board/${categoryId}`;
-      
-      const params = new URLSearchParams();
-      params.append("page", page.toString());
-      params.append("size", "10");
-      if (keyword) {
-        params.append("keyword", keyword);
-        params.append("type", type);
-      }
-
-      const response = await fetch(`${baseUrl}?${params.toString()}`);
-=======
   const fetchPosts = async (page: number, tab: 'all' | 'popular' = 'all', keyword: string = "", type: string = "all", categoryId: string = "all") => {
     setIsLoading(true);
     try {
@@ -113,7 +90,6 @@ export default function IndustryBoardPage() {
           ...(keyword && { keyword, type })
         }
       });
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       
       if (result.status === "success") {
@@ -138,13 +114,8 @@ export default function IndustryBoardPage() {
   };
 
   const handleCreatePost = () => {
-<<<<<<< HEAD
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-=======
     const { isAuthenticated } = useAuthStore.getState();
     if (!isAuthenticated) {
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       alert("로그인이 필요한 서비스입니다. 로그인 페이지로 이동합니다.");
       router.push("/auth/login");
       return;

@@ -1,11 +1,8 @@
 package com.team.nexus.domain.mypage.service;
 
 import com.team.nexus.domain.auth.repository.UserRepository;
-<<<<<<< HEAD
-=======
 import com.team.nexus.domain.board.repository.BoardRepository;
 import com.team.nexus.domain.comment.repository.CommentRepository;
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
 import com.team.nexus.domain.grouppurchase.repository.GroupOrderRepository;
 import com.team.nexus.domain.mypage.dto.MyPageResponseDto;
 import com.team.nexus.global.entity.User;
@@ -25,11 +22,8 @@ import java.util.stream.Collectors;
 public class MyPageServiceImpl implements MyPageService {
 
     private final UserRepository userRepository;
-<<<<<<< HEAD
-=======
     private final BoardRepository boardRepository;
     private final CommentRepository commentRepository;
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
     private final GroupOrderRepository groupOrderRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -47,13 +41,6 @@ public class MyPageServiceImpl implements MyPageService {
                 .provider(user.getLoginType() == null || user.getLoginType() == 0 ? "local"
                         : user.getLoginType() == 1 ? "google" : "kakao")
                 .profileImage(user.getProfileImage())
-<<<<<<< HEAD
-                .posts(java.util.List.of())
-                .comments(java.util.List.of())
-                .purchases(groupOrderRepository.findAllByUserId(userId).stream()
-                        .map(o -> MyPageResponseDto.MyPurchaseDto.builder()
-                                .id(o.getId())
-=======
                 .posts(boardRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
                         .map(b -> MyPageResponseDto.MyPostDto.builder()
                                 .id(b.getId().toString())
@@ -72,7 +59,6 @@ public class MyPageServiceImpl implements MyPageService {
                 .purchases(groupOrderRepository.findAllByUserId(userId).stream()
                         .map(o -> MyPageResponseDto.MyPurchaseDto.builder()
                                 .id(o.getId().toString())
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
                                 .title(o.getGroupPurchase().getTitle())
                                 .status(o.getGroupPurchase().getStatus())
                                 .createdAt(o.getPaidAt())
@@ -87,11 +73,7 @@ public class MyPageServiceImpl implements MyPageService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-<<<<<<< HEAD
-        user.setUserType(1); // 1: 사업가 회원
-=======
         user.setUserType(1);
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
         user.setBizNo(bizNo);
         userRepository.save(user);
     }
@@ -122,35 +104,6 @@ public class MyPageServiceImpl implements MyPageService {
 
     @Override
     @Transactional
-<<<<<<< HEAD
-    public void uploadProfileImage(UUID userId, org.springframework.web.multipart.MultipartFile file) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-
-        try {
-            // Spring Boot 실행 경로 기준 uploads 폴더 사용
-            String uploadDir = "uploads/profiles/";
-            java.io.File dir = new java.io.File(uploadDir);
-            if (!dir.exists())
-                dir.mkdirs();
-
-            String originalFilename = file.getOriginalFilename();
-            String extension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
-            String savedFilename = UUID.randomUUID().toString() + extension;
-            java.nio.file.Path path = java.nio.file.Paths.get(uploadDir + savedFilename).toAbsolutePath().normalize();
-
-            java.nio.file.Files.copy(file.getInputStream(), path, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-
-            // GroupPurchaseFileController의 display 엔드포인트를 통해 접근하도록 경로 설정
-            user.setProfileImage("/api/v1/group-purchases/files/display/profiles/" + savedFilename);
-            userRepository.save(user);
-        } catch (java.io.IOException e) {
-            throw new RuntimeException("프로필 이미지 업로드 중 오류가 발생했습니다: " + e.getMessage());
-        }
-=======
     public void updateProfileImage(UUID userId, String imageUrl) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
@@ -158,6 +111,5 @@ public class MyPageServiceImpl implements MyPageService {
         user.setProfileImage(imageUrl);
         userRepository.save(user);
         log.info("User {} profile image updated to: {}", userId, imageUrl);
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
     }
 }

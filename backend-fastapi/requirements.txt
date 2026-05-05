@@ -21,13 +21,11 @@ scikit-learn
 pandas
 numpy
 statsmodels
-timesfm
-jax
 google-genai>=1.0.0
 apscheduler
-huggingface_hub
+supabase
+xgboost
 langchain-google-genai
 langchain-postgres
 pypdf
-psycopg2-binary
-python-dotenv
+ruff

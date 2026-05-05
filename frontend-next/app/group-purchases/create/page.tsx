@@ -540,10 +540,11 @@ export default function GroupBuyCreatePage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className={`w-full py-8 rounded-[2rem] font-black text-2xl transition-all shadow-2xl flex items-center justify-center gap-4 transform active:scale-95 ${isSubmitting
+            className={`w-full py-8 rounded-[2rem] font-black text-2xl transition-all shadow-2xl flex items-center justify-center gap-4 transform active:scale-95 ${
+              isSubmitting
                 ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
                 : 'bg-[var(--nexus-primary)] text-white shadow-indigo-900/30 hover:bg-[#081363]'
-              }`}
+            }`}
           >
             {isSubmitting ? (
               '등록 처리 중...'

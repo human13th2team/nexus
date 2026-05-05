@@ -88,20 +88,22 @@ function BrandingPageContent() {
           {[1, 2, 3, 4].map((s) => (
             <div key={s} className="flex items-center gap-2 md:gap-4">
               <div
-                className={`flex items-center gap-3 px-6 py-3 rounded-full transition-all duration-500 ${step === s
+                className={`flex items-center gap-3 px-6 py-3 rounded-full transition-all duration-500 ${
+                  step === s
                     ? 'bg-[var(--nexus-primary)] text-white shadow-[0_10px_30px_-5px_rgba(11,26,125,0.3)] scale-105'
                     : step > s
                       ? 'bg-[var(--nexus-tertiary-fixed)] text-[var(--nexus-tertiary)]'
                       : 'bg-transparent text-gray-400'
-                  }`}
+                }`}
               >
                 <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 transition-colors ${step === s
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black border-2 transition-colors ${
+                    step === s
                       ? 'border-white bg-white text-[var(--nexus-primary)]'
                       : step > s
                         ? 'border-[var(--nexus-tertiary)] bg-transparent text-[var(--nexus-tertiary)]'
                         : 'border-gray-300 bg-transparent text-gray-400'
-                    }`}
+                  }`}
                 >
                   {s}
                 </div>

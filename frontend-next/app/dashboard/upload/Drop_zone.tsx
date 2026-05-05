@@ -109,10 +109,11 @@ const DropZone: React.FC<DropZoneProps> = ({ onUploadComplete }) => {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`relative min-h-[300px] flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed transition-all duration-300 ${isDragging
+        className={`relative min-h-[300px] flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed transition-all duration-300 ${
+          isDragging
             ? 'border-blue-500 bg-blue-500/10'
             : 'border-white/20 bg-white/5 hover:border-white/40'
-          }`}
+        }`}
       >
         {!file ? (
           <>

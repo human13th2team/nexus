@@ -17,11 +17,8 @@ import {
   Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-<<<<<<< HEAD
-=======
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
 
 export default function BoardEditPage() {
   const params = useParams();
@@ -43,11 +40,7 @@ export default function BoardEditPage() {
 
   const fetchPostDetail = async () => {
     try {
-<<<<<<< HEAD
-      const response = await fetch(`http://localhost:8080/api/v1/board/${params.id}`);
-=======
       const response = await api.get(`/api/v1/board/${params.id}`);
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === "success") {
         setTitle(result.data.title);
@@ -91,56 +84,25 @@ export default function BoardEditPage() {
 
     setIsSubmitting(true);
     try {
-<<<<<<< HEAD
-      const token = localStorage.getItem("accessToken");
-      if (!token) return;
-=======
       const { isAuthenticated } = useAuthStore.getState();
       if (!isAuthenticated) {
         alert("로그인이 필요합니다.");
         router.push("/auth/login");
         return;
       }
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
 
       let finalImageUrls = [...imageUrls];
       if (newImages.length > 0) {
         const formData = new FormData();
         newImages.forEach(file => formData.append("files", file));
-<<<<<<< HEAD
-        const uploadResponse = await fetch("http://localhost:8080/api/v1/upload/free", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`
-          },
-          body: formData,
-        });
-=======
         
         const uploadResponse = await api.post("/api/v1/upload/free", formData);
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
         const uploadResult = await uploadResponse.json();
         if (uploadResult.status === "success") {
           finalImageUrls = [...finalImageUrls, ...uploadResult.urls];
         }
       }
 
-<<<<<<< HEAD
-      const response = await fetch(`http://localhost:8080/api/v1/board/${params.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          title,
-          content,
-          isAnonymous,
-          imageUrls: finalImageUrls,
-          regionName: null,
-          categoryName: "FREE"
-        })
-=======
       const response = await api.put(`/api/v1/board/${params.id}`, {
         title,
         content,
@@ -148,7 +110,6 @@ export default function BoardEditPage() {
         imageUrls: finalImageUrls,
         regionName: null,
         categoryName: "FREE"
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       });
 
       const result = await response.json();
@@ -216,15 +177,11 @@ export default function BoardEditPage() {
                   {/* Existing */}
                   {imageUrls.map((url, index) => (
                     <div key={`ex-${index}`} className="relative aspect-square rounded-3xl overflow-hidden group shadow-lg shadow-black/5 border border-zinc-50">
-<<<<<<< HEAD
-                      <img src={url} alt={`Existing ${index}`} className="w-full h-full object-cover" />
-=======
                       <img 
                         src={url.startsWith('http') ? url : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${url}`} 
                         alt={`Existing ${index}`} 
                         className="w-full h-full object-cover" 
                       />
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
                       <button 
                         type="button"
                         onClick={() => removeExistingImage(index)}

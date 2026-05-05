@@ -186,7 +186,7 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
                             <img
                               src={
                                 identity.logoUrl.startsWith('http') ||
-                                  identity.logoUrl.startsWith('data:')
+                                identity.logoUrl.startsWith('data:')
                                   ? identity.logoUrl
                                   : `${FASTAPI_BASE_URL}${identity.logoUrl}`
                               }
@@ -198,7 +198,7 @@ export default function BrandDetailPage({ params }: { params: Promise<{ id: stri
                             onClick={() => {
                               const url =
                                 identity.logoUrl?.startsWith('http') ||
-                                  identity.logoUrl?.startsWith('data:')
+                                identity.logoUrl?.startsWith('data:')
                                   ? identity.logoUrl
                                   : `${FASTAPI_BASE_URL}${identity.logoUrl}`;
                               handleDownload(url!, `${identity.brandName}_logo`);

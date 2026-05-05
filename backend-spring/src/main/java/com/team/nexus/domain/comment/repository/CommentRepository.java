@@ -11,8 +11,5 @@ import java.util.UUID;
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
     long countByBoardId(UUID boardId);
     List<Comment> findByBoardIdAndParentIsNullOrderByCreatedAtAsc(UUID boardId);
-<<<<<<< HEAD
-=======
     List<Comment> findByUserIdOrderByCreatedAtDesc(UUID userId);
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
 }

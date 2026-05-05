@@ -124,10 +124,11 @@ export default function BrandListPage() {
           {['Overview', 'Performance', 'Settings'].map((tab) => (
             <button
               key={tab}
-              className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${tab === 'Overview'
-                ? 'bg-white text-[var(--nexus-primary)] shadow-sm'
-                : 'text-gray-500 hover:text-[var(--nexus-primary)]'
-                }`}
+              className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                tab === 'Overview'
+                  ? 'bg-white text-[var(--nexus-primary)] shadow-sm'
+                  : 'text-gray-500 hover:text-[var(--nexus-primary)]'
+              }`}
             >
               {tab}
             </button>
@@ -147,52 +148,53 @@ export default function BrandListPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-10">
               {isLoading
                 ? Array(4)
-                  .fill(0)
-                  .map((_, i) => (
-                    <div
-                      key={i}
-                      className="aspect-square bg-[var(--nexus-surface-container)] animate-pulse rounded-[2.5rem]"
-                    />
-                  ))
+                    .fill(0)
+                    .map((_, i) => (
+                      <div
+                        key={i}
+                        className="aspect-square bg-[var(--nexus-surface-container)] animate-pulse rounded-[2.5rem]"
+                      />
+                    ))
                 : brands.map((brand) => (
-                  <div
-                    key={brand.id}
-                    onClick={() => setSelectedBrandId(brand.id)}
-                    className={`group relative aspect-square flex flex-col items-center justify-center p-10 rounded-[3rem] transition-all cursor-pointer border-2 ${selectedBrandId === brand.id
-                      ? 'bg-white border-[var(--nexus-primary)] shadow-[0_30px_60px_-15px_rgba(11,26,125,0.15)] -translate-y-3'
-                      : 'bg-[var(--nexus-surface-lowest)] border-transparent hover:border-[var(--nexus-outline-variant)] hover:shadow-xl hover:-translate-y-1'
+                    <div
+                      key={brand.id}
+                      onClick={() => setSelectedBrandId(brand.id)}
+                      className={`group relative aspect-square flex flex-col items-center justify-center p-10 rounded-[3rem] transition-all cursor-pointer border-2 ${
+                        selectedBrandId === brand.id
+                          ? 'bg-white border-[var(--nexus-primary)] shadow-[0_30px_60px_-15px_rgba(11,26,125,0.15)] -translate-y-3'
+                          : 'bg-[var(--nexus-surface-lowest)] border-transparent hover:border-[var(--nexus-outline-variant)] hover:shadow-xl hover:-translate-y-1'
                       }`}
-                  >
-                    <div className="mb-8 transform transition-transform group-hover:scale-110 duration-700 w-36 h-36 flex items-center justify-center bg-[var(--nexus-surface-low)] rounded-[2.5rem] p-6 border border-[var(--nexus-outline-variant)]/30">
-                      {brand.logoUrl ? (
-                        <img
-                          src={
-                            brand.logoUrl.startsWith('http') || brand.logoUrl.startsWith('data:')
-                              ? brand.logoUrl
-                              : `${process.env.NEXT_PUBLIC_FASTAPI_URL}${brand.logoUrl}`
-                          }
-                          alt={brand.title}
-                          className="max-w-full max-h-full object-contain"
-                        />
-                      ) : (
-                        getIndustryIcon(brand.industryCategoryId)
+                    >
+                      <div className="mb-8 transform transition-transform group-hover:scale-110 duration-700 w-36 h-36 flex items-center justify-center bg-[var(--nexus-surface-low)] rounded-[2.5rem] p-6 border border-[var(--nexus-outline-variant)]/30">
+                        {brand.logoUrl ? (
+                          <img
+                            src={
+                              brand.logoUrl.startsWith('http') || brand.logoUrl.startsWith('data:')
+                                ? brand.logoUrl
+                                : `${process.env.NEXT_PUBLIC_FASTAPI_URL}${brand.logoUrl}`
+                            }
+                            alt={brand.title}
+                            className="max-w-full max-h-full object-contain"
+                          />
+                        ) : (
+                          getIndustryIcon(brand.industryCategoryId)
+                        )}
+                      </div>
+                      <h4 className="text-2xl font-black mb-2 text-center text-[var(--nexus-on-bg)]">
+                        {brand.title}
+                      </h4>
+                      <div className="text-center">
+                        <p className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase">
+                          {brand.createdAt}
+                        </p>
+                      </div>
+                      {selectedBrandId === brand.id && (
+                        <div className="absolute top-8 right-8">
+                          <div className="w-4 h-4 bg-[var(--nexus-primary)] rounded-full animate-pulse shadow-[0_0_15px_rgba(11,26,125,0.5)]" />
+                        </div>
                       )}
                     </div>
-                    <h4 className="text-2xl font-black mb-2 text-center text-[var(--nexus-on-bg)]">
-                      {brand.title}
-                    </h4>
-                    <div className="text-center">
-                      <p className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase">
-                        {brand.createdAt}
-                      </p>
-                    </div>
-                    {selectedBrandId === brand.id && (
-                      <div className="absolute top-8 right-8">
-                        <div className="w-4 h-4 bg-[var(--nexus-primary)] rounded-full animate-pulse shadow-[0_0_15px_rgba(11,26,125,0.5)]" />
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  ))}
             </div>
           </section>
 
@@ -215,7 +217,7 @@ export default function BrandListPage() {
                           <img
                             src={
                               selectedBrand.logoUrl.startsWith('http') ||
-                                selectedBrand.logoUrl.startsWith('data:')
+                              selectedBrand.logoUrl.startsWith('data:')
                                 ? selectedBrand.logoUrl
                                 : `${process.env.NEXT_PUBLIC_FASTAPI_URL}${selectedBrand.logoUrl}`
                             }

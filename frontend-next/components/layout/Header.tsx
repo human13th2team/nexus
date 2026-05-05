@@ -125,11 +125,11 @@ export default function Header() {
           )}
         </nav>
 
-        <div
-          className="w-[100px] lg:w-[160px] shrink-0 flex items-center justify-end gap-3"
-          ref={profileRef}
-        >
-          {mounted && _hasHydrated ? (
+          <div
+            className="w-[100px] lg:w-[160px] shrink-0 flex items-center justify-end gap-3"
+            ref={profileRef}
+          >
+            {mounted && _hasHydrated ? (
             <>
               {!isAuthenticated ? (
                 <Link

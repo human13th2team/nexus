@@ -15,11 +15,8 @@ import {
   Info
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-<<<<<<< HEAD
-=======
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/useAuthStore";
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
 
 export default function BoardCreatePage() {
   const router = useRouter();
@@ -78,13 +75,8 @@ export default function BoardCreatePage() {
 
     setIsLoading(true);
     try {
-<<<<<<< HEAD
-      const token = localStorage.getItem("accessToken");
-      if (!token) {
-=======
       const { isAuthenticated } = useAuthStore.getState();
       if (!isAuthenticated) {
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
         alert("로그인이 필요합니다.");
         router.push("/auth/login");
         return;
@@ -93,39 +85,6 @@ export default function BoardCreatePage() {
       let imageUrls: string[] = [];
       if (images.length > 0) {
         const formData = new FormData();
-<<<<<<< HEAD
-        images.forEach(file => {
-          formData.append("files", file);
-        });
-
-        const uploadResponse = await fetch("http://localhost:8080/api/v1/upload/region", {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`
-          },
-          body: formData,
-        });
-        const uploadResult = await uploadResponse.json();
-        if (uploadResult.status === "success") {
-          imageUrls = uploadResult.urls;
-        }
-      }
-
-      const response = await fetch("http://localhost:8080/api/v1/board", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          title,
-          content,
-          isAnonymous,
-          regionName,
-          categoryName: "REGION",
-          imageUrls
-        })
-=======
         images.forEach(file => formData.append("files", file));
         const uploadResponse = await api.post("/api/v1/upload/region", formData);
         const uploadResult = await uploadResponse.json();
@@ -139,7 +98,6 @@ export default function BoardCreatePage() {
         regionName,
         categoryName: "REGION",
         imageUrls
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       });
 
       const result = await response.json();

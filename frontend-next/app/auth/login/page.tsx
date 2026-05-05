@@ -74,7 +74,7 @@ export default function LoginPage() {
 
         // 페이지 이동
         router.push('/');
-        router.refresh();
+        router.refresh(); 
       } else {
         const msg = result.message || '로그인 중 오류가 발생했습니다. 이메일과 비밀번호를 확인해 주세요.';
         setErrorMessage(msg);

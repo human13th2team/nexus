@@ -25,10 +25,7 @@ import {
   Flag
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-<<<<<<< HEAD
-=======
 import { api } from "@/lib/api";
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
 
 interface Post {
   id: string;
@@ -99,11 +96,7 @@ export default function BoardDetailPage() {
   const fetchPostDetail = async (id: string, silent: boolean = false) => {
     if (!silent) setIsLoading(true);
     try {
-<<<<<<< HEAD
-      const response = await fetch(`http://localhost:8080/api/v1/board/${id}${silent ? "?silent=true" : ""}`);
-=======
       const response = await api.get(`/api/v1/board/${id}${silent ? "?silent=true" : ""}`);
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       if (!response.ok) throw new Error(`Server returned ${response.status}`);
       const result = await response.json();
       
@@ -122,9 +115,6 @@ export default function BoardDetailPage() {
   const fetchPosts = async (page: number) => {
     if (!post?.regionName) return;
     try {
-<<<<<<< HEAD
-      const response = await fetch(`http://localhost:8080/api/v1/region-board?page=${page}&size=10&region=${encodeURIComponent(post.regionName)}`);
-=======
       const response = await api.get("/api/v1/region-board", {
         params: {
           page: String(page),
@@ -132,7 +122,6 @@ export default function BoardDetailPage() {
           region: post.regionName
         }
       });
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === "success") {
         setPosts(result.data);
@@ -146,11 +135,7 @@ export default function BoardDetailPage() {
 
   const fetchComments = async (id: string = params.id as string) => {
     try {
-<<<<<<< HEAD
-      const response = await fetch(`http://localhost:8080/api/v1/comments/${id}`);
-=======
       const response = await api.get(`/api/v1/comments/${id}`);
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       if (!response.ok) return;
       const result = await response.json();
       if (result.status === "success") {
@@ -162,18 +147,9 @@ export default function BoardDetailPage() {
   };
   
   const fetchLikeStatus = async (id: string) => {
-<<<<<<< HEAD
-    const token = localStorage.getItem("accessToken");
-    if (!token) return;
-    try {
-      const response = await fetch(`http://localhost:8080/api/v1/board/like/${id}/status`, {
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-=======
     try {
       const response = await api.get(`/api/v1/board/like/${id}/status`);
       if (!response.ok) return;
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === "success") setIsLiked(result.isLiked);
     } catch (error) {
@@ -191,14 +167,7 @@ export default function BoardDetailPage() {
     if (isLikeLoading) return;
     setIsLikeLoading(true);
     try {
-<<<<<<< HEAD
-      const response = await fetch(`http://localhost:8080/api/v1/board/like/${params.id}`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${token}` }
-      });
-=======
       const response = await api.post(`/api/v1/board/like/${params.id}`);
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === "success") {
         setIsLiked(result.isLiked);
@@ -222,18 +191,7 @@ export default function BoardDetailPage() {
     if (!content.trim()) return;
     setIsSubmitting(true);
     try {
-<<<<<<< HEAD
-      const response = await fetch(`http://localhost:8080/api/v1/comments/${params.id}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ content, parentId })
-      });
-=======
       const response = await api.post(`/api/v1/comments/${params.id}`, { content, parentId });
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === "success") {
         setCommentContent("");
@@ -251,18 +209,7 @@ export default function BoardDetailPage() {
   const handleUpdateComment = async (commentId: string) => {
     if (!editCommentContent.trim()) return;
     try {
-<<<<<<< HEAD
-      const response = await fetch(`http://localhost:8080/api/v1/comments/${commentId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("accessToken")}`
-        },
-        body: JSON.stringify({ content: editCommentContent })
-      });
-=======
       const response = await api.put(`/api/v1/comments/${commentId}`, { content: editCommentContent });
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === "success") {
         setEditingCommentId(null);
@@ -276,14 +223,7 @@ export default function BoardDetailPage() {
   const handleDeleteComment = async (commentId: string) => {
     if (!confirm("정말 댓글을 삭제하시겠습니까?")) return;
     try {
-<<<<<<< HEAD
-      const response = await fetch(`http://localhost:8080/api/v1/comments/${commentId}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${localStorage.getItem("accessToken")}` }
-      });
-=======
       const response = await api.delete(`/api/v1/comments/${commentId}`);
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === "success") fetchComments();
     } catch (error) {
@@ -294,14 +234,7 @@ export default function BoardDetailPage() {
   const handleReportComment = async (commentId: string) => {
     if (!confirm("이 댓글을 신고하시겠습니까?")) return;
     try {
-<<<<<<< HEAD
-      const response = await fetch(`http://localhost:8080/api/v1/comments/report/${commentId}`, {
-        method: "POST",
-        headers: { "Authorization": `Bearer ${localStorage.getItem("accessToken")}` }
-      });
-=======
       const response = await api.post(`/api/v1/comments/report/${commentId}`);
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       const result = await response.json();
       if (result.status === "success") alert("신고가 접수되었습니다.");
     } catch (error) {
@@ -312,14 +245,7 @@ export default function BoardDetailPage() {
   const handleDeletePost = async () => {
     if (!confirm("정말 게시글을 삭제하시겠습니까?")) return;
     try {
-<<<<<<< HEAD
-      const response = await fetch(`http://localhost:8080/api/v1/board/${params.id}`, {
-        method: "DELETE",
-        headers: { "Authorization": `Bearer ${localStorage.getItem("accessToken")}` }
-      });
-=======
       const response = await api.delete(`/api/v1/board/${params.id}`);
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       if (response.ok) {
         alert("게시글이 삭제되었습니다.");
         router.push("/region-board");
@@ -333,22 +259,6 @@ export default function BoardDetailPage() {
     if (!editTitle.trim() || !editContent.trim()) return;
     setIsSubmitting(true);
     try {
-<<<<<<< HEAD
-      const response = await fetch(`http://localhost:8080/api/v1/board/${params.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("accessToken")}`
-        },
-        body: JSON.stringify({
-          title: editTitle,
-          content: editContent,
-          categoryName: "REGION",
-          regionName: post?.regionName,
-          isAnonymous: post?.author === "익명",
-          imageUrls: post?.imageUrls
-        })
-=======
       const response = await api.put(`/api/v1/board/${params.id}`, {
         title: editTitle,
         content: editContent,
@@ -356,7 +266,6 @@ export default function BoardDetailPage() {
         regionName: post?.regionName,
         isAnonymous: post?.author === "익명",
         imageUrls: post?.imageUrls
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
       });
       const result = await response.json();
       if (result.status === "success") {
@@ -497,11 +406,7 @@ export default function BoardDetailPage() {
                   {post.imageUrls.map((url, idx) => (
                     <div key={idx} className="rounded-[3rem] overflow-hidden shadow-2xl shadow-black/5 ring-8 ring-zinc-50">
                       <img 
-<<<<<<< HEAD
-                        src={url.startsWith('http') ? url : `http://localhost:8080${url}`} 
-=======
                         src={url.startsWith('http') ? url : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}${url}`} 
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
                         alt={`Post ${idx}`} 
                         className="w-full h-auto object-cover" 
                       />
@@ -864,50 +769,14 @@ function CommentItem({
               <button 
                 onClick={() => onReplySubmit(comment.id)}
                 disabled={isSubmitting || !replyContent.trim()}
-<<<<<<< HEAD
-                className="absolute right-4 bottom-4 bg-black text-white px-6 py-3 rounded-xl font-black text-xs active:scale-95 transition-all shadow-xl shadow-black/10 disabled:opacity-20"
-              >
-                POST REPLY
-=======
                 className="absolute right-6 bottom-6 flex items-center gap-3 bg-black text-white px-6 py-3 rounded-xl font-black text-[10px] active:scale-95 transition-all shadow-lg shadow-black/10 disabled:opacity-20"
               >
                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 REPLY
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
               </button>
             </div>
           </div>
         )}
-<<<<<<< HEAD
-      </div>
-
-      {/* Nested Replies Rendering - Unified indentation */}
-      {comment.children && comment.children.length > 0 && (
-        <div className={cn("pb-2", !isChild && "ml-8 md:ml-16")}>
-          {comment.children.map((child: any) => (
-            <CommentItem 
-              key={child.id}
-              comment={child}
-              onReport={onReport}
-              onReply={onReply}
-              replyTargetId={replyTargetId}
-              replyContent={replyContent}
-              onReplyContentChange={onReplyContentChange}
-              onReplySubmit={onReplySubmit}
-              onDelete={onDelete}
-              isSubmitting={isSubmitting}
-              formatDate={formatDate}
-              isChild={true}
-              editingCommentId={editingCommentId}
-              onSetEditingCommentId={onSetEditingCommentId}
-              editCommentContent={editCommentContent}
-              onSetEditCommentContent={onSetEditCommentContent}
-              onUpdate={onUpdate}
-            />
-          ))}
-        </div>
-      )}
-=======
 
         {/* Render Children Replies */}
         {comment.children && comment.children.length > 0 && (
@@ -936,7 +805,6 @@ function CommentItem({
           </div>
         )}
       </div>
->>>>>>> ee31a0495004b2bac36f517b8c0a8eacfec7f3a1
     </div>
   );
 }

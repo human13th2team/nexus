@@ -190,7 +190,7 @@ export default function GroupBuyDetailPage() {
             <div className="relative rounded-[3rem] overflow-hidden shadow-2xl border-4 border-white">
               <img
                 src={
-                  gb.imageUrl
+                  gb.imageUrl 
                     ? (gb.imageUrl.startsWith('http') ? gb.imageUrl : `http://localhost:8080${gb.imageUrl}`)
                     : 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=1200&auto=format&fit=crop'
                 }
@@ -301,10 +301,11 @@ export default function GroupBuyDetailPage() {
                 <button
                   disabled={timeLeft.isExpired}
                   onClick={() => handlePayment('TOSS')}
-                  className={`w-full py-7 rounded-[2rem] font-black text-xl flex items-center justify-center gap-4 transition-all shadow-2xl transform active:scale-95 ${timeLeft.isExpired
+                  className={`w-full py-7 rounded-[2rem] font-black text-xl flex items-center justify-center gap-4 transition-all shadow-2xl transform active:scale-95 ${
+                    timeLeft.isExpired
                       ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
                       : 'bg-[var(--nexus-primary)] text-white shadow-indigo-900/30 hover:bg-[#081363] hover:scale-[1.02]'
-                    }`}
+                  }`}
                 >
                   <ShoppingBag className="w-6 h-6" />
                   {timeLeft.isExpired ? '모집 마감' : '공동구매 참여하기'}
