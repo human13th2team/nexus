@@ -211,6 +211,7 @@ async def getAnalysisFromDb(userId: str, db: AsyncSession) -> Dict[str, Any]:
                 f"다음 달 예상 총 매출: {pred.get('nextMonthForecast', 0):,.0f}원입니다."
             ),
             "predictionMethod": pred["method"],
+            "nextMonthForecast": pred.get("nextMonthForecast", 0),
             "movingAverage": stats["currentMa"],
             "returnRate": stats["currentReturnRate"],
         }

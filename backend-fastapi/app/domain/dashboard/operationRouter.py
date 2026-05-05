@@ -6,7 +6,7 @@ from app.domain.dashboard.operationService import process_pdf_upload
 router = APIRouter()
 
 @router.post("/ingest-pdf", response_model=IngestionResponseSchema)
-def ingest_pdf(
+async def ingest_pdf(
     file: UploadFile = File(...)
 ) -> Dict[str, Any]:
     """
