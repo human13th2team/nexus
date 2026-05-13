@@ -57,6 +57,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "https://nexus-sigma-gilt.vercel.app",
+        "https://www.nexus-changup.com",
+        "https://nexus-changup.com",
         "https://nexus-g3li.onrender.com",
         os.getenv("FRONTEND_URL", "http://localhost:3000"),
     ],

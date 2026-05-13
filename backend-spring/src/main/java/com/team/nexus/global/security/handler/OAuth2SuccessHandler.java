@@ -52,7 +52,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             String host = request.getServerName();
             String baseUrl = (host.equals("localhost") || host.equals("127.0.0.1")) 
                              ? "http://localhost:3000" 
-                             : "https://nexus-sigma-gilt.vercel.app";
+                             : "https://www.nexus-changup.com";
 
             // 닉네임 한글 인코딩 및 URL 생성
             String targetUrl = UriComponentsBuilder.fromUriString(baseUrl + "/auth/oauth-callback")
@@ -74,7 +74,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             String host = request.getServerName();
             String errorBaseUrl = (host.equals("localhost") || host.equals("127.0.0.1")) 
                                   ? "http://localhost:3000" 
-                                  : "https://nexus-sigma-gilt.vercel.app";
+                                  : "https://www.nexus-changup.com";
             response.sendRedirect(errorBaseUrl + "/auth/login?error=auth_failed");
         }
     }

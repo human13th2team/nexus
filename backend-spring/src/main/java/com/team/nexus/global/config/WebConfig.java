@@ -16,7 +16,9 @@ public class WebConfig implements WebMvcConfigurer {
                         "http://localhost:3000",
                         "http://127.0.0.1:3000",
                         "https://ashfortune-nexus-ai-api.hf.space",
-                        "https://nexus-sigma-gilt.vercel.app") // 로컬, AI 서버, 프론트엔드 배포 주소
+                        "https://nexus-sigma-gilt.vercel.app",
+                        "https://www.nexus-changup.com",
+                        "https://nexus-changup.com") // 로컬, AI 서버, 프론트엔드 배포 주소 (WWW 및 Non-WWW 포함)
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)
