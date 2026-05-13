@@ -69,13 +69,14 @@ public class GroupPurchaseServiceImpl implements GroupPurchaseService {
 
     @Override
     public List<GroupPurchaseResponseDto> searchGroupPurchases(String itemName, String region) {
-        String searchItemName = (itemName != null && !itemName.trim().isEmpty()) ? itemName : null;
-        String searchRegion = (region != null && !region.trim().isEmpty()) ? region : null;
+        String searchItemName = (itemName != null && !itemName.trim().isEmpty()) ? "%" + itemName + "%" : null;
+        String searchRegion = (region != null && !region.trim().isEmpty()) ? "%" + region + "%" : null;
 
         return groupPurchaseRepository.searchGroupPurchases(searchItemName, searchRegion).stream()
                 .map(this::convertToDto)
                 .collect(Collectors.toList());
     }
+
 
     @Override
     public GroupPurchaseResponseDto getGroupPurchase(UUID id) {

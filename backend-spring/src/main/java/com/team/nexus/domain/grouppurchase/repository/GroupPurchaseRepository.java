@@ -14,19 +14,20 @@ public interface GroupPurchaseRepository extends JpaRepository<GroupPurchase, UU
 
     @org.springframework.data.jpa.repository.Query("SELECT gp FROM GroupPurchase gp ORDER BY " +
             "CASE WHEN gp.endDate > CURRENT_TIMESTAMP AND gp.status = 'RECRUITING' THEN 0 ELSE 1 END ASC, " +
-            "CASE WHEN gp.endDate > CURRENT_TIMESTAMP AND gp.status = 'RECRUITING' THEN gp.endDate END ASC, " +
+            "CASE WHEN gp.endDate > CURRENT_TIMESTAMP AND gp.status = 'RECRUITING' THEN gp.endDate ELSE NULL END ASC, " +
             "gp.endDate DESC")
     List<GroupPurchase> findAllCustomSorted();
 
     List<GroupPurchase> findAllByEndDateBefore(LocalDateTime dateTime);
 
     @org.springframework.data.jpa.repository.Query("SELECT gp FROM GroupPurchase gp WHERE " +
-            "(:itemName IS NULL OR gp.itemName LIKE CONCAT('%', :itemName, '%')) AND " +
-            "(:region IS NULL OR gp.region LIKE CONCAT('%', :region, '%')) " +
+            "(:itemName IS NULL OR gp.itemName LIKE :itemName) AND " +
+            "(:region IS NULL OR gp.region LIKE :region) " +
             "ORDER BY CASE WHEN gp.endDate > CURRENT_TIMESTAMP AND gp.status = 'RECRUITING' THEN 0 ELSE 1 END ASC, " +
-            "CASE WHEN gp.endDate > CURRENT_TIMESTAMP AND gp.status = 'RECRUITING' THEN gp.endDate END ASC, " +
+            "CASE WHEN gp.endDate > CURRENT_TIMESTAMP AND gp.status = 'RECRUITING' THEN gp.endDate ELSE NULL END ASC, " +
             "gp.endDate DESC")
     List<GroupPurchase> searchGroupPurchases(
             @org.springframework.data.repository.query.Param("itemName") String itemName,
             @org.springframework.data.repository.query.Param("region") String region);
+
 }
