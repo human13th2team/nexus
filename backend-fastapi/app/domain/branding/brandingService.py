@@ -203,7 +203,7 @@ async def chat_with_ai(db: AsyncSession, branding_id: uuid.UUID, request: ChatRe
         industry_list_str = "N/A"
 
         # 2. [최적화] 인터뷰 단계에서만 벡터 검색(업종 추천) 수행
-        # 대표님 요청 사항: 불필요한 단계에서 벡터 로그가 남지 않도록 조건부 실행
+        # 요청 사항: 불필요한 단계에서 벡터 로그가 남지 않도록 조건부 실행
         if branding and branding.current_step == "INTERVIEW":
             # 사용자의 현재 메시지를 벡터화하여 유사 업종 검색
             user_vector = await ai_client.embed_text(request.message)
@@ -444,7 +444,7 @@ async def generate_brand_logo(db: AsyncSession, identity_id: uuid.UUID):
         return None
 
     if identity.branding:
-        # [대표님 요청] 최종 브랜드 이름이 결정되었으므로 Branding 프로젝트의 제목을 업데이트합니다.
+        # [요청] 최종 브랜드 이름이 결정되었으므로 Branding 프로젝트의 제목을 업데이트합니다.
         if identity.branding.title != identity.brand_name:
             identity.branding.title = identity.brand_name
 

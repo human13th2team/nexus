@@ -88,27 +88,29 @@ graph TD
 
 ---
 
-## 🤖 5. AI 파이프라인 (AI Pipeline)
+## 🤖 5. AI & Data Engineering (AI/데이터 기술 스택)
 
-Nexus의 핵심 경쟁력은 AI의 **자기 교정 루프(Self-Correction Loop)**에 있습니다.
+Nexus의 핵심 경쟁력은 단순한 인터페이스가 아닌, **데이터 기반의 지능형 엔진**에 있습니다.
 
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant S as Spring Boot
-    participant F as FastAPI (AI)
-    participant L as LLM (Gemini/GPT)
+### 🧠 5.1 생성형 AI 및 LLM 파이프라인 (LLM & Generative AI)
+- **Gemma-4-31b Engine**: Google Gemini API를 통해 제공되는 고성능 언어 모델을 메인 브레인으로 채택하여, 다단계 브랜딩 인터뷰 및 전략 수립을 수행합니다.
+- **Self-Correction Loop**: 생성된 결과물을 상표권 데이터(KIPRIS)와 대조하여 AI가 스스로 검증하고, 기준 미달 시 재생성을 시도하는 자기 교정 루프를 통해 품질을 보증합니다.
+- **Multimodal Asset Generation**: Stability AI 연동을 통해 브랜드 정체성이 반영된 고해상도 로고 및 마케팅 에셋을 자동 생성합니다.
 
-    U->>S: 브랜딩 요청
-    S->>F: 분석 및 생성 위임
-    F->>L: 1차 초안 생성 (Drafting)
-    L-->>F: 결과 반환
-    F->>L: 품질 검증 및 필터링 (Evaluation)
-    Note over F,L: 기준 미달 시 재생성 시도
-    L-->>F: 최종 정제된 에셋
-    F-->>S: 결과 응답
-    S-->>U: 최종 브랜딩 제안
-```
+### 📈 5.2 정밀 분석 및 예측 모델 (Machine Learning & DL)
+- **Survival Prediction Engine**: 서울시 공공 데이터를 학습한 **XGBoost** 및 **CatBoost** 모델을 통해 25개 자치구 및 14개 업종별 창업 생존 확률을 예측합니다.
+- **Ensemble Recommender**: Jaccard, Cosine, KNN 알고리즘을 결합한 앙상블 유사도 모델을 통해 기존 설비를 활용한 최적의 업종 전환(Pivot) 전략을 제안합니다.
+
+#### 📊 모델 성능 지표 (Model Performance)
+학습된 모델의 신뢰도를 보장하기 위해 ROC Curve와 AUC 지표를 통해 지속적으로 성능을 검증합니다.
+
+| CatBoost ROC Curve | XGBoost ROC Curve |
+| :---: | :---: |
+| ![CatBoost ROC](./assets/0511_cat_roc_curve.png) | ![XGBoost ROC](./assets/0512_xgb_roc_curve.png) |
+
+### 🔍 5.3 지능형 검색 및 RAG (Retrieval-Augmented Generation)
+- **Semantic Policy Search**: '중소벤처24'의 비정형 정책 데이터를 **Gemini Embedding**으로 벡터화하여 **PostgreSQL pgvector**에 저장, 사용자 상황에 최적화된 정책을 의미론적으로 추출합니다.
+- **Vector-based Industry Mapping**: 사용자 대화 맥락을 실시간 임베딩하여 4,000여 개의 한국 표준 산업 분류 데이터 중 가장 적합한 업종을 정밀 매핑합니다.
 
 ---
 

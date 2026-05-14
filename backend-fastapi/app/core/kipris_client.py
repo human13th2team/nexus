@@ -8,7 +8,7 @@ import httpx
 class KiprisClient:
     def __init__(self):
         self.api_key = os.getenv("KIPRIS_API_KEY")
-        # 대표님께서 제공해주신 샘플 엔드포인트 (getWordSearch)
+        # 제공해주신 샘플 엔드포인트 (getWordSearch)
         self.base_url = (
             "http://plus.kipris.or.kr/kipo-api/kipi/trademarkInfoSearchService/getWordSearch"
         )
