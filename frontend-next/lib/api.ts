@@ -7,6 +7,7 @@ interface RequestOptions extends RequestInit {
   baseUrl?: string;
 }
 
+
 /**
  * 모든 API 요청을 처리하는 베이스 함수입니다.
  */
