@@ -10,6 +10,7 @@ interface SubMenu {
   name: string;
   href: string;
   allowedRoles?: number[];
+  requireAuth?: boolean;
 }
 
 interface MenuItem {
@@ -19,6 +20,7 @@ interface MenuItem {
   href?: string;
   subMenu?: SubMenu[];
   allowedRoles?: number[];
+  requireAuth?: boolean;
   modes: StartupMode[]; // 'BEFORE' | 'AFTER' 둘 다 포함될 수 있음
 }
 
@@ -45,6 +47,7 @@ const MENU_DATA: MenuItem[] = [
     allowedRoles: [0, 1, 2],
     modes: ['BEFORE'],
   },
+  { id: 'expert-before', title: '전문가 매칭', hasSub: false, href: '/expert', allowedRoles: [0, 1, 2], modes: ['BEFORE'] },
 
   // 창업 후 (AFTER) 전용
   {
@@ -54,7 +57,7 @@ const MENU_DATA: MenuItem[] = [
     modes: ['AFTER'],
     subMenu: [
       { name: '직원 고용 가이드', href: '/worker', allowedRoles: [0, 1, 2] },
-      { name: '전문가 매칭', href: '/expert', allowedRoles: [0, 1, 2] },
+      { name: '운영 대시보드', href: '/dashboard', allowedRoles: [0, 1, 2], requireAuth: true },
     ],
   },
   { id: 'group-purchases', title: '공동구매', hasSub: false, href: '/group-purchases', allowedRoles: [0, 1, 2], modes: ['AFTER'] },
@@ -110,19 +113,29 @@ export default function Header() {
       // 1. 창업 단계(모드) 필터링
       if (!menu.modes.includes(mode)) return false;
 
-      // 2. 메인 메뉴 권한 체크
+      // 2. 로그인 필수 체크
+      if (menu.requireAuth && !isAuthenticated) return false;
+
+      // 3. 메인 메뉴 권한 체크
       if (isAuthenticated) {
         const isMenuAllowed = !menu.allowedRoles || menu.allowedRoles.includes(userType);
         if (!isMenuAllowed) return false;
       }
 
-      // 3. 서브 메뉴 권한 필터링
-      if (menu.subMenu && isAuthenticated) {
-        menu.subMenu = menu.subMenu.filter(sub =>
-          !sub.allowedRoles || sub.allowedRoles.includes(userType)
-        );
-      }
       return true;
+    }).map(menu => {
+      // 4. 서브 메뉴 필터링 (원본 보존을 위해 새로운 객체 생성)
+      if (menu.subMenu) {
+        const filteredSub = menu.subMenu.filter(sub => {
+          if (sub.requireAuth && !isAuthenticated) return false;
+          if (isAuthenticated && sub.allowedRoles) {
+            return sub.allowedRoles.includes(userType);
+          }
+          return true;
+        });
+        return { ...menu, subMenu: filteredSub };
+      }
+      return menu;
     });
   }, [isAuthenticated, user?.userType, mode]);
 
