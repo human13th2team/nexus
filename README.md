@@ -186,6 +186,10 @@ docker-compose up -d
 PM의 주도 하에 AI와 인간 개발자가 조화롭게 협업할 수 있는 시스템을 구축했습니다.
 
 - **AI-Human Collaboration Control**: `.ai-rules.md`와 `.agent-conventions.md`를 정의하여 AI 코딩 어시스턴트가 팀의 컨벤션을 이탈하지 않도록 엄격히 통제하고 높은 수준의 코드 품질을 유지했습니다.
+- **Multi-Language Linting & Formatting**: 각 프레임워크 특성에 맞는 최적의 린터와 포매터를 도입하여 코드 일관성을 확보했습니다.
+  - **Java (Spring)**: `Checkstyle`을 통한 표준 코딩 가이드 준수.
+  - **Python (FastAPI)**: `Ruff`를 도입하여 고성능 린팅 및 자동 코드 정제 수행.
+  - **TypeScript (Next.js)**: `ESLint`와 `Prettier`를 연동하여 프로젝트 전반의 스타일 자동화.
 - **전략적 기술 병목 해결**: 5~6인 규모의 한정된 리소스 내에서 인증 로직, AI 연산 등 기술적 병목 구간에 인력을 전략적으로 배치하여 개발 속도와 안정성을 동시에 확보했습니다.
 - **Agile & Quality Assurance**: **WBS 기반의 철저한 일정 관리**와 **테스트 케이스(TC) 기반의 검증 프로세스**를 통해 단 하나의 크리티컬 이슈 없이 데드라인 내 프로젝트를 완수했습니다.
 
