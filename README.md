@@ -96,9 +96,9 @@ graph TD
 
 | 주요 기능 | 인터페이스 미리보기 | 기능 상세 |
 | :--- | :---: | :--- |
-| **AI 브랜딩 결과물** | ![Branding Result](https://via.placeholder.com/400x250?text=Branding+Result) | 네이밍, 슬로건, 로고 및 브랜드 스토리를 패키지로 제공 |
-| **상권 분석 대시보드** | ![Market Analysis](https://via.placeholder.com/400x250?text=Market+Analysis) | 히트맵 기반 상권 밀집도 및 유동인구 시각화 분석 |
-| **창업 비용 시뮬레이션** | ![Simulation](https://via.placeholder.com/400x250?text=Startup+Simulation) | 초기 투자금 및 운영 비용에 따른 손익분기점 예측 |
+| **AI 브랜딩 결과물** | ![Branding Result](./assets/Branding-result.png) | 네이밍, 슬로건, 로고 및 브랜드 스토리를 패키지로 제공 |
+| **상권 분석 대시보드** | ![Market Analysis](./assets/MarketAnalysis.png) | 히트맵 기반 상권 밀집도 및 유동인구 시각화 분석 |
+| **창업 비용 시뮬레이션** | ![Simulation](./assets/Simulation.png) | 초기 투자금 및 운영 비용에 따른 손익분기점 예측 |
 
 ---
 
