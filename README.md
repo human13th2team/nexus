@@ -40,7 +40,7 @@
 
 ### 🎨 AI 브랜딩 엔진 (AI Branding)
 - **Multi-Stage Workflow**: 단순 생성을 넘어, LLM 기반의 'Self-Correction Loop'를 통해 네이밍과 슬로건의 품질을 자동 검증하고 개선합니다.
-- **이미지 생성**: DALL-E 3 등 최신 이미지 모델을 연동하여 업종별 최적화된 로고를 즉시 제작합니다.
+- **이미지 생성**: Stability AI 등 최신 이미지 모델을 연동하여 업종별 최적화된 로고를 즉시 제작합니다.
 
 ### 🏢 창업 시뮬레이션 (Startup Simulation)
 - **상권 분석**: PostgreSQL의 공간 쿼리와 공공 데이터를 결합하여 해당 지역의 업종 밀집도와 유동인구를 분석합니다.
@@ -50,14 +50,6 @@
 - **실시간 데이터 연동**: '중소벤처24' API와 연동하여 최신 정부 지원금 및 정책 정보를 실시간으로 수집합니다.
 - **지능형 검색**: Gemini 임베딩 기반의 시맨틱 검색을 통해 사용자 상황(지역, 업종, 창업 단계)에 가장 적합한 정책을 추천합니다.
 
-### ⚖️ 지능형 고용 관리 (Employment Management)
-- **계약서 자동 생성**: 복잡한 노무 지식 없이도 표준근로계약서(기간 정함 없음/있음, 단시간, 연소자 등)를 PDF로 즉시 생성합니다.
-- **노무 가이드 제공**: 창업 초기 필수적인 고용 절차와 법적 준수 사항에 대한 가이드를 제공합니다.
-
-### 📊 지능형 대시보드 (Intelligent Dashboard)
-- **매출 예측**: FastAPI 기반의 시계열 분석 모델을 통해 미래 매출 추이를 시각화합니다.
-- **감성 분석**: 고객 리뷰를 AI가 분석하여 긍정/부정 키워드를 추출하고 운영 개선점을 제안합니다.
-
 ---
 
 ## 🏗️ 4. 시스템 아키텍처 (System Architecture)
@@ -66,11 +58,20 @@ Nexus는 확장성과 유지보수성을 극대화하기 위해 **도메인 중�
 
 ```mermaid
 graph TD
-    User((사용자)) --> NextJS[Next.js 16 Frontend]
+    User((사용자)) --> Nginx[Nginx Reverse Proxy]
+    
+    subgraph "CI/CD Pipeline"
+        GitHub[GitHub] --> GHA[GitHub Actions]
+        GHA --> Jenkins[Jenkins CI/CD]
+    end
+
+    subgraph "Frontend Layer"
+        Nginx --> NextJS[Next.js 16 Frontend]
+    end
     
     subgraph "Service Layer"
-        NextJS --> SpringBoot[Spring Boot Core Server]
-        NextJS --> FastAPI[FastAPI AI Engine]
+        Nginx --> SpringBoot[Spring Boot Core Server]
+        Nginx --> FastAPI[FastAPI AI Engine]
     end
     
     subgraph "Infrastructure"
@@ -78,13 +79,26 @@ graph TD
         FastAPI --> DB
         FastAPI --> LLM[AI Models / RAG]
         SpringBoot --> Storage[Supabase / S3]
+        Jenkins --> Deploy[Docker Compose Deploy]
     end
 
+    style Nginx fill:#009639,stroke:#333,stroke-width:2px,color:#fff
     style NextJS fill:#f9f,stroke:#333,stroke-width:2px
     style SpringBoot fill:#bbf,stroke:#333,stroke-width:2px
     style FastAPI fill:#bfb,stroke:#333,stroke-width:2px
     style DB fill:#ffb,stroke:#333,stroke-width:2px
+    style Jenkins fill:#d33833,stroke:#333,stroke-width:2px,color:#fff
 ```
+
+---
+
+## 🖥️ Service Preview (서비스 프리뷰)
+
+| 주요 기능 | 인터페이스 미리보기 | 기능 상세 |
+| :--- | :---: | :--- |
+| **AI 브랜딩 결과물** | ![Branding Result](https://via.placeholder.com/400x250?text=Branding+Result) | 네이밍, 슬로건, 로고 및 브랜드 스토리를 패키지로 제공 |
+| **상권 분석 대시보드** | ![Market Analysis](https://via.placeholder.com/400x250?text=Market+Analysis) | 히트맵 기반 상권 밀집도 및 유동인구 시각화 분석 |
+| **창업 비용 시뮬레이션** | ![Simulation](https://via.placeholder.com/400x250?text=Startup+Simulation) | 초기 투자금 및 운영 비용에 따른 손익분기점 예측 |
 
 ---
 
@@ -93,8 +107,11 @@ graph TD
 Nexus의 핵심 경쟁력은 단순한 인터페이스가 아닌, **데이터 기반의 지능형 엔진**에 있습니다.
 
 ### 🧠 5.1 생성형 AI 및 LLM 파이프라인 (LLM & Generative AI)
-- **Gemma-4-31b Engine**: Google Gemini API를 통해 제공되는 고성능 언어 모델을 메인 브레인으로 채택하여, 다단계 브랜딩 인터뷰 및 전략 수립을 수행합니다.
-- **Self-Correction Loop**: 생성된 결과물을 상표권 데이터(KIPRIS)와 대조하여 AI가 스스로 검증하고, 기준 미달 시 재생성을 시도하는 자기 교정 루프를 통해 품질을 보증합니다.
+- **Gemini 3 Flash & Pro (Hybrid Inference)**: 저지연 응답이 필요한 인터뷰 단계에서는 **Flash** 모델을, 고도의 창의성과 논리적 추론이 필요한 브랜딩 전략 수립 단계에서는 **Pro** 모델을 동적으로 호출하는 하이브리드 추론 구조를 채택했습니다.
+- **CLIP 기반 Alignment Score**: 생성된 시각 에셋과 브랜드 키워드 간의 의미적 일치도를 CLIP 모델로 정량화합니다.
+  - **디자인의 정량적 검증 수식**:
+    $$Score_{final} = \text{clamp}\left(\frac{Score_{raw} - 0.15}{0.35 - 0.15}, 0, 1\right) \times 100$$
+- **Self-Correction Loop**: 생성된 브랜드 에셋을 KIPRIS(상표권) API와 연동하여 실시간으로 대조합니다. 이를 통해 법적 안정성을 선제적으로 확보하며, 유사 상표 발견 시 AI가 스스로 파라미터를 조정하여 재생성을 시도하는 고도화된 품질 보증 루프를 수행합니다.
 - **Multimodal Asset Generation**: Stability AI 연동을 통해 브랜드 정체성이 반영된 고해상도 로고 및 마케팅 에셋을 자동 생성합니다.
 
 ### 📈 5.2 정밀 분석 및 예측 모델 (Machine Learning & DL)
@@ -135,30 +152,42 @@ nexus/
 | **Backend (Core)** | `Spring Boot 3.3`, `Java 17`, `JPA` | 안정적인 비즈니스 로직 및 API 관리 |
 | **Backend (AI)** | `FastAPI`, `Python 3.10`, `LangChain` | 고성능 AI 엔진 및 데이터 처리 파이프라인 |
 | **Database** | `PostgreSQL 16`, `Supabase Storage` | 관계형 데이터 및 대용량 파일 관리 |
-| **DevOps** | `Docker`, `Docker Compose`, `GitHub Actions` | 일관된 개발 및 배포 환경 보장 |
+| **DevOps** | `Docker`, `Docker Compose`, `Jenkins`, `Nginx` | 일관된 개발 및 배포 환경 보장 |
 
 ---
 
-## ⚙️ 8. 시작하기 (Quick Start)
+## ⚙️ 8. 운영 및 배포 전략 (Deployment & Operation Strategy)
 
-### 🐘 1단계: 인프라 기동 (Docker)
+Nexus는 특정 클라우드 플랫폼에 종속되지 않는 **인프라 자립형 하이브리드 배포 전략**을 취하고 있습니다.
+
+### 🏗️ 인프라 구성
+- **Hybrid Infrastructure**: **Ubuntu Server** 환경에서 **Docker Compose**를 통해 각 마이크로서비스를 컨테이너화하여 관리합니다.
+- **CI/CD Pipeline**: GitHub에 코드 푸시 시 **GitHub Actions**가 일차적 빌드를 검증하며, **Jenkins**가 실제 운영 서버에 접속하여 무중단 배포를 수행합니다.
+- **Reverse Proxy**: **Nginx**를 최전방에 배치하여 SSL 인증 처리 및 각 서비스(Spring, FastAPI, Next.js)로의 요청을 안전하게 라우팅합니다.
+
+### 🔒 보안 및 환경 관리
+- **Secret Management**: 모든 민감 정보는 `.env` 파일로 관리되며, 협업을 위해 `env.example` 파일을 가이드라인으로 제공합니다. 운영 서버의 Secrets는 Jenkins 파이프라인 내에서 암호화되어 관리됩니다.
+
+### 🏃 시작하기 (Quick Start)
 ```bash
-# PostgreSQL DB 실행
+# 1. 인프라 기동
 docker-compose up -d
-```
 
-### 🏃 2단계: 서버 실행
-각 폴더의 README를 참고하거나 아래 명령어를 실행하세요.
-- **FastAPI**: `cd backend-fastapi && python -m app.main`
-- **Spring Boot**: `cd backend-spring && ./gradlew bootRun`
-- **Next.js**: `cd frontend-next && npm run dev`
+# 2. 개별 서버 실행 (개발 모드)
+# FastAPI: cd backend-fastapi && python -m app.main
+# Spring: cd backend-spring && ./gradlew bootRun
+# Next.js: cd frontend-next && npm run dev
+```
 
 ---
 
 ## 💎 9. 코드 품질 및 협업 (Quality & Collaboration)
 
-- **코드 컨벤션**: `.agent-conventions.md`를 통해 AI와 인간 개발자 간의 일관된 코드 품질을 유지합니다.
-- **린트/포맷**: `Checkstyle`(Java), `Ruff`(Python), `ESLint/Prettier`(TS)를 통해 엄격히 관리됩니다.
+PM의 주도 하에 AI와 인간 개발자가 조화롭게 협업할 수 있는 시스템을 구축했습니다.
+
+- **AI-Human Collaboration Control**: `.ai-rules.md`와 `.agent-conventions.md`를 정의하여 AI 코딩 어시스턴트가 팀의 컨벤션을 이탈하지 않도록 엄격히 통제하고 높은 수준의 코드 품질을 유지했습니다.
+- **전략적 기술 병목 해결**: 5~6인 규모의 한정된 리소스 내에서 인증 로직, AI 연산 등 기술적 병목 구간에 인력을 전략적으로 배치하여 개발 속도와 안정성을 동시에 확보했습니다.
+- **Agile & Quality Assurance**: **WBS 기반의 철저한 일정 관리**와 **테스트 케이스(TC) 기반의 검증 프로세스**를 통해 단 하나의 크리티컬 이슈 없이 데드라인 내 프로젝트를 완수했습니다.
 
 ---
 <div align="center">
