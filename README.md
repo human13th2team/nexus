@@ -135,11 +135,21 @@ Nexus의 핵심 경쟁력은 단순한 인터페이스가 아닌, **데이터 �
 
 ```text
 nexus/
-├── frontend-next/     # Next.js 16 (App Router, TypeScript)
-├── backend-spring/    # Spring Boot 3.3 (Core Business Logic, JPA)
-├── backend-fastapi/   # FastAPI (AI Logic, Data Analysis)
-├── db/                # DB Initialization Scripts (Docker)
-└── docker-compose.yml # 통합 컨테이너 오케스트레이션
+├── frontend-next/         # Next.js 16 프론트엔드 (App Router)
+│   ├── app/               # 페이지 라우팅 및 서버 컴포넌트
+│   ├── components/        # UI(Shadcn), Auth, Layout 등 재사용 컴포넌트
+│   ├── lib/               # API 클라이언트 및 공통 유틸리티
+│   └── store/             # Zustand 기반 전역 상태 관리
+├── backend-spring/        # Spring Boot 3.3 코어 백엔드
+│   ├── src/main/java/     # 비즈니스 로직, 엔티티, 보안(Security) 구현체
+│   ├── src/main/resources/# 애플리케이션 설정 및 데이터베이스 마이그레이션
+│   └── config/checkstyle/ # 코드 품질 관리를 위한 스타일 규격
+├── backend-fastapi/       # FastAPI AI 서비스 백엔드
+│   ├── app/               # AI 도메인 로직 및 LangChain 파이프라인
+│   ├── scripts/           # ML 모델 학습 및 데이터 정제 스크립트
+│   └── main.py            # AI 서비스 엔드포인트 및 서버 설정
+├── db/                    # DB 초기화 및 Docker 설정 파일
+└── docker-compose.yml     # 멀티 컨테이너 오케스트레이션 및 네트워크 설정
 ```
 
 ---
@@ -150,8 +160,8 @@ nexus/
 | :--- | :--- | :--- |
 | **Frontend** | `Next.js 16`, `React 19`, `Tailwind CSS` | 고성능 UI/UX 및 서버 사이드 렌더링 |
 | **Backend (Core)** | `Spring Boot 3.3`, `Java 17`, `JPA` | 안정적인 비즈니스 로직 및 API 관리 |
-| **Backend (AI)** | `FastAPI`, `Python 3.10`, `LangChain` | 고성능 AI 엔진 및 데이터 처리 파이프라인 |
-| **Database** | `PostgreSQL 16`, `Supabase Storage` | 관계형 데이터 및 대용량 파일 관리 |
+| **Backend (AI)** | `FastAPI`, `LangChain`, `LLM`, `XGBoost`, `CatBoost` | 고성능 AI 엔진 및 지능형 분석 파이프라인 |
+| **Database** | `PostgreSQL 16`, `Redis`, `Supabase Storage` | 데이터 영속성 관리 및 실시간 캐싱 |
 | **DevOps** | `Docker`, `Docker Compose`, `Jenkins`, `Nginx` | 일관된 개발 및 배포 환경 보장 |
 
 ---
