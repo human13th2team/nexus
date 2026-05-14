@@ -115,6 +115,9 @@ Nexus의 핵심 경쟁력은 단순한 인터페이스가 아닌, **데이터 �
 - **Multimodal Asset Generation**: Stability AI 연동을 통해 브랜드 정체성이 반영된 고해상도 로고 및 마케팅 에셋을 자동 생성합니다.
 
 ### 📈 5.2 정밀 분석 및 예측 모델 (Machine Learning & DL)
+- **TimesFM (Time Series Foundation Model)**: Google Research에서 개발한 최신 시계열 파운데이션 모델을 핵심 엔진으로 활용하여 예측 성능을 극대화했습니다.
+  - **Zero-Shot Forecasting**: 방대한 데이터로 사전 학습되어 별도의 추가 학습 없이도 즉각적이고 정교한 예측 결과를 도출합니다.
+  - **Transformer 기반 구조**: 시계열 데이터에 최적화된 Transformer 디코더를 통해 복잡한 비선형 패턴과 맥락을 깊이 있게 분석합니다.
 - **Survival Prediction Engine**: 서울시 공공 데이터를 학습한 **XGBoost** 및 **CatBoost** 모델을 통해 25개 자치구 및 14개 업종별 창업 생존 확률을 예측합니다.
 - **Ensemble Recommender**: Jaccard, Cosine, KNN 알고리즘을 결합한 앙상블 유사도 모델을 통해 기존 설비를 활용한 최적의 업종 전환(Pivot) 전략을 제안합니다.
 
