@@ -107,7 +107,7 @@ graph TD
 Nexus의 핵심 경쟁력은 단순한 인터페이스가 아닌, **데이터 기반의 지능형 엔진**에 있습니다.
 
 ### 🧠 5.1 생성형 AI 및 LLM 파이프라인 (LLM & Generative AI)
-- **Gemini 3 Flash & Pro (Hybrid Inference)**: 저지연 응답이 필요한 인터뷰 단계에서는 **Flash** 모델을, 고도의 창의성과 논리적 추론이 필요한 브랜딩 전략 수립 단계에서는 **Pro** 모델을 동적으로 호출하는 하이브리드 추론 구조를 채택했습니다.
+- **Gemma-4-31b Engine**: Google Gemini API를 통해 제공되는 고성능 언어 모델을 메인 브레인으로 채택하여, 다단계 브랜딩 인터뷰 및 전략 수립을 수행합니다.
 - **CLIP 기반 Alignment Score**: 생성된 시각 에셋과 브랜드 키워드 간의 의미적 일치도를 CLIP 모델로 정량화합니다.
   - **디자인의 정량적 검증 수식**:
     $$Score_{final} = \text{clamp}\left(\frac{Score_{raw} - 0.15}{0.35 - 0.15}, 0, 1\right) \times 100$$
